@@ -1,8 +1,14 @@
 PYTHON ?= python3
 
-.PHONY: test evaluate evaluate-quick
+.PHONY: native native-check test evaluate evaluate-quick
 
-test:
+native:
+	$(PYTHON) scripts/build_native.py
+
+native-check:
+	$(PYTHON) scripts/check_native.py
+
+test: native
 	$(PYTHON) -m unittest discover -s tests -v
 
 evaluate:

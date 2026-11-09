@@ -1,0 +1,9 @@
+{
+  "image_id": "sha256:460dfa9aefc5b32c8c5b36cb13c5d279e7d9a252e0801a6a554208f3c9b04724",
+  "architecture": "amd64",
+  "os": "linux",
+  "library_sha256": "efadefbb38b2076dd3e8a900a28a25c93064d6d0d0bf26e65fea50729a20ac79",
+  "avx2_on_test_host": true,
+  "fp_contract": "off",
+  "runtime_dispatch": "AVX2 when available, scalar otherwise"
+}

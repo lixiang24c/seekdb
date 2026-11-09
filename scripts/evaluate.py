@@ -64,7 +64,7 @@ def main():
     report={'schema':'minivectordb-local-evaluation-v1','scope':'LOCAL ONLY; no official driver or official score',
             'status':'RUNNING','git_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
             'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()),
-            'implementation_sha256':source_hash([ROOT/'Dockerfile',ROOT/'requirements.txt',*sorted((ROOT/'minivectordb').glob('*.py'))]),
+            'implementation_sha256':source_hash([ROOT/'Dockerfile',ROOT/'requirements.txt',*sorted((ROOT/'minivectordb').glob('*.py')),*sorted((ROOT/'native').glob('*.c'))]),
             'harness_sha256':source_hash([Path(__file__),*sorted((ROOT/'evaluation').glob('*.py'))]),
             'configuration':{k:str(v) if isinstance(v,Path) else v for k,v in vars(args).items()},'phases':{},'cases':[]}
     started=time.perf_counter()

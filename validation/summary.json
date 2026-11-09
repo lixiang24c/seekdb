@@ -21,8 +21,8 @@
     "No official baseline, rank, performance score or Agent prompt score is claimed.",
     "Raw generated transcripts and data are not committed; rerunning evaluation produces them."
   ],
-  "latest_validation": "validation/optimization-round2/gates/report.json",
-  "latest_comparison": "validation/optimization-round2/summary.json",
+  "latest_validation": "validation/optimization-round3/gates/report.json",
+  "latest_comparison": "validation/optimization-round3/summary.json",
   "optimized_local_delivery_validated": true,
-  "current_regression_test_count": 34
+  "current_regression_test_count": 36
 }

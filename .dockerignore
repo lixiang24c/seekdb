@@ -3,3 +3,5 @@
 !requirements.txt
 !minivectordb/
 !minivectordb/*.py
+!native/
+!native/*.c

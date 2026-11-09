@@ -1,0 +1,1 @@
+{"result": "PASS", "rows": 80000, "data_bytes": 85510871, "cgroup_memory_peak": 67108864, "cgroup_memory_limit": 67108864, "scope": "local container test, not official resource configuration"}

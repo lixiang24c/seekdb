@@ -88,3 +88,9 @@ SQL以完整向量字面量分词，借助标准JSON解析器批量解析数值�
 精确查询使用只读内存映射按2048条分块读取索引；映射不将全索引载入Python堆，实际页缓存仍计入cgroup。距离通过单次float64减法分配减少临时数组；结果投影复用同一查询的TopK距离，不重新计算。
 旧提交4575c6cf的实测镜像作为第二轮基线，保持同一配置、种子和精确校验。原有持久化成功确认时机与fsync步骤未放宽。
 第二轮交错实测结果见 validation/optimization-round2/summary.json。复现交错测量：python3 scripts/compare_images.py --baseline 已构建的旧镜像 --candidate 新镜像 --output 尚不存在的结果目录。本次归档的完整功能/资源记录在 validation/optimization-round2/gates/ 下，测试数量已增加到34。
+
+第三轮性能优化
+自实现 native/topk.c 提供精确L2与TopK数学内核，通过ctypes访问只读索引块，减少NumPy临时数组及解释器调度。编译禁用浮点乘加收缩，CPU运行时检测AVX2，不支持时使用标量路径；不使用现成向量索引库。
+Docker采用多阶段构建，在构建阶段以锁定版本GCC12编译，运行镜像只复制共享库，不携带编译器。默认要求原生库成功加载，不静默把加载故障当成原生优化成绩；MINIVECTOR_NATIVE=0可显式使用原NumPy路径。
+本地开发运行 make native 或 python3 scripts/build_native.py 编译；make test 会先编译再运行测试。make native-check 运行AddressSanitizer/UBSan独立原生测试，需要本机GCC。仅运行 make evaluate 不需要宿主机编译器，Docker内会从源码构建。
+共享库为生成物，不纳入源码提交；没有本地库时原生Python入口仍可回退。完整Docker镜像内同时包含标量与AVX2实现。

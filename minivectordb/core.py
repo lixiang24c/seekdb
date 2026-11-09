@@ -508,6 +508,11 @@ class Database:
                             if not line:raise DBError('incomplete index metadata')
                             if predicate(json.loads(line)):mask.append(position)
                     if np is not None:
+                        from .native import scan
+                        native=scan(entries,query_array,mask,k)
+                        if native is not None:
+                            yield from native
+                            continue
                         selected=entries[mask]
                         delta=np.subtract(selected['vector'],query_array,dtype=np.float64)
                         squared=np.einsum('ij,ij->i',delta,delta)

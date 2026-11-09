@@ -1,0 +1,49 @@
+{
+  "scope": "local paired benchmark; not official rank or score",
+  "baseline_commit": "573cbe4761e41af79fc943681cddf270b9227176",
+  "configuration": "2 CPU, 128MiB, offline; 10000 rows, 128 dimensions, 1000 queries; 3 alternating rounds, seeds 720/721/722",
+  "tracks": {
+    "write": {
+      "seconds": {
+        "before": 2.827392963983584,
+        "after": 2.6678958970005624,
+        "before_over_after": 1.0597838420765742,
+        "reduction_fraction": 0.05641135456399471
+      },
+      "io_bytes": {
+        "before": 6848512,
+        "after": 6848512,
+        "before_over_after": 1.0,
+        "reduction_fraction": 0.0
+      },
+      "memory_peak_bytes": {
+        "before": 16359424,
+        "after": 16289792,
+        "before_over_after": 1.0042745788282625,
+        "reduction_fraction": 0.00425638457686528
+      }
+    },
+    "query": {
+      "seconds": {
+        "before": 4.773747158993501,
+        "after": 2.3450395700056106,
+        "before_over_after": 2.0356787237419964,
+        "reduction_fraction": 0.5087633483923267
+      },
+      "io_bytes": {
+        "before": 17776640,
+        "after": 17776640,
+        "before_over_after": 1.0,
+        "reduction_fraction": 0.0
+      },
+      "memory_peak_bytes": {
+        "before": 32759808,
+        "after": 28721152,
+        "before_over_after": 1.1406160867084998,
+        "reduction_fraction": 0.12328082020505127
+      }
+    }
+  },
+  "native_validation": "36 regressions, 5 harness self-tests, 11 SQL cases; scalar and AVX2 vs independent reference; ASan/UBSan passed; 64MiB resource case passed",
+  "recall": "filtered and unfiltered Recall@10=1.0 in all rounds; exact IDs/order and distances checked"
+}

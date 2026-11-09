@@ -1,0 +1,41 @@
+test_abandoned_transaction_recovery (test_core.CoreTests.test_abandoned_transaction_recovery) ... ok
+test_filter_and_ties (test_core.CoreTests.test_filter_and_ties) ... ok
+test_invalid_types (test_core.CoreTests.test_invalid_types) ... ok
+test_statement_atomicity (test_core.CoreTests.test_statement_atomicity) ... ok
+test_transaction_topk (test_core.CoreTests.test_transaction_topk) ... ok
+test_abandoned_transaction_recovery (test_core.IndexTests.test_abandoned_transaction_recovery) ... ok
+test_filter_and_ties (test_core.IndexTests.test_filter_and_ties) ... ok
+test_index_updates_and_rollback (test_core.IndexTests.test_index_updates_and_rollback) ... ok
+test_invalid_types (test_core.IndexTests.test_invalid_types) ... ok
+test_statement_atomicity (test_core.IndexTests.test_statement_atomicity) ... ok
+test_transaction_topk (test_core.IndexTests.test_transaction_topk) ... ok
+test_manifest_atomicity_and_repeated_reopen (test_crash_boundaries.CrashBoundaryTests.test_manifest_atomicity_and_repeated_reopen) ... ok
+test_exact_index_matches_independent_scan (test_index_truth.IndexTruthTests.test_exact_index_matches_independent_scan) ... ok
+test_commit_publication_uncertainty_requires_reopen (test_io_errors.IOErrorTests.test_commit_publication_uncertainty_requires_reopen) ... ok
+test_data_sync_failure_rolls_back_only_statement (test_io_errors.IOErrorTests.test_data_sync_failure_rolls_back_only_statement) ... ok
+test_random_transactions_against_independent_model (test_model.ModelTests.test_random_transactions_against_independent_model) ... ok
+test_simd_and_scalar_against_independent_reference (test_native_kernel.NativeKernelTests.test_simd_and_scalar_against_independent_reference) ... ok
+test_ties_empty_and_k_larger_than_count (test_native_kernel.NativeKernelTests.test_ties_empty_and_k_larger_than_count) ... ok
+test_cached_filters_ties_and_rollback (test_optimized_paths.OptimizedPathTests.test_cached_filters_ties_and_rollback) ... ok
+test_filter_cache_budget_falls_back_to_streaming (test_optimized_paths.OptimizedPathTests.test_filter_cache_budget_falls_back_to_streaming) ... ok
+test_float32_storage_drives_exact_order (test_optimized_paths.OptimizedPathTests.test_float32_storage_drives_exact_order) ... ok
+test_legacy_snapshot_reads_and_upgrades (test_optimized_paths.OptimizedPathTests.test_legacy_snapshot_reads_and_upgrades) ... ok
+test_primary_runs_compact_and_recover (test_optimized_paths.OptimizedPathTests.test_primary_runs_compact_and_recover) ... ok
+test_statement_boundaries_across_lines (test_optimized_paths.OptimizedPathTests.test_statement_boundaries_across_lines) ... ok
+test_vector_literal_fast_path (test_optimized_paths.OptimizedPathTests.test_vector_literal_fast_path) ... ok
+test_kill_preserves_confirmed_commit_only (test_process_recovery.ProcessRecovery.test_kill_preserves_confirmed_commit_only) ... ok
+test_boundaries (test_protocol_local.StatementTests.test_boundaries) ... ok
+test_kill_during_cleanup_then_recover_again (test_recovery_interruption.RecoveryInterruptionTests.test_kill_during_cleanup_then_recover_again) ... ok
+test_large_key_batch_retains_external_sort_and_atomicity (test_second_optimization.SecondOptimizationTests.test_large_key_batch_retains_external_sort_and_atomicity) ... ok
+test_mapped_empty_index_and_distance_projection (test_second_optimization.SecondOptimizationTests.test_mapped_empty_index_and_distance_projection) ... ok
+test_numeric_fast_token_rejects_bad_arrays (test_second_optimization.SecondOptimizationTests.test_numeric_fast_token_rejects_bad_arrays) ... ok
+test_end_to_end (test_sql.SQLTests.test_end_to_end) ... ok
+test_external_sort (test_sql.SQLTests.test_external_sort) ... ok
+test_failed_tail_never_executes (test_sql.SQLTests.test_failed_tail_never_executes) ... ok
+test_invalid_update_atomicity (test_sql.SQLTests.test_invalid_update_atomicity) ... ok
+test_multiline_unicode_and_quotes (test_sql.SQLTests.test_multiline_unicode_and_quotes) ... ok
+
+----------------------------------------------------------------------
+Ran 36 tests in 3.131s
+
+OK
