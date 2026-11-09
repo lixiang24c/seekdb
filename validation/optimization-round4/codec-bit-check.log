@@ -1,0 +1,1 @@
+PASS: 10000 random float32 bit words sampled; finite words retained bit patterns through the native codec. Non-finite rejection is tested separately.

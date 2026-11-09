@@ -74,3 +74,42 @@ size_t mv_topk(const unsigned char *rows,size_t count,size_t stride,size_t dim,
     }
     free(heap);return total;
 }
+
+#ifdef MV_WITH_PYTHON
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+#include <math.h>
+static PyObject *float32_vector(PyObject *self,PyObject *args) {
+    (void)self;PyObject *input;Py_ssize_t dimension;
+    if (!PyArg_ParseTuple(args,"On:float32_vector",&input,&dimension)) return NULL;
+    int list=PyList_CheckExact(input),tuple=PyTuple_CheckExact(input);
+    if ((!list&&!tuple) || dimension<0 || (list?PyList_GET_SIZE(input):PyTuple_GET_SIZE(input))!=dimension) {
+        PyErr_SetString(PyExc_ValueError,"vector dimension or sequence mismatch");return NULL;
+    }
+    PyObject *output=PyList_New(dimension);if (!output) return NULL;
+    for (Py_ssize_t i=0;i<dimension;i++) {
+        PyObject *item=list?PyList_GET_ITEM(input,i):PyTuple_GET_ITEM(input,i);double number;
+        if (PyFloat_CheckExact(item)) number=PyFloat_AS_DOUBLE(item);
+        else if (PyLong_CheckExact(item)) {
+            number=PyLong_AsDouble(item);
+            if (PyErr_Occurred()) {Py_DECREF(output);return NULL;}
+        } else {
+            Py_DECREF(output);PyErr_SetString(PyExc_ValueError,"invalid float32 type");return NULL;
+        }
+        float stored=(float)number;
+        if (!isfinite(number)||!isfinite(stored)) {
+            Py_DECREF(output);PyErr_SetString(PyExc_ValueError,"invalid finite float32");return NULL;
+        }
+        PyObject *value=PyFloat_FromDouble((double)stored);
+        if (!value) {Py_DECREF(output);return NULL;}
+        PyList_SET_ITEM(output,i,value);
+    }
+    return output;
+}
+static PyMethodDef methods[]={
+    {"float32_vector",float32_vector,METH_VARARGS,"Validate and round finite float32 values."},
+    {NULL,NULL,0,NULL}
+};
+static struct PyModuleDef module={PyModuleDef_HEAD_INIT,"libminivector",NULL,-1,methods};
+PyMODINIT_FUNC PyInit_libminivector(void) {return PyModule_Create(&module);}
+#endif

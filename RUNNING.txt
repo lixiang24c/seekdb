@@ -94,3 +94,10 @@ SQL以完整向量字面量分词，借助标准JSON解析器批量解析数值�
 Docker采用多阶段构建，在构建阶段以锁定版本GCC12编译，运行镜像只复制共享库，不携带编译器。默认要求原生库成功加载，不静默把加载故障当成原生优化成绩；MINIVECTOR_NATIVE=0可显式使用原NumPy路径。
 本地开发运行 make native 或 python3 scripts/build_native.py 编译；make test 会先编译再运行测试。make native-check 运行AddressSanitizer/UBSan独立原生测试，需要本机GCC。仅运行 make evaluate 不需要宿主机编译器，Docker内会从源码构建。
 共享库为生成物，不纳入源码提交；没有本地库时原生Python入口仍可回退。完整Docker镜像内同时包含标量与AVX2实现。
+
+第四轮性能优化
+普通追加批次使用MVDBROW2布局：记录区后附有序主键区，文件头保存记录区结束偏移。记录与主键一起flush/fsync后，再同步并原子发布manifest，最后同步/data目录；普通批次的独立同步调用从4次变为3次，不提前确认提交。
+读记录时按明确的记录区边界停止，不将主键尾部作为记录解析。主键有序分段支持旧字符串文件引用和新描述符混合读取。建向量索引或重写表数据时将尾部主键分离，避免仅为保留主键而长期保留旧向量副本。
+旧JSON行、MVDBROW1和旧主键分段保持读取兼容；旧程序不支持MVDBROW2及新描述符，回退须使用独立数据目录。
+float32类型校验和舍入增加CPython原生接口，严格区分bool、int和float，拒绝非有限值及转换溢出；使用当前解释器头文件编译，Docker固定为Python3.12。本地更换解释器后须执行make native重新构建，生成物不提交。
+make native-check现在同时检查TopK内核和CPython编码接口。后者使用malloc对象分配并关闭全解释器LSan汇总；部分列表的引用释放另由tracemalloc回归验证。

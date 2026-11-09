@@ -1,0 +1,54 @@
+{
+  "scope": "local paired benchmark; no official score or rank",
+  "baseline_commit": "6ef992691bb769f3cff1138f287e02e22fc4f355",
+  "configuration": "2 CPU, 128MiB, offline; 10000 rows, 128 dimensions, 1000 queries; three alternating rounds, seeds 720/721/722",
+  "tracks": {
+    "write": {
+      "seconds": {
+        "before": 2.278755714010913,
+        "after": 1.860249912017025,
+        "before_over_after": 1.2249728917014768,
+        "reduction_fraction": 0.1836554043159203
+      },
+      "io_bytes": {
+        "before": 6848512,
+        "after": 6504448,
+        "before_over_after": 1.0528967254408061,
+        "reduction_fraction": 0.05023923444976075
+      },
+      "memory_peak_bytes": {
+        "before": 16068608,
+        "after": 16150528,
+        "before_over_after": 0.9949277200101445,
+        "reduction_fraction": -0.005098139179199546
+      }
+    },
+    "query": {
+      "seconds": {
+        "before": 2.0999474009731784,
+        "after": 2.0993918500025757,
+        "before_over_after": 1.0002646247152964,
+        "reduction_fraction": 0.000264554707582354
+      },
+      "io_bytes": {
+        "before": 17776640,
+        "after": 17514496,
+        "before_over_after": 1.0149672591206735,
+        "reduction_fraction": 0.014746543778801802
+      },
+      "memory_peak_bytes": {
+        "before": 29179904,
+        "after": 29933568,
+        "before_over_after": 0.9748221127531472,
+        "reduction_fraction": -0.025828186412127918
+      }
+    }
+  },
+  "local_baseline_E": "0.499677",
+  "local_candidate_E": "0.512559",
+  "ordinary_append_sync_calls": {
+    "before": 4,
+    "after": 3
+  },
+  "gates": "43 regressions, 5 harness self-tests, 11 SQL cases, exact IDs/order, both Recall@10 groups=1.0 in all rounds, 64MiB over-memory resource case passed; math kernel and CPython codec sanitizer probes passed"
+}

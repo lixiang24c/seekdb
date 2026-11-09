@@ -1,0 +1,54 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 977B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 128B done
+#3 DONE 0.0s
+
+#4 [native-build 1/4] FROM docker.io/library/python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0
+#4 resolve docker.io/library/python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 111.04kB done
+#5 DONE 0.0s
+
+#6 [native-build 2/4] RUN apt-get update && apt-get install -y --no-install-recommends gcc=4:12.2.0-3 gcc-12=12.2.0-14+deb12u1 libc6-dev=2.36-9+deb12u14 && rm -rf /var/lib/apt/lists/*
+#6 CACHED
+
+#7 [stage-1 2/6] WORKDIR /app
+#7 CACHED
+
+#8 [stage-1 3/6] COPY requirements.txt /app/requirements.txt
+#8 CACHED
+
+#9 [stage-1 4/6] RUN pip install --no-cache-dir -r /app/requirements.txt
+#9 CACHED
+
+#10 [native-build 3/4] COPY native/topk.c /tmp/topk.c
+#10 DONE 0.0s
+
+#11 [stage-1 5/6] COPY minivectordb /app/minivectordb
+#11 DONE 0.0s
+
+#12 [native-build 4/4] RUN gcc -std=c11 -O3 -fPIC -shared -ffp-contract=off -DMV_WITH_PYTHON -I/usr/local/include/python3.12 /tmp/topk.c -o /tmp/libminivector.so
+#12 DONE 1.2s
+
+#13 [stage-1 6/6] COPY --from=native-build /tmp/libminivector.so /app/minivectordb/libminivector.so
+#13 DONE 0.1s
+
+#14 exporting to image
+#14 exporting layers 0.1s done
+#14 exporting manifest sha256:8004e8bb67951a8372b997715013b116fc8fbc4f2489677347cc9359dbe9b88d 0.0s done
+#14 exporting config sha256:059d8941ddf6aa415434d2ad2f43d4962932b02c3388d4b244971e8424f49ee1 0.0s done
+#14 exporting attestation manifest sha256:6e6b73a9ce51650d971e971e70b2717326bdfdb51f109efa9be19973e67f68dc 0.0s done
+#14 exporting manifest list sha256:df8f94e68f6b58fdc9067ca6be1329b611ceadc40ac69cef120bc2b40213f15e 0.0s done
+#14 naming to docker.io/library/minivectordb:round4-final done
+#14 unpacking to docker.io/library/minivectordb:round4-final 0.0s done
+#14 DONE 0.2s

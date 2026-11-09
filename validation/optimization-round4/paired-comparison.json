@@ -1,0 +1,22 @@
+{
+  "scope": "local comparison only; not an official rank or score",
+  "baseline_medians": {
+    "write": {
+      "seconds": 2.278755714010913,
+      "io_bytes": 6848512,
+      "memory_peak_bytes": 16068608
+    },
+    "query": {
+      "seconds": 2.0999474009731784,
+      "io_bytes": 17776640,
+      "memory_peak_bytes": 29179904
+    }
+  },
+  "round_E": [
+    0.5029989444809304,
+    0.5125586777678124,
+    0.5139620233995417
+  ],
+  "median_E": 0.5125586777678124,
+  "ranking_E": "0.512559"
+}

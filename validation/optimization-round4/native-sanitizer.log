@@ -1,0 +1,2 @@
+PASS: native scalar/SIMD sanitizer checks, odd dimensions, masks, ties and K bounds
+PASS: native float32 codec ASan/UBSan, malloc-backed Python objects and error cleanup

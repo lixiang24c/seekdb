@@ -31,6 +31,11 @@
       "id": "u-optimize-third",
       "role": "student",
       "content": "继续，还得优化"
+    },
+    {
+      "id": "u-optimize-fourth",
+      "role": "student",
+      "content": "继续优化"
     }
   ],
   "experiments": [
@@ -103,6 +108,13 @@
       "command": "python3 scripts/compare_images.py --baseline minivectordb:baseline-573cbe47 --candidate minivectordb:round3-native --output /tmp/minivector-round3-paired",
       "output": "{\"write\": {\"seconds\": {\"before\": 2.827392963983584, \"after\": 2.6678958970005624, \"before_over_after\": 1.0597838420765742, \"reduction_fraction\": 0.05641135456399471}, \"io_bytes\": {\"before\": 6848512, \"after\": 6848512, \"before_over_after\": 1.0, \"reduction_fraction\": 0.0}, \"memory_peak_bytes\": {\"before\": 16359424, \"after\": 16289792, \"before_over_after\": 1.0042745788282625, \"reduction_fraction\": 0.00425638457686528}}, \"query\": {\"seconds\": {\"before\": 4.773747158993501, \"after\": 2.3450395700056106, \"before_over_after\": 2.0356787237419964, \"reduction_fraction\": 0.5087633483923267}, \"io_bytes\": {\"before\": 17776640, \"after\": 17776640, \"before_over_after\": 1.0, \"reduction_fraction\": 0.0}, \"memory_peak_bytes\": {\"before\": 32759808, \"after\": 28721152, \"before_over_after\": 1.1406160867084998, \"reduction_fraction\": 0.12328082020505127}}}",
       "scope": "36 regressions, 5 harness self-tests, 11 SQL cases; scalar and AVX2 vs independent reference; ASan/UBSan passed; 64MiB resource case passed filtered and unfiltered Recall@10=1.0 in all rounds; exact IDs/order and distances checked Student technical interpretation has not been supplied."
+    },
+    {
+      "id": "fourth-optimization-combined-sync",
+      "source": "tool",
+      "command": "python3 scripts/compare_images.py --baseline minivectordb:baseline-6ef99269 --candidate minivectordb:round4-final --output /tmp/minivector-round4-paired",
+      "output": "{\"write\": {\"seconds\": {\"before\": 2.278755714010913, \"after\": 1.860249912017025, \"before_over_after\": 1.2249728917014768, \"reduction_fraction\": 0.1836554043159203}, \"io_bytes\": {\"before\": 6848512, \"after\": 6504448, \"before_over_after\": 1.0528967254408061, \"reduction_fraction\": 0.05023923444976075}, \"memory_peak_bytes\": {\"before\": 16068608, \"after\": 16150528, \"before_over_after\": 0.9949277200101445, \"reduction_fraction\": -0.005098139179199546}}, \"query\": {\"seconds\": {\"before\": 2.0999474009731784, \"after\": 2.0993918500025757, \"before_over_after\": 1.0002646247152964, \"reduction_fraction\": 0.000264554707582354}, \"io_bytes\": {\"before\": 17776640, \"after\": 17514496, \"before_over_after\": 1.0149672591206735, \"reduction_fraction\": 0.014746543778801802}, \"memory_peak_bytes\": {\"before\": 29179904, \"after\": 29933568, \"before_over_after\": 0.9748221127531472, \"reduction_fraction\": -0.025828186412127918}}}",
+      "scope": "43 regressions, 5 harness self-tests, 11 SQL cases, exact IDs/order, both Recall@10 groups=1.0 in all rounds, 64MiB over-memory resource case passed; math kernel and CPython codec sanitizer probes passed Student technical interpretation has not been supplied."
     }
   ],
   "limitations": [

@@ -1,0 +1,10 @@
+test_formula_equal_baseline (evaluation.test_harness.HarnessTests.test_formula_equal_baseline) ... ok
+test_missing_metrics_and_invalid_recall_rejected (evaluation.test_harness.HarnessTests.test_missing_metrics_and_invalid_recall_rejected) ... ok
+test_missing_response_has_timeout (evaluation.test_harness.HarnessTests.test_missing_response_has_timeout) ... ok
+test_slow_candidate_lowers_efficiency (evaluation.test_harness.HarnessTests.test_slow_candidate_lowers_efficiency) ... ok
+test_unexpected_sql_error_is_a_failure (evaluation.test_harness.HarnessTests.test_unexpected_sql_error_is_a_failure) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.074s
+
+OK

@@ -1,0 +1,6 @@
+{
+  "image_id": "sha256:df8f94e68f6b58fdc9067ca6be1329b611ceadc40ac69cef120bc2b40213f15e",
+  "architecture": "amd64",
+  "library_sha256": "b67684910a675d1741f3cd22fc24321d7c5b41071a1b81ccdaa5c93808aaeb83",
+  "codec": "CPython3.12 module; same source also exports scalar/AVX2 TopK ABI"
+}

@@ -12,6 +12,14 @@ import struct
 import uuid
 from pathlib import Path
 
+try:
+    if os.environ.get('MINIVECTOR_NATIVE')=='0':raise ImportError()
+    from .libminivector import float32_vector as _native_vector
+except ImportError:
+    _native_vector=None
+    if os.environ.get('MINIVECTOR_REQUIRE_NATIVE')=='1' and os.environ.get('MINIVECTOR_NATIVE')!='0':
+        raise RuntimeError('required native float32 codec could not be loaded')
+
 
 class DBError(Exception):
     pass
@@ -42,14 +50,14 @@ class Database:
         live.update(v['index']['file'] for v in self.committed.values() if 'index' in v)
         live.update(v['index']['metadata'] for v in self.committed.values() if 'index' in v)
         live.update(v['keys'] for v in self.committed.values())
-        live.update(f for v in self.committed.values() for f in v.get('key_segments',[]))
+        live.update(self._key_name(f) for v in self.committed.values() for f in v.get('key_segments',[]))
         live.update(f for v in self.committed.values() for f in v.get('segments', []))
         if self.pending is not None:
             live.update(v['file'] for v in self.pending.values())
             live.update(v['index']['file'] for v in self.pending.values() if 'index' in v)
             live.update(v['index']['metadata'] for v in self.pending.values() if 'index' in v)
             live.update(v['keys'] for v in self.pending.values())
-            live.update(f for v in self.pending.values() for f in v.get('key_segments',[]))
+            live.update(self._key_name(f) for v in self.pending.values() for f in v.get('key_segments',[]))
             live.update(f for v in self.pending.values() for f in v.get('segments', []))
         for p in list(self.root.glob('table-*.jsonl')) + list(self.root.glob('table-*.rows')) + list(self.root.glob('index-*.bin')) + list(self.root.glob('keys-*.bin')) + list(self.root.glob('index-*.meta')):
             if p.name not in live:
@@ -124,6 +132,7 @@ class Database:
         return self.root / ('table-' + uuid.uuid4().hex + '.rows')
 
     ROW_MAGIC = b'MVDBROW1\n'
+    ROW_WITH_KEYS_MAGIC = b'MVDBROW2\n'
     ROW_HEADER = struct.Struct('<III')
 
     @classmethod
@@ -148,10 +157,24 @@ class Database:
             row[name.decode('utf-8')] = list(struct.unpack('<'+str(dimension)+'f',vector))
         return row
 
-    def _write(self, rows):
+    @classmethod
+    def _row_span(cls, source):
+        magic=source.read(len(cls.ROW_MAGIC))
+        if magic==cls.ROW_MAGIC:return None
+        if magic==cls.ROW_WITH_KEYS_MAGIC:
+            raw=source.read(8)
+            if len(raw)!=8:raise DBError('incomplete row span')
+            end=struct.unpack('<Q',raw)[0]
+            if end<source.tell() or end>os.fstat(source.fileno()).st_size:
+                raise DBError('invalid row span')
+            return end
+        raise DBError('unknown row format')
+
+    def _write(self, rows, key_column=None):
         path = self._newfile()
-        with path.open('xb') as out:
-            out.write(self.ROW_MAGIC)
+        count=0;prefix=[];large=False
+        with path.open('x+b') as out:
+            out.write(self.ROW_MAGIC if key_column is None else self.ROW_WITH_KEYS_MAGIC+b'\0'*8)
             for row in rows:
                 column = next((key for key,value in row.items() if isinstance(value,list)),None)
                 name = column.encode('utf-8') if column is not None else b''
@@ -162,9 +185,30 @@ class Database:
                 out.write(name)
                 if vector:
                     out.write(struct.pack('<'+str(len(vector))+'f',*vector))
+                count+=1
+                if key_column is not None and not large:
+                    if count<=4096:prefix.append(row[key_column])
+                    else:large=True;prefix.clear()
+            data_end=out.tell()
+            if key_column is not None:
+                out.seek(len(self.ROW_WITH_KEYS_MAGIC))
+                out.write(struct.pack('<Q',data_end))
+                out.seek(data_end)
+                out.flush()  # Publish only to this process's private staging reader, not the catalog.
+                if large:
+                    from .sql import SQL
+                    key_rows=({key_column:row[key_column]} for row in self._rows_of({'file':path.name},scalar_only=True))
+                    ordered=SQL(self).external_sort(key_rows,lambda row:row[key_column])
+                    keys=(row[key_column] for row in ordered)
+                else:keys=iter(sorted(prefix))
+                previous=None
+                for key in keys:
+                    if key==previous:raise DBError('duplicate primary key')
+                    out.write(struct.pack('<q',key));previous=key
             out.flush()
             os.fsync(out.fileno())
-        return path.name
+        if key_column is None:return path.name
+        return path.name,{'file':path.name,'key_offset':data_end,'key_count':count}
 
     def create(self, name, columns, primary):
         """columns: {name: ['BIGINT'|'VARCHAR'|'VECTOR', optional size]}."""
@@ -205,11 +249,11 @@ class Database:
                         yield json.loads(line)
             else:
                 with (self.root / filename).open('rb') as src:
-                    if src.read(len(self.ROW_MAGIC))!=self.ROW_MAGIC:
-                        raise DBError('unknown row format')
-                    while True:
+                    end=self._row_span(src)
+                    while end is None or src.tell()<end:
                         row=self._read_record(src,scalar_only=scalar_only)
                         if row is None:break
+                        if end is not None and src.tell()>end:raise DBError('row crosses key footer')
                         yield row
 
     def _validate(self, table, row):
@@ -238,6 +282,8 @@ class Database:
         if not isinstance(value, (list, tuple)) or len(value) != dimension:
             raise DBError('vector dimension mismatch')
         try:
+            if _native_vector is not None and type(value) in (list,tuple):
+                return _native_vector(value,dimension)
             if any(type(number) not in (float,int) for number in value):
                 raise ValueError()
             fmt='<'+str(dimension)+'f'
@@ -261,23 +307,41 @@ class Database:
             os.fsync(out.fileno())
         return path.name
 
-    def _filekeys(self, filename):
-        with (self.root / filename).open('rb') as src:
-            while True:
+    @staticmethod
+    def _key_name(run):
+        return run['file'] if isinstance(run,dict) else run
+
+    def _filekeys(self, run):
+        with (self.root / self._key_name(run)).open('rb') as src:
+            remaining=None
+            if isinstance(run,dict):
+                src.seek(run['key_offset']);remaining=run['key_count']
+            while remaining is None or remaining>0:
                 raw = src.read(8)
-                if not raw:return
+                if not raw:
+                    if remaining:raise DBError('incomplete primary index')
+                    return
                 if len(raw)!=8:raise DBError('incomplete primary index')
                 yield struct.unpack('<q',raw)[0]
+                if remaining is not None:remaining-=1
 
     def _keys(self, table):
         yield from heapq.merge(*(self._filekeys(f) for f in [table['keys']]+table.get('key_segments',[])))
 
-    def _key_range(self, filename):
-        with (self.root/filename).open('rb') as src:
+    def _key_range(self, run):
+        if isinstance(run,dict) and not run['key_count']:return None
+        with (self.root/self._key_name(run)).open('rb') as src:
+            if isinstance(run,dict):src.seek(run['key_offset'])
             first=src.read(8)
             if not first:return None
-            src.seek(-8,os.SEEK_END)
+            if isinstance(run,dict):src.seek(run['key_offset']+8*(run['key_count']-1))
+            else:src.seek(-8,os.SEEK_END)
             return struct.unpack('<q',first)[0],struct.unpack('<q',src.read(8))[0]
+
+    def _detach_keys(self, table):
+        if any(isinstance(run,dict) for run in table.get('key_segments',[])):
+            return dict(table,keys=self._keyfile(self._keys(table)),key_segments=[])
+        return table
 
     def _check_keys(self, table, incoming):
         bounds=self._key_range(incoming)
@@ -294,21 +358,8 @@ class Database:
         def action():
             from .sql import SQL
             table = self._table(name)
-            staged = self._write(self._validate(table, row) for row in rows)
-            incoming = dict(table, file=staged, segments=[])
             pk = table['primary']
-            # Small SQL batches sort keys in bounded memory. Large statements
-            # retain the external-sort path instead of loading all keys.
-            import itertools
-            key_rows=lambda: ({pk: row[pk]} for row in self._rows_of(incoming,scalar_only=True))
-            prefix=list(itertools.islice(key_rows(),4097))
-            if len(prefix)<=4096:
-                newkeys=iter(sorted(row[pk] for row in prefix))
-            else:
-                prefix.clear()
-                ordered=SQL(self).external_sort(key_rows(),lambda row:row[pk])
-                newkeys=(row[pk] for row in ordered)
-            incoming_keys=self._keyfile(newkeys)
+            staged,incoming_keys=self._write((self._validate(table,row) for row in rows),key_column=pk)
             self._check_keys(table,incoming_keys)
             key_segments=table.get('key_segments',[])+[incoming_keys]
             keys=table['keys']
@@ -318,7 +369,7 @@ class Database:
             segments = table.get('segments', []) + [staged]
             result = dict(table, segments=segments, keys=keys, key_segments=key_segments)
             if len(segments) >= 128 or 'index' in table:
-                result = dict(result, file=self._write(self._rows_of(result)), segments=[])
+                result = self._detach_keys(dict(result, file=self._write(self._rows_of(result)), segments=[]))
             self.pending[name] = self._indexed(result)
             self._collect()
         return self._statement(action)
@@ -353,6 +404,7 @@ class Database:
                 ordered = SQL(self).external_sort(({pk:r[pk]} for r in self._rows_of(result)), lambda r:r[pk])
                 result['keys'] = self._keyfile(r[pk] for r in ordered)
                 result['key_segments']=[]
+            else:result=self._detach_keys(result)
             self.pending[name] = self._indexed(result)
             self._collect()
             return count
@@ -363,6 +415,7 @@ class Database:
             return table
         if table.get('segments'):
             table = dict(table, file=self._write(self._rows_of(table)), segments=[])
+        table=self._detach_keys(table)
         index = dict(table['index'])
         column = index['column']
         dimension = table['columns'][column][1]
@@ -371,9 +424,8 @@ class Database:
         metadata = path.with_suffix('.meta')
         with (self.root / table['file']).open('rb') as src, path.open('xb') as out, metadata.open('x', encoding='utf-8') as meta:
             binary=table['file'].endswith('.rows')
-            if binary and src.read(len(self.ROW_MAGIC))!=self.ROW_MAGIC:
-                raise DBError('unknown row format')
-            while True:
+            end=self._row_span(src) if binary else None
+            while end is None or src.tell()<end:
                 offset = src.tell()
                 row=self._read_record(src) if binary else json.loads(line) if (line:=src.readline()) else None
                 if row is None:

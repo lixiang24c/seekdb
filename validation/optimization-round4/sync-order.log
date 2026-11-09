@@ -1,0 +1,2 @@
+Measured Docker ordinary 100-row autocommit append: baseline fsync calls=4 (rows, keys, manifest temp, directory); candidate=3 (combined rows+keys, manifest temp, directory).
+Regression independently verified combined-file sync precedes manifest publication and directory sync follows publication.
