@@ -1,7 +1,5 @@
-"""Disk-backed reference engine. Immutable generations, atomic manifest commit.
-
-This correctness-first implementation rewrites affected tables; it is not yet the
-performance implementation. All database and temporary files live under data_dir.
+"""Disk-backed vector engine with immutable segments and atomic manifest commit.
+All database and temporary files live under data_dir.
 """
 import heapq
 from collections import OrderedDict
@@ -53,6 +51,7 @@ class Database:
         live = {v['file'] for v in self.committed.values()}
         live.update(v['index']['file'] for v in self.committed.values() if 'index' in v)
         live.update(v['index']['metadata'] for v in self.committed.values() if 'index' in v)
+        live.update(v['index']['quantized'] for v in self.committed.values() if v.get('index',{}).get('quantized'))
         live.update(v['keys'] for v in self.committed.values())
         live.update(self._key_name(f) for v in self.committed.values() for f in v.get('key_segments',[]))
         live.update(f for v in self.committed.values() for f in v.get('segments', []))
@@ -60,10 +59,11 @@ class Database:
             live.update(v['file'] for v in self.pending.values())
             live.update(v['index']['file'] for v in self.pending.values() if 'index' in v)
             live.update(v['index']['metadata'] for v in self.pending.values() if 'index' in v)
+            live.update(v['index']['quantized'] for v in self.pending.values() if v.get('index',{}).get('quantized'))
             live.update(v['keys'] for v in self.pending.values())
             live.update(self._key_name(f) for v in self.pending.values() for f in v.get('key_segments',[]))
             live.update(f for v in self.pending.values() for f in v.get('segments', []))
-        for p in list(self.root.glob('table-*.jsonl')) + list(self.root.glob('table-*.rows')) + list(self.root.glob('index-*.bin')) + list(self.root.glob('keys-*.bin')) + list(self.root.glob('index-*.meta')):
+        for p in list(self.root.glob('table-*.jsonl')) + list(self.root.glob('table-*.rows')) + list(self.root.glob('index-*.bin')) + list(self.root.glob('keys-*.bin')) + list(self.root.glob('index-*.meta')) + list(self.root.glob('index-*.q8')):
             if p.name not in live:
                 p.unlink()
         for key in list(self._filter_cache):
@@ -290,6 +290,9 @@ class Database:
 
     @staticmethod
     def vector(value, dimension):
+        if isinstance(value,str):
+            try:value=json.loads(value)
+            except ValueError as error:raise DBError('invalid vector literal') from error
         if not isinstance(value, (list, tuple)) or len(value) != dimension:
             raise DBError('vector dimension mismatch')
         try:
@@ -449,6 +452,11 @@ class Database:
             os.fsync(meta.fileno())
         index['file'] = path.name
         index['metadata'] = metadata.name
+        index.pop('quantized',None)
+        from .native import build_quantized
+        quantized=path.with_suffix('.q8')
+        if build_quantized(path,quantized,dimension,self.SCAN_MAP_LIMIT):
+            index['quantized']=quantized.name
         return dict(table, index=index)
 
     def create_vector_index(self, name, table_name, column):
@@ -570,6 +578,10 @@ class Database:
             for start in range(0,count,2048):
                 size=min(2048,count-start)
                 mask[start:start+size]=self._filter_chunk(meta,size,terms,np,predicate)
+        # Store selective filters as postings; native queries visit matching rows
+        # directly instead of checking every entry in the full-table bitmap.
+        if count and np.count_nonzero(mask)*8<=count:
+            mask=np.flatnonzero(mask).astype(np.uint32)
         mask.flags.writeable=False
         size=mask.nbytes+sys.getsizeof(mask)+512+sys.getsizeof(key[1])+sum(sys.getsizeof(term) for term in terms)+sum(sys.getsizeof(value) for term in terms for value in term)
         if size<=self.QUERY_MASK_LIMIT:
@@ -598,7 +610,17 @@ class Database:
                 if mapped is None:return []
                 if not terms or len(mapped)<=self.WHOLE_MASK_ROWS:
                     mask=self._query_mask(index,len(mapped),terms,np,predicate) if terms else slice(None)
-                    winners=list(scan(mapped,query_array,mask,k))
+                    quantization=None
+                    candidate_count=len(mask) if isinstance(mask,np.ndarray) and mask.dtype==np.dtype('uint32') else len(mapped)
+                    if index.get('quantized') and candidate_count>=512 and k<=candidate_count//4:
+                        from .native import QUANT_HEADER,QUANT_MAGIC
+                        codes=self._scan_map({'file':index['quantized']},np.dtype('uint8'),np)
+                        if codes is None or len(codes)<QUANT_HEADER.size:raise DBError('incomplete quantized index')
+                        magic,count,dim,minimum,step=QUANT_HEADER.unpack_from(codes)
+                        if magic!=QUANT_MAGIC or count!=len(mapped) or dim!=dimension or len(codes)!=QUANT_HEADER.size+count*dim:
+                            raise DBError('invalid quantized index')
+                        quantization=(codes[QUANT_HEADER.size:],minimum,step)
+                    winners=list(scan(mapped,query_array,mask,k,quantization=quantization))
         def candidates():
             with (self.root/index['file']).open('rb') as src, (self.root/index['metadata']).open(encoding='utf-8') as meta:
                 file_size=os.fstat(src.fileno()).st_size

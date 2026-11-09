@@ -1,7 +1,7 @@
 MiniVectorDB 本地评测接口 v1
 
 这是项目自带的本地接口，并非组织方正式 mysqltest 协议。
-正式分支 c842a368c3394748d0499386c18f6b465242e141 未包含可对接的驱动或协议。
+官方分支 a3dba559c1e7ebdc48bc990ffb1a4c75d1c1075c 提供5组公开SQL用例；mysqltest/README.md明确这些文件未定义进程通信协议。
 SQL 执行与本地传输分开，组织方提供协议后只需替换 server/driver 适配层。
 
 请求
@@ -15,7 +15,7 @@ stdin 接收以分号结束的 UTF-8 SQL。字符串、反引号标识符、注�
 查询：一行 {"columns":[...]}; 每条结果一行 {"row":[...]}; 最后一行 {"ok":true}。
 错误：一行 {"ok":false,"error":"错误描述"}，不将尚未约定的描述冒充正式错误码。
 query 完成标识之前的所有结果行属于同一个 SQL 请求；驱动为每次等待读取设置超时。
-日志不得出现在 stdout，发送每行后立即刷新缓冲。
+日志写入stderr。小结果一次刷新，大结果分块刷新，完整回复在处理下一条SQL前刷新。
 
 模式
 启动参数 --mode exact（默认）或 --mode ann。
@@ -33,6 +33,6 @@ I/O 统计读取整个本地容器 cgroup 的 io.stat，包含所有设备；不
 资源压力检查口径补充
 memory.max是内核硬限制控制器，Linux文档允许在某些情况下临时超过其值。
 本地资源测试保留memory.peak/current/max、memory.events和swap限制，拒绝OOM事件及未完成工作负载。
---strict-peak是独立的附加门槛，要求memory.peak<=memory.max；该状态和原始超出字节数均输出，不将峰值裁剪为限制值。
+评测入口默认并强制要求memory.peak<=memory.max；该状态和原始超出字节数均输出，不将峰值裁剪为限制值。底层检查函数仍可用于单独诊断控制器事件。
 基准性能中的M始终使用真实memory.peak，未因该补充改变计算。正式准入以组织方冻结口径为准。
 内核依据：https://docs.kernel.org/admin-guide/cgroup-v2.html#memory-interface-files

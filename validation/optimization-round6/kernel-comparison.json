@@ -1,0 +1,57 @@
+{
+  "scope": "native kernel only; paired medians of 3 rounds, 300 queries per round",
+  "rows": 10000,
+  "dimensions": 128,
+  "k": 10,
+  "seed": 20261109,
+  "cases": {
+    "100% candidates": {
+      "baseline_seconds": 0.08219022600678727,
+      "candidate_seconds": 0.08351567399222404,
+      "speedup": 0.9841293505508897,
+      "matching_ids": true,
+      "baseline_rounds": [
+        0.08083166903816164,
+        0.0824668180430308,
+        0.08219022600678727
+      ],
+      "candidate_rounds": [
+        0.08351567399222404,
+        0.08807946601882577,
+        0.0828928219852969
+      ]
+    },
+    "10% candidates": {
+      "baseline_seconds": 0.01209802902303636,
+      "candidate_seconds": 0.012179112993180752,
+      "speedup": 0.9933423747534167,
+      "matching_ids": true,
+      "baseline_rounds": [
+        0.01209802902303636,
+        0.012505822989623994,
+        0.011994118976872414
+      ],
+      "candidate_rounds": [
+        0.011402320000343025,
+        0.012179112993180752,
+        0.012414611002895981
+      ]
+    },
+    "1% candidates": {
+      "baseline_seconds": 0.005059264018200338,
+      "candidate_seconds": 0.0033212490379810333,
+      "speedup": 1.5233016134423432,
+      "matching_ids": true,
+      "baseline_rounds": [
+        0.005059264018200338,
+        0.0050168270245194435,
+        0.008591807971242815
+      ],
+      "candidate_rounds": [
+        0.0032562640262767673,
+        0.0033212490379810333,
+        0.003356040979269892
+      ]
+    }
+  }
+}

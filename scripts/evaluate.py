@@ -54,7 +54,7 @@ def main():
     parser.add_argument('--rounds',type=int,default=3)
     parser.add_argument('--memory',default='128m')
     parser.add_argument('--timeout',type=float,default=30)
-    parser.add_argument('--strict-peak',action='store_true',help='Also reject any raw memory.peak above memory.max in resource tests')
+    parser.add_argument('--strict-peak',action='store_true',default=True,help='Require raw memory.peak<=memory.max in resource tests (always enabled)')
     parser.add_argument('--keep-data',action='store_true')
     parser.add_argument('--output',type=Path,default=ROOT/'artifacts'/time.strftime('%Y%m%d-%H%M%S'))
     args=parser.parse_args()
@@ -63,11 +63,12 @@ def main():
     args.output=args.output.resolve()
     args.output.mkdir(parents=True,exist_ok=False)
     report={'schema':'minivectordb-local-evaluation-v1','scope':'LOCAL ONLY; no official driver or official score',
-            'resource_policy':'memory.max enforced, swap disabled, no OOM events; raw peak retained; --strict-peak optionally gates transient peak too',
+            'resource_policy':'memory.max enforced, raw memory.peak<=memory.max required, swap disabled, no OOM events',
             'status':'RUNNING','git_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
             'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()),
-            'implementation_sha256':source_hash([ROOT/'Dockerfile',ROOT/'requirements.txt',*sorted((ROOT/'minivectordb').glob('*.py')),*sorted((ROOT/'native').glob('*.c'))]),
+            'implementation_sha256':source_hash([ROOT/'Dockerfile',ROOT/'requirements.txt',ROOT/'requirements.lock',ROOT/'debian-packages.lock',*sorted((ROOT/'minivectordb').glob('*.py')),*sorted((ROOT/'native').glob('*.c'))]),
             'harness_sha256':source_hash([Path(__file__),*sorted((ROOT/'evaluation').glob('*.py'))]),
+            'public_cases_sha256':source_hash([ROOT/'scripts/check_public.py',*sorted((ROOT/'mysqltest').rglob('*.test')),*sorted((ROOT/'mysqltest').rglob('*.result')),ROOT/'mysqltest/manifest.json']),
             'configuration':{k:str(v) if isinstance(v,Path) else v for k,v in vars(args).items()},'phases':{},'cases':[]}
     started=time.perf_counter()
     def save():
@@ -95,7 +96,7 @@ def main():
         if not args.keep_data:shutil.rmtree(args.output/name/'data')
     try:
         if args.docker and not args.skip_build:
-            phase('build',['docker','build','-t',args.image,'.'])
+            phase('build',['docker','build','--platform','linux/amd64','-t',args.image,'.'])
         if args.docker:
             report['image_id']=subprocess.check_output(['docker','image','inspect','--format','{{.Id}}',args.image],text=True).strip()
             phase('regression',['docker','run','--rm','--network','none','--cpus','2','--memory',args.memory,'--memory-swap',args.memory,
@@ -103,6 +104,14 @@ def main():
         else:phase('regression',[sys.executable,'-m','unittest','discover','-s','tests','-v'])
         phase('harness-self-test',[sys.executable,'-m','unittest','evaluation.test_harness','-v'])
         phase('material-format',[sys.executable,'scripts/check_conversation.py'])
+        if args.docker:
+            phase('public-cases',['docker','run','--rm','--network','none','--cpus','2','--memory',args.memory,'--memory-swap',args.memory,
+                  '-v',str(ROOT/'scripts')+':/checks:ro','-v',str(ROOT/'mysqltest')+':/cases:ro',
+                  '-v',str(args.output)+':/reports','--entrypoint','python3',args.image,
+                  '/checks/check_public.py','--cases','/cases','--report','/reports/public-report.json'])
+        else:
+            phase('public-cases',[sys.executable,'scripts/check_public.py','--cases',str(ROOT/'mysqltest'),
+                  '--data-root',str(args.output/'public-data'),'--report',str(args.output/'public-report.json')])
         run_cases(case)
         from evaluation.fixtures import run_fixture
         for fixture in sorted((ROOT/"tests"/"sql").glob("*.test")):

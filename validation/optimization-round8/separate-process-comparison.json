@@ -1,0 +1,30 @@
+{
+  "scope": "local SQL process over stdin/stdout, same storage and native kernel; 3 paired rounds",
+  "rows": 10000,
+  "dimensions": 128,
+  "queries": 600,
+  "unique_queries": 200,
+  "k": 10,
+  "seed": 720,
+  "filtered_fraction": 0.5,
+  "exact_ids_order_distances_correct": true,
+  "baseline_server_sha256": "88dc33857573a311dc77de039d62144bbc1d9b6d47e2ff69ae599226974adddb",
+  "candidate_server_sha256": "88dc33857573a311dc77de039d62144bbc1d9b6d47e2ff69ae599226974adddb",
+  "baseline_sql_sha256": null,
+  "candidate_sql_sha256": "d7bca0254325b990ada632b37fe25ac2d607b34f238e2562ad613ab9b6a707a3",
+  "baseline_core_sha256": "2178009743baac487cabbac21cc5d4c92ff906c0c4f0660001382315e59d272b",
+  "candidate_core_sha256": "97affd07ba31a9100737b7b16b756b97a7104799af26c00f839941b94fa275dd",
+  "baseline_rounds_seconds": [
+    0.5117794479592703,
+    0.27779260696843266,
+    0.2524043979938142
+  ],
+  "candidate_rounds_seconds": [
+    0.3882928679813631,
+    0.34626406600000337,
+    0.2210557410144247
+  ],
+  "baseline_median_seconds": 0.27779260696843266,
+  "candidate_median_seconds": 0.34626406600000337,
+  "speedup": 0.8022565268682254
+}

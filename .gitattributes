@@ -10,3 +10,9 @@
 *.i filter=codeformat
 *.ic filter=codeformat
 *.js filter=codeformat
+
+# Keep build inputs and shell entry points portable across Git checkouts.
+*.sh text eol=lf
+*.py text eol=lf
+*.lock text eol=lf
+Dockerfile text eol=lf

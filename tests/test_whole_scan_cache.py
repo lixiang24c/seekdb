@@ -5,6 +5,24 @@ from minivectordb.core import Database
 from minivectordb.sql import SQL
 
 class WholeScanCacheTests(unittest.TestCase):
+    def test_sparse_filter_postings_and_transaction_visibility(self):
+        import numpy as np
+        with tempfile.TemporaryDirectory() as root:
+            db=Database(root);sql=SQL(db)
+            sql.execute('CREATE TABLE t(id BIGINT PRIMARY KEY, tag BIGINT, v VECTOR(1))')
+            db.insert('t',({'id':i,'tag':i%100,'v':[float(i)]} for i in range(1000)))
+            sql.execute('CREATE VECTOR INDEX ix ON t(v)')
+            query='SELECT id FROM t WHERE tag=7 AND id>=100 ORDER BY L2_DISTANCE(v,[0]) LIMIT 20'
+            expected=[[i] for i in range(107,1000,100)]
+            self.assertEqual(list(sql.execute(query)['rows']),expected)
+            from minivectordb.native import available
+            if available():
+                self.assertTrue(any(mask.dtype==np.dtype('uint32') for mask,size in db._query_masks.values()))
+            self.assertEqual(list(sql.execute('SELECT id FROM t WHERE tag=101 ORDER BY L2_DISTANCE(v,[0]) LIMIT 10')['rows']),[])
+            db.begin();sql.execute('DELETE FROM t WHERE id=107')
+            self.assertEqual(list(sql.execute(query)['rows']),expected[1:])
+            db.rollback();self.assertEqual(list(sql.execute(query)['rows']),expected)
+            db.close()
     def test_projection_keeps_vectors_only_when_required(self):
         with tempfile.TemporaryDirectory() as root:
             db=Database(root);sql=SQL(db)
@@ -56,6 +74,23 @@ class WholeScanCacheTests(unittest.TestCase):
 
 @unittest.skipUnless((Path(__file__).resolve().parents[1]/'minivectordb/libminivector.so').exists(),'native library not built')
 class BoundedDistanceTests(unittest.TestCase):
+    def test_sparse_native_matches_independent_truth(self):
+        import numpy as np
+        from minivectordb.native import scan
+        rng=np.random.default_rng(20261109)
+        for dim in (1,31,32,127,128,131):
+            data=np.zeros(1000,dtype=[('pk','<i8'),('offset','<u8'),('vector','<f4',(dim,))])
+            data['pk']=np.arange(1000)[::-1];data['offset']=np.arange(1000)*13
+            data['vector']=rng.normal(size=(1000,dim))
+            query=rng.normal(size=dim)
+            positions=np.arange(7,1000,100,dtype=np.uint32)
+            truth=sorted((sum((float(a)-float(b))**2 for a,b in zip(data['vector'][i],query)),int(data['pk'][i]),int(data['offset'][i])) for i in positions)
+            for simd in (False,True):
+                for k in (0,1,10,100):
+                    actual=list(scan(data,query,positions,k,use_simd=simd))
+                    self.assertEqual([r[1:] for r in actual],[r[1:] for r in truth[:k]])
+                    np.testing.assert_allclose([r[0] for r in actual],[r[0] for r in truth[:k]],rtol=1e-14)
+                self.assertEqual(list(scan(data,query,np.empty(0,dtype=np.uint32),10,use_simd=simd)),[])
     def test_strict_partial_bound_keeps_ties_and_checks_tail(self):
         import numpy as np
         from minivectordb.native import scan

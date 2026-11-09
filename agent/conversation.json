@@ -36,6 +36,12 @@
       "id": "u-optimize-fourth",
       "role": "student",
       "content": "继续优化"
+    },
+    {
+      "id": "u-competition-contract-audit",
+      "role": "student",
+      "content": "你仔细看看现在做的有没有不符合赛题的，我队友复现的时候发现下依赖什么的很麻烦",
+      "context": "该条用户消息随后附完整赛题说明；此处保留提问原文。关键新增上下文是题面INSERT、UPDATE、L2_DISTANCE示例使用带单引号的JSON向量字符串。"
     }
   ],
   "experiments": [
@@ -115,12 +121,71 @@
       "command": "python3 scripts/compare_images.py --baseline minivectordb:baseline-6ef99269 --candidate minivectordb:round4-final --output /tmp/minivector-round4-paired",
       "output": "{\"write\": {\"seconds\": {\"before\": 2.278755714010913, \"after\": 1.860249912017025, \"before_over_after\": 1.2249728917014768, \"reduction_fraction\": 0.1836554043159203}, \"io_bytes\": {\"before\": 6848512, \"after\": 6504448, \"before_over_after\": 1.0528967254408061, \"reduction_fraction\": 0.05023923444976075}, \"memory_peak_bytes\": {\"before\": 16068608, \"after\": 16150528, \"before_over_after\": 0.9949277200101445, \"reduction_fraction\": -0.005098139179199546}}, \"query\": {\"seconds\": {\"before\": 2.0999474009731784, \"after\": 2.0993918500025757, \"before_over_after\": 1.0002646247152964, \"reduction_fraction\": 0.000264554707582354}, \"io_bytes\": {\"before\": 17776640, \"after\": 17514496, \"before_over_after\": 1.0149672591206735, \"reduction_fraction\": 0.014746543778801802}, \"memory_peak_bytes\": {\"before\": 29179904, \"after\": 29933568, \"before_over_after\": 0.9748221127531472, \"reduction_fraction\": -0.025828186412127918}}}",
       "scope": "43 regressions, 5 harness self-tests, 11 SQL cases, exact IDs/order, both Recall@10 groups=1.0 in all rounds, 64MiB over-memory resource case passed; math kernel and CPython codec sanitizer probes passed Student technical interpretation has not been supplied."
+    },
+    {
+      "id": "optimization-round6-kernel-comparison",
+      "source": "tool",
+      "output": "{\n  \"scope\": \"native kernel only; paired medians of 3 rounds, 300 queries per round\",\n  \"rows\": 10000,\n  \"dimensions\": 128,\n  \"k\": 10,\n  \"seed\": 20261109,\n  \"cases\": {\n    \"100% candidates\": {\n      \"baseline_seconds\": 0.08219022600678727,\n      \"candidate_seconds\": 0.08351567399222404,\n      \"speedup\": 0.9841293505508897,\n      \"matching_ids\": true,\n      \"baseline_rounds\": [\n        0.08083166903816164,\n        0.0824668180430308,\n        0.08219022600678727\n      ],\n      \"candidate_rounds\": [\n        0.08351567399222404,\n        0.08807946601882577,\n        0.0828928219852969\n      ]\n    },\n    \"10% candidates\": {\n      \"baseline_seconds\": 0.01209802902303636,\n      \"candidate_seconds\": 0.012179112993180752,\n      \"speedup\": 0.9933423747534167,\n      \"matching_ids\": true,\n      \"baseline_rounds\": [\n        0.01209802902303636,\n        0.012505822989623994,\n        0.011994118976872414\n      ],\n      \"candidate_rounds\": [\n        0.011402320000343025,\n        0.012179112993180752,\n        0.012414611002895981\n      ]\n    },\n    \"1% candidates\": {\n      \"baseline_seconds\": 0.005059264018200338,\n      \"candidate_seconds\": 0.0033212490379810333,\n      \"speedup\": 1.5233016134423432,\n      \"matching_ids\": true,\n      \"baseline_rounds\": [\n        0.005059264018200338,\n        0.0050168270245194435,\n        0.008591807971242815\n      ],\n      \"candidate_rounds\": [\n        0.0032562640262767673,\n        0.0033212490379810333,\n        0.003356040979269892\n      ]\n    }\n  }\n}\n",
+      "scope": "已执行的本地短对比；报告中的工作负载、测量方式及代码摘要对应当次实验。"
+    },
+    {
+      "id": "optimization-round7-transport-comparison",
+      "source": "tool",
+      "output": "{\n  \"scope\": \"local SQL process over stdin/stdout, same storage and native kernel; 3 paired rounds\",\n  \"rows\": 10000,\n  \"dimensions\": 128,\n  \"queries\": 600,\n  \"unique_queries\": 200,\n  \"k\": 10,\n  \"seed\": 720,\n  \"filtered_fraction\": 0.5,\n  \"exact_ids_order_distances_correct\": true,\n  \"baseline_server_sha256\": \"c16fbc10e31fde75f76637a94ec672747f2750c62e4b9930c595d439c1127227\",\n  \"candidate_server_sha256\": \"88dc33857573a311dc77de039d62144bbc1d9b6d47e2ff69ae599226974adddb\",\n  \"baseline_sql_sha256\": \"087b6c2081665f3c06ae53e583aeeba0fa18c6487753bc032df21c8362ee4b7a\",\n  \"candidate_sql_sha256\": \"d7bca0254325b990ada632b37fe25ac2d607b34f238e2562ad613ab9b6a707a3\",\n  \"baseline_rounds_seconds\": [\n    0.32001847302308306,\n    0.3067796360119246,\n    0.32642313902033493\n  ],\n  \"candidate_rounds_seconds\": [\n    0.3041421500383876,\n    0.2995045990101062,\n    0.30475877900607884\n  ],\n  \"baseline_median_seconds\": 0.32001847302308306,\n  \"candidate_median_seconds\": 0.3041421500383876,\n  \"speedup\": 1.0522003378442994\n}\n",
+      "scope": "已执行的本地短对比；报告中的工作负载、测量方式及代码摘要对应当次实验。"
+    },
+    {
+      "id": "optimization-round8-kernel-comparison",
+      "source": "tool",
+      "output": "{\n  \"scope\": \"native kernel only; paired medians of 3 rounds, 300 queries per round\",\n  \"rows\": 10000,\n  \"dimensions\": 128,\n  \"k\": 10,\n  \"seed\": 20261109,\n  \"quantized_screen\": true,\n  \"distribution\": \"uniform\",\n  \"baseline_sparse_positions\": true,\n  \"cases\": {\n    \"100% candidates\": {\n      \"baseline_seconds\": 0.12352967099286616,\n      \"candidate_seconds\": 0.05141926003852859,\n      \"speedup\": 2.4024007910713814,\n      \"matching_ids\": true,\n      \"baseline_rounds\": [\n        0.12352967099286616,\n        0.12266998697305098,\n        0.12370252201799303\n      ],\n      \"candidate_rounds\": [\n        0.05141926003852859,\n        0.054328899015672505,\n        0.05104063200997189\n      ]\n    },\n    \"10% candidates\": {\n      \"baseline_seconds\": 0.015229223994538188,\n      \"candidate_seconds\": 0.01186159800272435,\n      \"speedup\": 1.2839099749494434,\n      \"matching_ids\": true,\n      \"baseline_rounds\": [\n        0.015229223994538188,\n        0.019138334959279746,\n        0.015074761991854757\n      ],\n      \"candidate_rounds\": [\n        0.012911609024740756,\n        0.010695349948946387,\n        0.01186159800272435\n      ]\n    },\n    \"1% candidates\": {\n      \"baseline_seconds\": 0.004131937981583178,\n      \"candidate_seconds\": 0.004213369044009596,\n      \"speedup\": 0.9806731711426528,\n      \"matching_ids\": true,\n      \"baseline_rounds\": [\n        0.004322392982430756,\n        0.004131937981583178,\n        0.004105470958165824\n      ],\n      \"candidate_rounds\": [\n        0.004147745959926397,\n        0.004334907978773117,\n        0.004213369044009596\n      ]\n    }\n  }\n}\n",
+      "scope": "已执行的本地短对比；报告中的工作负载、测量方式及代码摘要对应当次实验。"
+    },
+    {
+      "id": "optimization-round8-transport-comparison",
+      "source": "tool",
+      "output": "{\n  \"scope\": \"local SQL processes over stdin/stdout, same storage and native kernel; 3 rounds of alternating 20-query blocks\",\n  \"rows\": 10000,\n  \"dimensions\": 128,\n  \"queries\": 600,\n  \"unique_queries\": 200,\n  \"k\": 10,\n  \"seed\": 720,\n  \"filtered_fraction\": 0.5,\n  \"exact_ids_order_distances_correct\": true,\n  \"baseline_server_sha256\": \"88dc33857573a311dc77de039d62144bbc1d9b6d47e2ff69ae599226974adddb\",\n  \"candidate_server_sha256\": \"88dc33857573a311dc77de039d62144bbc1d9b6d47e2ff69ae599226974adddb\",\n  \"baseline_sql_sha256\": null,\n  \"candidate_sql_sha256\": \"d7bca0254325b990ada632b37fe25ac2d607b34f238e2562ad613ab9b6a707a3\",\n  \"baseline_core_sha256\": \"2178009743baac487cabbac21cc5d4c92ff906c0c4f0660001382315e59d272b\",\n  \"candidate_core_sha256\": \"97affd07ba31a9100737b7b16b756b97a7104799af26c00f839941b94fa275dd\",\n  \"baseline_rounds_seconds\": [\n    0.46503836510237306,\n    0.49490384809905663,\n    0.5375049099093303\n  ],\n  \"candidate_rounds_seconds\": [\n    0.38619089988060296,\n    0.4240375499939546,\n    0.44468599307583645\n  ],\n  \"baseline_median_seconds\": 0.49490384809905663,\n  \"candidate_median_seconds\": 0.4240375499939546,\n  \"speedup\": 1.167122694926693\n}\n",
+      "scope": "已执行的本地短对比；报告中的工作负载、测量方式及代码摘要对应当次实验。"
+    },
+    {
+      "id": "quoted-vector-before-fix",
+      "source": "tool",
+      "output": "quoted_vector_before_fix: DBError vector dimension mismatch",
+      "scope": "本轮修复前，CREATE TABLE t(id BIGINT PRIMARY KEY,v VECTOR(2)) 后执行 INSERT INTO t VALUES(1,'[0,1]') 的实际错误。"
+    },
+    {
+      "id": "contract-audit-functional",
+      "source": "tool",
+      "command": "python3 scripts/evaluate.py --docker --image minivectordb:audit --skip-build --output artifacts/audit-contract-review",
+      "output": "{\n  \"status\": \"PASS\",\n  \"image_id\": \"sha256:5625c7743d80a4d7b02a5ed807df1e5452d895a567f47b12204db6ff53b8140b\",\n  \"implementation_sha256\": \"1943d7cad31adca1d3a744051e4e0c3588a62823939910a754f354e9aa905a10\",\n  \"phases\": {\n    \"regression\": {\n      \"status\": \"PASS\",\n      \"seconds\": 6.613728162017651,\n      \"log\": \"regression.log\"\n    },\n    \"harness-self-test\": {\n      \"status\": \"PASS\",\n      \"seconds\": 1.2067116100224666,\n      \"log\": \"harness-self-test.log\"\n    },\n    \"material-format\": {\n      \"status\": \"PASS\",\n      \"seconds\": 0.0359130859724246,\n      \"log\": \"material-format.log\"\n    },\n    \"public-cases\": {\n      \"status\": \"PASS\",\n      \"seconds\": 1.3406300509814173,\n      \"log\": \"public-cases.log\"\n    }\n  },\n  \"sql_cases\": [\n    {\n      \"name\": \"sql_types\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"unicode_order\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"statement_atomicity\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"filtering\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"index_transactions\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"crash\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"eof_rollback\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"rejected_sql\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"random_model\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"fixture-basic\",\n      \"status\": \"PASS\"\n    },\n    {\n      \"name\": \"fixture-recovery\",\n      \"status\": \"PASS\"\n    }\n  ]\n}",
+      "scope": "本地功能审核，不含新一轮性能或超内存压力运行；容器使用已从源码及锁定依赖构建的镜像。"
+    },
+    {
+      "id": "upstream-public-cases-a3dba559",
+      "source": "tool",
+      "command": "MINIVECTOR_IMAGE=minivectordb:audit bash scripts/reproduce.sh check",
+      "output": "{\n  \"scope\": \"upstream public SQL cases through local process adapter\",\n  \"version\": \"minivectordb-public-basic-v1\",\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"statements\": 9,\n      \"status\": \"PASS\"\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"statements\": 7,\n      \"status\": \"PASS\"\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"statements\": 7,\n      \"status\": \"PASS\"\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"statements\": 4,\n      \"status\": \"PASS\"\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"statements\": 5,\n      \"status\": \"PASS\"\n    }\n  ],\n  \"status\": \"PASS\"\n}\n",
+      "scope": "官方公开SQL用例原文件取自a3dba559c1e7ebdc48bc990ffb1a4c75d1c1075c；通过本地SQL进程适配器核对32条SQL的全部公开断言。"
+    },
+    {
+      "id": "audit-container-regression",
+      "source": "tool",
+      "command": "MINIVECTOR_IMAGE=minivectordb:audit MINIVECTOR_SKIP_BUILD=1 bash scripts/reproduce.sh unit",
+      "output": "----------------------------------------------------------------------\nRan 67 tests in 5.742s\n\nOK\n",
+      "scope": "67项真实容器回归，包含带引号向量与SQL入口的进程强杀恢复。"
+    },
+    {
+      "id": "offline-image-reproduction",
+      "source": "tool",
+      "command": "bash scripts/reproduce.sh load artifacts/minivectordb-image.tar.gz; MINIVECTOR_SKIP_BUILD=1 bash scripts/reproduce.sh check",
+      "output": "Loaded image: minivectordb:team\n{\n  \"scope\": \"upstream public SQL cases through local process adapter\",\n  \"version\": \"minivectordb-public-basic-v1\",\n  \"cases\": [\n    {\n      \"id\": \"sql_crud\",\n      \"statements\": 9,\n      \"status\": \"PASS\"\n    },\n    {\n      \"id\": \"sql_comparisons\",\n      \"statements\": 7,\n      \"status\": \"PASS\"\n    },\n    {\n      \"id\": \"sql_ordering\",\n      \"statements\": 7,\n      \"status\": \"PASS\"\n    },\n    {\n      \"id\": \"sql_empty\",\n      \"statements\": 4,\n      \"status\": \"PASS\"\n    },\n    {\n      \"id\": \"vector_euclidean\",\n      \"statements\": 5,\n      \"status\": \"PASS\"\n    }\n  ],\n  \"status\": \"PASS\"\n}\n",
+      "scope": "导入导出镜像后跳过构建，禁网执行5组公开用例，验证队友无需宿主机Python/NumPy/GCC依赖的流程。"
     }
   ],
   "limitations": [
     "材料不完整，只包含当前节选。",
     "没有学生解释测试结果、修正或迁移的记录，不能据此认定学生已理解。",
-    "已完成本地Docker构建与测试，仍未执行官方协议驱动。"
+    "已完成本地Docker构建与测试，仍未执行官方协议驱动。",
+    "官方a3dba559新增公开用例已纳入；其README仍未定义正式进程通信封装，当前通过结果针对本地适配器。"
   ],
   "redaction": "未包含账号凭据或访问密钥。"
 }

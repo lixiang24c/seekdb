@@ -1,0 +1,209 @@
+{
+  "schema": "minivectordb-local-evaluation-v1",
+  "scope": "LOCAL ONLY; no official driver or official score",
+  "resource_policy": "memory.max enforced, raw memory.peak<=memory.max required, swap disabled, no OOM events",
+  "status": "PASS",
+  "git_commit": "7263162f445e4881759ab9b93753758dcdb3ed9d",
+  "working_tree_dirty": true,
+  "implementation_sha256": "1943d7cad31adca1d3a744051e4e0c3588a62823939910a754f354e9aa905a10",
+  "harness_sha256": "6ed11a4971b5546249f604d2fac6236ac48acb251622122c254694998346b02e",
+  "public_cases_sha256": "af31e818d71b2457feaa1e42e4b8cee1e8877c694c9d1eace881f83572da760c",
+  "configuration": {
+    "docker": true,
+    "image": "minivectordb:audit",
+    "skip_build": true,
+    "benchmark": false,
+    "resource": false,
+    "rows": 10000,
+    "queries": 1000,
+    "rounds": 3,
+    "memory": "128m",
+    "timeout": 30,
+    "strict_peak": true,
+    "keep_data": false,
+    "output": "/home/recoletas/oceanbase/competition_seekdb/artifacts/audit-contract-review"
+  },
+  "phases": {
+    "regression": {
+      "status": "PASS",
+      "seconds": 6.613728162017651,
+      "log": "regression.log"
+    },
+    "harness-self-test": {
+      "status": "PASS",
+      "seconds": 1.2067116100224666,
+      "log": "harness-self-test.log"
+    },
+    "material-format": {
+      "status": "PASS",
+      "seconds": 0.0359130859724246,
+      "log": "material-format.log"
+    },
+    "public-cases": {
+      "status": "PASS",
+      "seconds": 1.3406300509814173,
+      "log": "public-cases.log"
+    }
+  },
+  "cases": [
+    {
+      "name": "sql_types",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 10137600,
+        "io_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 16384,
+            "rios": 0,
+            "wios": 4,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "io_bytes": 16384,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.5687341849552467
+    },
+    {
+      "name": "unicode_order",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 9912320,
+        "io_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 16384,
+            "rios": 0,
+            "wios": 4,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "io_bytes": 16384,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.6200766039546579
+    },
+    {
+      "name": "statement_atomicity",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 9895936,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 1.1014635040191934
+    },
+    {
+      "name": "filtering",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 9601024,
+        "io_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 16384,
+            "rios": 0,
+            "wios": 4,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "io_bytes": 16384,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.5382993949460797
+    },
+    {
+      "name": "index_transactions",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 17985536,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 1.553013094002381
+    },
+    {
+      "name": "crash",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 9854976,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 1.6258453839691356
+    },
+    {
+      "name": "eof_rollback",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 9629696,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 1.2312913300120272
+    },
+    {
+      "name": "rejected_sql",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 9965568,
+        "io_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 8192,
+            "rios": 0,
+            "wios": 2,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "io_bytes": 8192,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.6790972739690915
+    },
+    {
+      "name": "random_model",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 9850880,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 1.9804982339846902
+    },
+    {
+      "name": "fixture-basic",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 9891840,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 1.3939959039562382
+    },
+    {
+      "name": "fixture-recovery",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 9859072,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 1.9972697490011342
+    }
+  ],
+  "image_id": "sha256:5625c7743d80a4d7b02a5ed807df1e5452d895a567f47b12204db6ff53b8140b",
+  "elapsed_seconds": 22.590179021994118
+}

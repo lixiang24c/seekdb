@@ -1,0 +1,9 @@
+{
+  "scope": "output batching without encoder reuse; local SQL process; 200 queries; 3 paired rounds",
+  "baseline_rounds_seconds": [0.10256982303690165, 0.10673726297682151, 0.1095530369784683],
+  "candidate_rounds_seconds": [0.11745542101562023, 0.11299375299131498, 0.10703995497897267],
+  "baseline_median_seconds": 0.10673726297682151,
+  "candidate_median_seconds": 0.11299375299131498,
+  "speedup": 0.9446297706832133,
+  "outcome": "revised: reuse JSON encoder and avoid row wrapper dictionaries"
+}

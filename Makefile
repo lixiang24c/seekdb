@@ -1,7 +1,16 @@
 PYTHON ?= python3
 MINIVECTOR_EVAL_FLAGS ?=
 
-.PHONY: native native-check test evaluate evaluate-quick
+.PHONY: native native-check test evaluate evaluate-quick reproduce public-check container-test image-save
+
+reproduce public-check:
+	bash scripts/reproduce.sh check
+
+container-test:
+	bash scripts/reproduce.sh unit
+
+image-save:
+	bash scripts/reproduce.sh export
 
 native:
 	$(PYTHON) scripts/build_native.py

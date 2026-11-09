@@ -1,0 +1,32 @@
+{
+  "scope": "upstream public SQL cases through local process adapter",
+  "version": "minivectordb-public-basic-v1",
+  "cases": [
+    {
+      "id": "sql_crud",
+      "statements": 9,
+      "status": "PASS"
+    },
+    {
+      "id": "sql_comparisons",
+      "statements": 7,
+      "status": "PASS"
+    },
+    {
+      "id": "sql_ordering",
+      "statements": 7,
+      "status": "PASS"
+    },
+    {
+      "id": "sql_empty",
+      "statements": 4,
+      "status": "PASS"
+    },
+    {
+      "id": "vector_euclidean",
+      "statements": 5,
+      "status": "PASS"
+    }
+  ],
+  "status": "PASS"
+}

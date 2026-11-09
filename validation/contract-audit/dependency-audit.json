@@ -1,0 +1,8 @@
+{
+  "runtime_third_party_python_imports": [
+    "numpy"
+  ],
+  "system_packages_locked": 37,
+  "numpy_version": "2.0.1",
+  "binary_wheel_sha256_count": 44
+}

@@ -28,7 +28,7 @@ def snapshot():
            'current':int((root/'memory.current').read_text()),'swap_limit':int((root/'memory.swap.max').read_text()),
            'events':{key:int(value) for key,value in (line.split() for line in (root/'memory.events').read_text().splitlines())}}
     try:
-        return check(stats,strict=os.environ.get('MINIVECTOR_STRICT_PEAK')=='1')
+        return check(stats,strict=os.environ.get('MINIVECTOR_STRICT_PEAK','1')=='1')
     except AssertionError:
         print(json.dumps({'resource_diagnostic':stats}),file=sys.stderr,flush=True)
         raise

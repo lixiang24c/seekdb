@@ -1,0 +1,26 @@
+{
+  "scope": "local SQL process over stdin/stdout, same storage and native kernel; 3 paired rounds",
+  "rows": 10000,
+  "dimensions": 128,
+  "queries": 600,
+  "unique_queries": 200,
+  "k": 10,
+  "seed": 720,
+  "filtered_fraction": 0.5,
+  "exact_ids_order_distances_correct": true,
+  "baseline_server_sha256": "c16fbc10e31fde75f76637a94ec672747f2750c62e4b9930c595d439c1127227",
+  "candidate_server_sha256": "88dc33857573a311dc77de039d62144bbc1d9b6d47e2ff69ae599226974adddb",
+  "baseline_rounds_seconds": [
+    0.3356608920148574,
+    0.3228207739884965,
+    0.31784583296393976
+  ],
+  "candidate_rounds_seconds": [
+    0.3176226160139777,
+    0.3194225690094754,
+    0.3454265150357969
+  ],
+  "baseline_median_seconds": 0.3228207739884965,
+  "candidate_median_seconds": 0.3194225690094754,
+  "speedup": 1.010638587591224
+}

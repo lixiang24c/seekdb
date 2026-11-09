@@ -1,6 +1,8 @@
 **
 !Dockerfile
 !requirements.txt
+!requirements.lock
+!debian-packages.lock
 !minivectordb/
 !minivectordb/*.py
 !native/

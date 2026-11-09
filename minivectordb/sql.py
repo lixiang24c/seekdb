@@ -2,12 +2,21 @@
 import re
 import math
 import json
+import sys
+from collections import OrderedDict
+from typing import NamedTuple
 from .core import DBError
 
 TOKEN=re.compile(r"\s+|--[^\n]*|/\*.*?\*/|'(?:''|[^'])*'|`[^`]+`|\[[0-9eE+.,\-\s]*\]|\[(?:/\*.*?\*/|--[^\n]*(?:\n|$)|[^\[\]])*\]|(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[A-Za-z_][A-Za-z_0-9]*|<=|>=|!=|<>|[(),;*=<>\[\]+-]",re.S)
 
+class VectorParameter(NamedTuple):
+    token_index:int
+
 class SQL:
-    def __init__(self, db): self.db=db
+    PLAN_CACHE_LIMIT=128*1024
+    def __init__(self, db):
+        self.db=db
+        self._plans=OrderedDict();self._plan_bytes=0;self._parameterized=False;self._vector_parameters=set()
     def execute(self, text):
         self.tokens=[]; end=0
         for match in TOKEN.finditer(text):
@@ -17,8 +26,26 @@ class SQL:
         if end!=len(text): raise DBError('invalid SQL token')
         self.i=0
         if self.tokens and self.tokens[-1]==';':self.tokens.pop()
+        self._parameterized=bool(self.tokens and self.tokens[0].upper()=='SELECT' and
+                                 not any(token in ('[',']') for token in self.tokens))
+        self._vector_parameters={i for i,token in enumerate(self.tokens) if token.startswith('[') or
+            (token.startswith("'") and i>=4 and self.tokens[i-4].upper()=='L2_DISTANCE' and
+             self.tokens[i-3]=='(' and self.tokens[i-1]==',')} if self._parameterized else set()
+        key=tuple(None if i in self._vector_parameters else token for i,token in enumerate(self.tokens)) if self._parameterized else None
+        cached=self._plans.get(key) if key is not None else None
+        if cached is not None:
+            self._plans.move_to_end(key)
+            return cached[0]()
         statement=self.parse()
         if self.i!=len(self.tokens): raise DBError('unsupported trailing SQL')
+        if key is not None and None in key:
+            # Account for the token key, parsed nodes and closure; vector payloads
+            # stay in the current request rather than being retained by a plan.
+            size=4096+4*sum(sys.getsizeof(token) for token in key)
+            if size<=self.PLAN_CACHE_LIMIT:
+                while self._plans and self._plan_bytes+size>self.PLAN_CACHE_LIMIT:
+                    self._plan_bytes-=self._plans.popitem(last=False)[1][1]
+                self._plans[key]=(statement,size);self._plan_bytes+=size
         return statement()
     def peek(self):return self.tokens[self.i] if self.i<len(self.tokens) else ''
     def pop(self):
@@ -37,17 +64,10 @@ class SQL:
         return value.lower()
     def literal(self):
         token=self.pop()
+        if self.i-1 in self._vector_parameters:return VectorParameter(self.i-1)
         if token.startswith("'"):return token[1:-1].replace("''", "'")
         if token.startswith('[') and token!='[':
-            cleaned=re.sub(r'--[^\n]*|/\*.*?\*/',' ',token,flags=re.S)
-            try:
-                return json.loads(cleaned)
-            except (ValueError,OverflowError):
-                parts=cleaned[1:-1].split(',')
-                numeric=r'[+-]?\s*(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?'
-                if not all(re.fullmatch(numeric,part.strip()) for part in parts):
-                    raise DBError('invalid vector literal')
-                return [float(re.sub(r'\s+','',part)) for part in parts]
+            return self.vector_literal(token)
         if token=='[':
             result=[]
             if not self.take(']'):
@@ -60,6 +80,17 @@ class SQL:
         if token in ('-','+'):token=self.pop()
         try:return sign*(float(token) if any(c in token.lower() for c in '.e') else int(token))
         except ValueError:raise DBError('expected literal')
+    @staticmethod
+    def vector_literal(token):
+        cleaned=re.sub(r'--[^\n]*|/\*.*?\*/',' ',token,flags=re.S)
+        try:
+            return json.loads(cleaned)
+        except (ValueError,OverflowError):
+            parts=cleaned[1:-1].split(',')
+            numeric=r'[+-]?\s*(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?'
+            if not all(re.fullmatch(numeric,part.strip()) for part in parts):
+                raise DBError('invalid vector literal')
+            return [float(re.sub(r'\s+','',part)) for part in parts]
     def expression(self):
         if self.take('L2_DISTANCE'):
             self.need('(');column=self.identifier();self.need(',');vector=self.literal();self.need(')')
@@ -181,13 +212,22 @@ class SQL:
         table=self.db._table(name);schema=table['columns'];pk=table['primary']
         if projection is None:projection=[(('column',c),None) for c in schema]
         aliases={a:e for e,a in projection if a}
+        bound_vectors={}
         def prepare(expr):
             if expr[0]=='column' and expr[1] not in schema and expr[1] in aliases:expr=aliases[expr[1]]
             if expr[1] not in schema:raise DBError('unknown column')
             if expr[0]=='distance':
                 spec=schema[expr[1]]
                 if spec[0]!='VECTOR':raise DBError('distance requires vector')
-                return ('distance',expr[1],self.db.vector(expr[2],spec[1]))
+                value=expr[2]
+                if isinstance(value,VectorParameter):
+                    key=(expr[1],value.token_index)
+                    if key not in bound_vectors:
+                        token=self.tokens[value.token_index]
+                        raw=token[1:-1].replace("''", "'") if token.startswith("'") else self.vector_literal(token)
+                        bound_vectors[key]=self.db.vector(raw,spec[1])
+                    return ('distance',expr[1],bound_vectors[key])
+                return ('distance',expr[1],self.db.vector(value,spec[1]))
             return expr
         expressions=[prepare(e) for e,a in projection]
         ordering=[(prepare(e),d) for e,d in order]
