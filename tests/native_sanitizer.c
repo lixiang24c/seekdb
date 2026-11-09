@@ -7,6 +7,22 @@ static int compare(const void *a,const void *b) {
     return less(x,y)?-1:less(y,x)?1:0;
 }
 int main(void) {
+    /* Exercise exact carries, subtraction and the widest binary64 query
+       exponent under ASan/UBSan, independent of rounded double distances. */
+    {
+        const size_t dim=8,stride=16+4*dim;
+        unsigned char rows[2*(16+4*8)]={0};
+        double query[8]={DBL_MAX},distances[2];int64_t keys[2];uint64_t offsets[2],positions[2];
+        for(size_t i=0;i<2;i++) {
+            int64_t key=(int64_t)i+1;memcpy(rows+i*stride,&key,8);
+            float value=i?FLT_MAX:-FLT_MAX;memcpy(rows+i*stride+16,&value,4);
+        }
+        for(int simd=0;simd<2;simd++) {
+            size_t count=mv_topk_ranked(rows,2,stride,dim,query,NULL,2,0,NULL,0,0,2,simd,
+                                       distances,keys,offsets,positions);
+            assert(count==2 && keys[0]==2 && keys[1]==1 && positions[0]==1 && positions[1]==0);
+        }
+    }
     const size_t dimensions[]={1,3,4,7,128,131};
     for (size_t t=0;t<6;t++) {
         size_t dim=dimensions[t],count=2053,stride=16+4*dim;

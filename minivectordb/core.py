@@ -9,6 +9,7 @@ import os
 import struct
 import uuid
 from pathlib import Path
+from .distance import DistanceOrder
 
 try:
     if os.environ.get('MINIVECTOR_NATIVE')=='0':raise ImportError()
@@ -691,10 +692,11 @@ class Database:
             if table.get('changes'):
                 return self._delta_topk(table,index,query,k,predicate,scalar_only,primary_only)
             return self._index_topk(table, index, query, k, predicate,scalar_only=scalar_only,primary_only=primary_only)
+        order=DistanceOrder(query)
         def candidates():
             for row in self.rows(name):
                 if predicate(row):
-                    squared = sum((a-b)**2 for a,b in zip(row[column], query))
+                    squared = order.key(row[column])
                     yield squared, row[table['primary']], row
         return [(row,math.sqrt(d)) for d,_,row in heapq.nsmallest(k,candidates(),key=lambda x:(x[0],x[1]))]
 
@@ -712,22 +714,9 @@ class Database:
             def visible(row):
                 return predicate(row) and not any(self._contains_key(run,row[pk]) for run in runs)
             base=self._index_topk(table,index,query,k,visible,scalar_only=scalar_only,primary_only=primary_only,squared=True)
-            # Use the base index's accumulation order for identical-vector ties.
-            def distance_of(vector):return sum((a-b)**2 for a,b in zip(vector,query))
-            try:
-                import numpy as np
-                from .native import available,scan
-                if available():
-                    entry=np.zeros(1,dtype=[('pk','<i8'),('offset','<u8'),('vector','<f4',(len(query),))])
-                    query_array=np.asarray(query,dtype=np.float64)
-                    def distance_of(vector):
-                        entry['vector'][0]=vector
-                        return next(scan(entry,query_array,slice(None),1))[0]
-                else:
-                    def distance_of(vector):
-                        delta=np.asarray(vector,dtype=np.float64)-np.asarray(query,dtype=np.float64)
-                        return float(np.einsum('i,i->',delta,delta))
-            except ImportError:pass
+            # Base/index and pending rows share exact comparison semantics even
+            # though their fast distance calculations use different reductions.
+            distance_of=DistanceOrder(query).key
             def candidates():
                 for row,distance in base:yield distance,row[pk],row
                 for row in self._rows_of(table,changes_only=True):
@@ -849,6 +838,7 @@ class Database:
         except ImportError:
             np = None
         dimension = len(query)
+        order=DistanceOrder(query)
         record = struct.Struct('<qQ' + 'f'*dimension)
         terms=getattr(predicate,'terms',None)
         query_array=np.asarray(query,dtype=np.float64) if np is not None else None
@@ -871,7 +861,7 @@ class Database:
                         if magic!=QUANT_MAGIC or count!=len(mapped) or dim!=dimension or len(codes)!=QUANT_HEADER.size+count*dim:
                             raise DBError('invalid quantized index')
                         quantization=(codes[QUANT_HEADER.size:],minimum,step)
-                    winners=list(scan(mapped,query_array,mask,k,quantization=quantization))
+                    winners=list(scan(mapped,query_array,mask,k,quantization=quantization,rank_keys=squared))
         def candidates():
             with (self.root/index['file']).open('rb') as src, (self.root/index['metadata']).open(encoding='utf-8') as meta:
                 file_size=os.fstat(src.fileno()).st_size
@@ -904,16 +894,17 @@ class Database:
                         squared=np.einsum('ij,ij->i',delta,delta)
                         if len(squared)>k:
                             boundary=np.partition(squared,k-1)[k-1]
-                            eligible=np.flatnonzero(squared<=boundary)
+                            factor=(1+order.roundoff)/(1-order.roundoff) if order.roundoff<.5 else math.inf
+                            eligible=np.flatnonzero(squared<=np.nextafter(boundary*factor,np.inf))
                         else:
                             eligible=np.arange(len(squared))
-                        order=eligible[np.lexsort((selected['pk'][eligible],squared[eligible]))[:k]]
-                        for i in order:
-                            yield float(squared[i]),int(selected['pk'][i]),int(selected['offset'][i])
+                        hits=((order.key(selected['vector'][i].copy(),float(squared[i])),
+                               int(selected['pk'][i]),int(selected['offset'][i])) for i in eligible)
+                        yield from heapq.nsmallest(k,hits,key=lambda hit:(hit[0],hit[1]))
                     else:
                         for position in mask:
                             values=record.unpack_from(raw,position*record.size)
-                            yield sum((a-b)**2 for a,b in zip(values[2:],query)),values[0],values[1]
+                            yield order.key(values[2:]),values[0],values[1]
         if winners is None:winners=heapq.nsmallest(k,candidates(),key=lambda x:(x[0],x[1]))
         if primary_only:
             return [({table['primary']:pk},distance if squared else math.sqrt(distance)) for distance,pk,offset in winners]

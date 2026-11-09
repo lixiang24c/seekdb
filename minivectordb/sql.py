@@ -6,6 +6,7 @@ import sys
 from collections import OrderedDict
 from typing import NamedTuple
 from .core import DBError
+from .distance import DistanceOrder
 
 TOKEN=re.compile(r"\s+|--[^\n]*|/\*.*?\*/|'(?:''|[^'])*'|`[^`]+`|\[[0-9eE+.,\-\s]*\]|\[(?:/\*.*?\*/|--[^\n]*(?:\n|$)|[^\[\]])*\]|(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[A-Za-z_][A-Za-z_0-9]*|<=|>=|!=|<>|[(),;*=<>\[\]+-]",re.S)
 
@@ -235,7 +236,7 @@ class SQL:
         predicate=self.predicate(name,terms)
         def evaluate(expr,row):
             if expr[0]=='column':return row[expr[1]]
-            return math.sqrt(sum((a-b)**2 for a,b in zip(row[expr[1]],expr[2])))
+            return math.sqrt(math.fsum((a-b)**2 for a,b in zip(row[expr[1]],expr[2])))
         distances=None
         reuse_distance=[False]*len(expressions)
         needs_vector=any(e[0]=='distance' or schema[e[1]][0]=='VECTOR'
@@ -250,9 +251,13 @@ class SQL:
             distances={row[pk]:distance for row,distance in winners}
             rows=(row for row,distance in winners)
         elif ordering:
+            distance_orders={id(expr):DistanceOrder(expr[2]) for expr,desc in ordering if expr[0]=='distance'}
             def compare(a,b):
                 for expr,desc in ordering:
-                    x,y=evaluate(expr,a),evaluate(expr,b)
+                    if expr[0]=='distance':
+                        distance_order=distance_orders[id(expr)]
+                        x,y=distance_order.key(a[expr[1]]),distance_order.key(b[expr[1]])
+                    else:x,y=evaluate(expr,a),evaluate(expr,b)
                     if x!=y:return (-1 if x<y else 1)*(-1 if desc else 1)
                 return (a[pk]>b[pk])-(a[pk]<b[pk])
             key=functools.cmp_to_key(compare)

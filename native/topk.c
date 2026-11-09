@@ -58,9 +58,73 @@ static uint32_t byte_l2_scalar(const unsigned char *v,const unsigned char *q,siz
     return sum;
 }
 
-typedef struct { double distance; int64_t key; uint64_t offset; } Hit;
+typedef struct { double distance; int64_t key; uint64_t offset; size_t position; } Hit;
 static int less(Hit a, Hit b) {
     return a.distance < b.distance || (a.distance == b.distance && a.key < b.key);
+}
+
+/* A finite binary64 is an integer multiple of 2^-1074. Squared differences
+   summed over at most SIZE_MAX coordinates fit in 68 64-bit words (4262 bits
+   suffice on x86_64). This rare path compares the actual inputs exactly,
+   including differences too small to survive rounding to double. */
+#define EXACT_WORDS 68
+typedef struct { uint64_t mantissa; unsigned shift, negative; } BinaryParts;
+static BinaryParts binary_parts(double value) {
+    uint64_t bits;memcpy(&bits,&value,sizeof(bits));
+    unsigned exponent=(unsigned)((bits>>52)&2047);
+    BinaryParts result={bits&UINT64_C(0xfffffffffffff),exponent?exponent-1:0,(unsigned)(bits>>63)};
+    if(exponent)result.mantissa|=UINT64_C(1)<<52;
+    return result;
+}
+static void exact_word(uint64_t *sum,size_t index,uint64_t value,int subtract) {
+    while(value) {
+        uint64_t previous=sum[index];
+        sum[index]=subtract?previous-value:previous+value;
+        value=subtract?(previous<value):(sum[index]<previous);
+        index++;
+    }
+}
+static void exact_term(uint64_t *sum,__uint128_t value,unsigned shift,int subtract) {
+    size_t index=shift/64;unsigned bits=shift%64;
+    for(size_t part=0;part<2;part++,value>>=64) {
+        uint64_t word=(uint64_t)value;
+        exact_word(sum,index+part,word<<bits,subtract);
+        if(bits)exact_word(sum,index+part+1,word>>(64-bits),subtract);
+    }
+}
+static void exact_squared(const float *vector,const double *query,size_t dim,uint64_t *sum) {
+    memset(sum,0,EXACT_WORDS*sizeof(*sum));
+    for(size_t j=0;j<dim;j++) {
+        BinaryParts a=binary_parts((double)vector[j]),b=binary_parts(query[j]);
+        exact_term(sum,(__uint128_t)a.mantissa*a.mantissa,2*a.shift,0);
+        exact_term(sum,(__uint128_t)b.mantissa*b.mantissa,2*b.shift,0);
+        /* Add both squares before subtracting the cross term: the running
+           unsigned accumulator cannot underflow because (a-b)^2 >= 0. */
+        exact_term(sum,2*(__uint128_t)a.mantissa*b.mantissa,a.shift+b.shift,a.negative==b.negative);
+    }
+}
+typedef struct {
+    const unsigned char *rows;
+    const double *query;
+    size_t stride,dim;
+    double roundoff;
+} DistanceOrder;
+static int exact_less(Hit a,Hit b,const DistanceOrder *order) {
+    const float *left=(const float*)(order->rows+a.position*order->stride+16);
+    const float *right=(const float*)(order->rows+b.position*order->stride+16);
+    if(memcmp(left,right,order->dim*sizeof(float))) {
+        uint64_t x[EXACT_WORDS],y[EXACT_WORDS];
+        exact_squared(left,order->query,order->dim,x);
+        exact_squared(right,order->query,order->dim,y);
+        for(size_t i=EXACT_WORDS;i--;)if(x[i]!=y[i])return x[i]<y[i];
+    }
+    return a.key<b.key;
+}
+static inline __attribute__((always_inline)) int ranked_less(Hit a,Hit b,const DistanceOrder *order) {
+    double gap=fabs(a.distance-b.distance);
+    double maximum=a.distance>b.distance?a.distance:b.distance;
+    if(isfinite(gap) && gap>order->roundoff*maximum)return less(a,b);
+    return exact_less(a,b,order);
 }
 static double scalar_l2(const float *v, const double *q, size_t dim) {
     double sum = 0;
@@ -104,11 +168,15 @@ static double avx2_l2(const float *v,const double *q,size_t dim,double cutoff) {
 static inline __attribute__((always_inline)) size_t topk(const unsigned char *rows,size_t count,size_t stride,size_t dim,
                const double *query,const unsigned char *mask,const uint32_t *positions,
                size_t candidates,const unsigned char *codes,double minimum,double step,size_t k,int use_simd,
-               double *distances,int64_t *keys,uint64_t *offsets) {
+               double *distances,int64_t *keys,uint64_t *offsets,uint64_t *row_positions) {
     if (!k || !count) return 0;
     if (k>count) k=count;
     Hit *heap=(Hit*)malloc(k*sizeof(Hit));if (!heap) return SIZE_MAX;
     size_t used=0;
+    /* Covers subtraction, squaring and either scalar or SIMD summation.
+       The band triggers exact comparison; it never declares two values tied. */
+    DistanceOrder order={rows,query,stride,dim,64*DBL_EPSILON*((double)dim+1)};
+    double cutoff_factor=order.roundoff<.5?(1+order.roundoff)/(1-order.roundoff):INFINITY;
     int avx=use_simd && __builtin_cpu_supports("avx2");
     unsigned char *query_codes=NULL;
     if (codes && dim>=32 && dim<=4096 && candidates>=512 && k<=candidates/4 &&
@@ -128,12 +196,18 @@ static inline __attribute__((always_inline)) size_t topk(const unsigned char *ro
         }
     }
     double last_cutoff=-1,integer_limit=DBL_MAX;
+    double cutoff=INFINITY,cutoff_distance=-1;
     double residual=2*sqrt((double)dim)+1;
     for (size_t candidate=0;candidate<candidates;candidate++) {
         size_t i=positions?positions[candidate]:candidate;
         if (i>=count) continue;
         if (mask && !mask[i]) continue;
-        double cutoff=used==k?heap[0].distance:DBL_MAX;
+        /* Include rounding uncertainty on both sides before partial-distance
+           or quantized rejection. Near-boundary candidates must reach ranking. */
+        if(used==k && heap[0].distance!=cutoff_distance) {
+            cutoff_distance=heap[0].distance;
+            cutoff=nextafter(cutoff_distance*cutoff_factor,INFINITY);
+        }
         if (query_codes && used==k) {
             if (cutoff!=last_cutoff) {
                 /* Each reconstruction has L2 error <= step*sqrt(dim).
@@ -147,23 +221,25 @@ static inline __attribute__((always_inline)) size_t topk(const unsigned char *ro
         }
         const unsigned char *row=rows+i*stride;Hit hit;
         memcpy(&hit.key,row,8);memcpy(&hit.offset,row+8,8);
+        hit.position=i;
         const float *vector=(const float*)(row+16);
         hit.distance=avx ? avx2_l2(vector,query,dim,cutoff) : scalar_bounded_l2(vector,query,dim,cutoff);
+        if(used==k && hit.distance>cutoff)continue;
         size_t at;
         if (used<k) {
             at=used++;heap[at]=hit;
             while (at) {
                 size_t parent=(at-1)/2;
-                if (!less(heap[parent],heap[at])) break;
+                if (!ranked_less(heap[parent],heap[at],&order)) break;
                 Hit temp=heap[parent];heap[parent]=heap[at];heap[at]=temp;at=parent;
             }
         } else {
-            if (!less(hit,heap[0])) continue;
+            if (!ranked_less(hit,heap[0],&order)) continue;
             heap[0]=hit;at=0;
             for (;;) {
                 size_t child=at*2+1;if (child>=used) break;
-                if (child+1<used && less(heap[child],heap[child+1])) child++;
-                if (!less(heap[at],heap[child])) break;
+                if (child+1<used && ranked_less(heap[child],heap[child+1],&order)) child++;
+                if (!ranked_less(heap[at],heap[child],&order)) break;
                 Hit temp=heap[at];heap[at]=heap[child];heap[child]=temp;at=child;
             }
         }
@@ -172,11 +248,12 @@ static inline __attribute__((always_inline)) size_t topk(const unsigned char *ro
     while (used) {
         Hit hit=heap[0];size_t output=used-1;
         distances[output]=hit.distance;keys[output]=hit.key;offsets[output]=hit.offset;
+        if(row_positions)row_positions[output]=(uint64_t)hit.position;
         heap[0]=heap[--used];size_t at=0;
         for (;;) {
             size_t child=at*2+1;if (child>=used) break;
-            if (child+1<used && less(heap[child],heap[child+1])) child++;
-            if (!less(heap[at],heap[child])) break;
+            if (child+1<used && ranked_less(heap[child],heap[child+1],&order)) child++;
+            if (!ranked_less(heap[at],heap[child],&order)) break;
             Hit temp=heap[at];heap[at]=heap[child];heap[child]=temp;at=child;
         }
     }
@@ -186,13 +263,13 @@ static inline __attribute__((always_inline)) size_t topk(const unsigned char *ro
 size_t mv_topk(const unsigned char *rows,size_t count,size_t stride,size_t dim,
                const double *query,const unsigned char *mask,size_t k,int use_simd,
                double *distances,int64_t *keys,uint64_t *offsets) {
-    return topk(rows,count,stride,dim,query,mask,NULL,count,NULL,0,0,k,use_simd,distances,keys,offsets);
+    return topk(rows,count,stride,dim,query,mask,NULL,count,NULL,0,0,k,use_simd,distances,keys,offsets,NULL);
 }
 
 size_t mv_topk_selected(const unsigned char *rows,size_t count,size_t stride,size_t dim,
                const double *query,const uint32_t *positions,size_t candidates,size_t k,int use_simd,
                double *distances,int64_t *keys,uint64_t *offsets) {
-    return topk(rows,count,stride,dim,query,NULL,positions,candidates,NULL,0,0,k,use_simd,distances,keys,offsets);
+    return topk(rows,count,stride,dim,query,NULL,positions,candidates,NULL,0,0,k,use_simd,distances,keys,offsets,NULL);
 }
 
 size_t mv_topk_quantized(const unsigned char *rows,size_t count,size_t stride,size_t dim,
@@ -200,7 +277,17 @@ size_t mv_topk_quantized(const unsigned char *rows,size_t count,size_t stride,si
                const void *selection,size_t candidates,int sparse,size_t k,int use_simd,
                double *distances,int64_t *keys,uint64_t *offsets) {
     return topk(rows,count,stride,dim,query,sparse?NULL:selection,sparse?selection:NULL,
-                sparse?candidates:count,codes,minimum,step,k,use_simd,distances,keys,offsets);
+                sparse?candidates:count,codes,minimum,step,k,use_simd,distances,keys,offsets,NULL);
+}
+
+/* Keep the original C entry points usable by benchmark/sanitizer tools. The
+   Python adapter also needs row positions for exact comparisons across blocks. */
+size_t mv_topk_ranked(const unsigned char *rows,size_t count,size_t stride,size_t dim,
+                     const double *query,const void *selection,size_t candidates,int sparse,
+                     const unsigned char *codes,double minimum,double step,size_t k,int use_simd,
+                     double *distances,int64_t *keys,uint64_t *offsets,uint64_t *row_positions) {
+    return topk(rows,count,stride,dim,query,sparse?NULL:selection,sparse?selection:NULL,
+                sparse?candidates:count,codes,minimum,step,k,use_simd,distances,keys,offsets,row_positions);
 }
 
 #ifdef MV_WITH_PYTHON

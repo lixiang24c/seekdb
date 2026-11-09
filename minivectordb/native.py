@@ -32,6 +32,11 @@ def available():
             quantize=library.mv_quantize
             quantize.restype=ctypes.c_int
             quantize.argtypes=function.argtypes[:4]+[ctypes.c_void_p]*3
+            ranked=library.mv_topk_ranked
+            ranked.restype=ctypes.c_size_t
+            ranked.argtypes=[ctypes.c_void_p,ctypes.c_size_t,ctypes.c_size_t,ctypes.c_size_t,
+                ctypes.c_void_p,ctypes.c_void_p,ctypes.c_size_t,ctypes.c_int,
+                ctypes.c_void_p,ctypes.c_double,ctypes.c_double,ctypes.c_size_t,ctypes.c_int]+[ctypes.c_void_p]*4
             _library=library
         except (OSError,AttributeError):
             _library=None
@@ -42,33 +47,53 @@ def available():
     return True
 
 
-def scan(entries, query, mask, k, use_simd=True, quantization=None):
-    """Scan all rows, a uint8 bitmap, or sorted uint32 candidate positions."""
+def scan(entries, query, mask, k, use_simd=True, quantization=None, *, rank_keys=True):
+    """Scan rows; retain exact comparison keys only when the caller will merge."""
     if not available():return None
     import numpy as np
+    from .distance import DistanceOrder
+    query=np.ascontiguousarray(query,dtype=np.float64)
     sparse=isinstance(mask,np.ndarray) and mask.dtype==np.dtype('uint32')
     k=min(k,len(mask) if sparse else len(entries))
     distance=np.empty(k,dtype=np.float64);keys=np.empty(k,dtype=np.int64);offsets=np.empty(k,dtype=np.uint64)
+    positions=np.empty(k,dtype=np.uint64) if rank_keys else None
     selected=None
     if not isinstance(mask,slice):
         if isinstance(mask,list):
             selected=np.zeros(len(entries),dtype=np.uint8);selected[mask]=1
         else:selected=np.ascontiguousarray(mask,dtype=np.uint32 if sparse else np.uint8)
-    arguments=[entries.ctypes.data,len(entries),entries.strides[0],len(query),query.ctypes.data,
-               selected.ctypes.data if selected is not None else None]
+    codes=None;minimum=step=0.
     if quantization is not None and (len(mask) if sparse else len(entries))>=512 and k<=(len(mask) if sparse else len(entries))//4:
         codes,minimum,step=quantization
-        arguments=arguments[:5]+[codes.ctypes.data,minimum,step,arguments[5],
-                                  len(selected) if sparse else len(entries),int(sparse)]
+    if rank_keys:
+        size=_library.mv_topk_ranked(entries.ctypes.data,len(entries),entries.strides[0],len(query),query.ctypes.data,
+            selected.ctypes.data if selected is not None else None,len(selected) if sparse else len(entries),int(sparse),
+            codes.ctypes.data if codes is not None else None,minimum,step,k,int(use_simd),
+            distance.ctypes.data,keys.ctypes.data,offsets.ctypes.data,positions.ctypes.data)
+    else:
+        # These entry points use the same exact comparator. Their fixed scan
+        # shape also lets the C compiler eliminate unused mask/quantizer paths.
+        arguments=[entries.ctypes.data,len(entries),entries.strides[0],len(query),query.ctypes.data,
+                   selected.ctypes.data if selected is not None else None]
+        if codes is not None:
+            arguments=arguments[:5]+[codes.ctypes.data,minimum,step,arguments[5],
+                                      len(selected) if sparse else len(entries),int(sparse)]
+            function=_library.mv_topk_quantized
+        else:
+            if sparse:arguments.append(len(selected))
+            function=_library.mv_topk_selected if sparse else _library.mv_topk
         arguments.extend((k,int(use_simd),distance.ctypes.data,keys.ctypes.data,offsets.ctypes.data))
-        size=_library.mv_topk_quantized(*arguments)
-        if size==ctypes.c_size_t(-1).value:raise MemoryError('native TopK allocation failed')
-        return ((float(distance[i]),int(keys[i]),int(offsets[i])) for i in range(size))
-    if sparse:arguments.append(len(selected))
-    arguments.extend((k,int(use_simd),distance.ctypes.data,keys.ctypes.data,offsets.ctypes.data))
-    size=(_library.mv_topk_selected if sparse else _library.mv_topk)(*arguments)
+        size=function(*arguments)
     if size==ctypes.c_size_t(-1).value:raise MemoryError('native TopK allocation failed')
-    return ((float(distance[i]),int(keys[i]),int(offsets[i])) for i in range(size))
+    if not rank_keys:
+        # The C kernel has already ordered the complete result. No Python
+        # comparison follows, so covering queries need not copy vector values.
+        return ((float(distance[i]),int(keys[i]),int(offsets[i])) for i in range(size))
+    order=DistanceOrder(query)
+    # Own just the winning vectors; do not retain entire decoded blocks in a
+    # Python merge heap after a scan advances to the next block.
+    return ((order.key(entries['vector'][int(positions[i])].copy(),float(distance[i])),
+             int(keys[i]),int(offsets[i])) for i in range(size))
 
 
 def build_quantized(source, destination, dimension, byte_limit, *, sync=True):
