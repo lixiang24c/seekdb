@@ -1,0 +1,66 @@
+{
+  "scope": "single in-process operation comparison, not SQL end-to-end latency",
+  "rows": 10000,
+  "dimension": 128,
+  "seed": 43,
+  "native": true,
+  "baseline_source_sha256": "001e16f090b7e3df4936a3b62fbf8b05fc4f8b86075854bc2d4a55d5ac26846e",
+  "expected_content_sha256": "58e6bf5080ce167dbf1048b294a89f7554513526d3bb3af5e12570011deb56bf",
+  "results": {
+    "baseline": {
+      "merge_seconds": 0.4225045820348896,
+      "merge_cpu_seconds": 0.44600993599999983,
+      "merged_sha256": "91e75e37579c4d349b563d4dfdfbe8fd2db8b798a84817f3a649442910340538",
+      "scalar_scan_seconds": 0.2264098489540629,
+      "scalar_scan_cpu_seconds": 0.24609926899999968,
+      "primary_scan_seconds": 0.010728225985076278,
+      "primary_scan_cpu_seconds": 0.011667532000000147,
+      "index_prepare_seconds": 0.7653124990174547,
+      "index_prepare_cpu_seconds": 0.7805688429999997,
+      "index_sha256": "71a1363f51d25009550bc5df1114f570f1ecebc706ed5679a95541f799a9eb84",
+      "metadata_sha256": "999582163a584fc630cf7fbe385770d04f3eb1e852f40b007793e945bf54066f",
+      "reopened_records": 10000,
+      "content_sha256": "58e6bf5080ce167dbf1048b294a89f7554513526d3bb3af5e12570011deb56bf",
+      "exact_topk_checks": 6,
+      "status": "PASS"
+    },
+    "candidate": {
+      "merge_seconds": 0.023041714041028172,
+      "merge_cpu_seconds": 0.01603798699999981,
+      "merged_sha256": "91e75e37579c4d349b563d4dfdfbe8fd2db8b798a84817f3a649442910340538",
+      "scalar_scan_seconds": 0.12415224500000477,
+      "scalar_scan_cpu_seconds": 0.1349738330000001,
+      "primary_scan_seconds": 0.008754534996114671,
+      "primary_scan_cpu_seconds": 0.009525068999999498,
+      "index_prepare_seconds": 0.24223484797403216,
+      "index_prepare_cpu_seconds": 0.20569473300000052,
+      "index_sha256": "71a1363f51d25009550bc5df1114f570f1ecebc706ed5679a95541f799a9eb84",
+      "metadata_sha256": "999582163a584fc630cf7fbe385770d04f3eb1e852f40b007793e945bf54066f",
+      "reopened_records": 10000,
+      "content_sha256": "58e6bf5080ce167dbf1048b294a89f7554513526d3bb3af5e12570011deb56bf",
+      "exact_topk_checks": 6,
+      "status": "PASS"
+    }
+  },
+  "ratios": {
+    "merge_seconds": 0.05453600983462336,
+    "merge_cpu_seconds": 0.03595881101626358,
+    "index_prepare_seconds": 0.31651756411273174,
+    "index_prepare_cpu_seconds": 0.26351901545217143,
+    "scalar_scan_seconds": 0.5483517858147349,
+    "scalar_scan_cpu_seconds": 0.5484527993457806,
+    "primary_scan_seconds": 0.8160282052496702,
+    "primary_scan_cpu_seconds": 0.8163739340932922
+  },
+  "status": "PASS",
+  "baseline_commit": "63a98b840838aac1ecb90cd31337f5e86d0f419a",
+  "candidate_core_sha256": "7dd04f5a73a3ef10bf0841c8c8518fc0972cf08c2d3d0f40192f9bd059623ef6",
+  "candidate_sql_sha256": "009fa86916f209f0225b4d1066db029be868dbd29a219a82302d9b1fd90f72b3",
+  "image_id": "sha256:f34b7c31cfef2c006a5ebd791df472af2918013544a1103e94f56610b9488bc1",
+  "container_config": {
+    "cpus": 2,
+    "memory_bytes": 134217728,
+    "swap": false,
+    "network": "none"
+  }
+}

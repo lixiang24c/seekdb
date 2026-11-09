@@ -221,6 +221,26 @@ class Database:
         if key_column is None:return path.name
         return path.name,{'file':path.name,'key_offset':data_end,'key_count':count}
 
+    def _merge_rows(self, table):
+        """Copy immutable binary record spans; omit embedded primary-key footers."""
+        filenames=[table['file']]+table.get('segments',[])
+        if any(name.endswith('.jsonl') for name in filenames):
+            return self._write(self._rows_of(table))
+        path=self._newfile()
+        with path.open('xb') as out:
+            out.write(self.ROW_MAGIC)
+            for name in filenames:
+                with (self.root/name).open('rb') as src:
+                    end=self._row_span(src)
+                    if end is None:end=os.fstat(src.fileno()).st_size
+                    remaining=end-src.tell()
+                    while remaining:
+                        block=src.read(min(256*1024,remaining))
+                        if not block:raise DBError('incomplete row data')
+                        out.write(block);remaining-=len(block)
+            out.flush();os.fsync(out.fileno())
+        return path.name
+
     def create(self, name, columns, primary):
         """columns: {name: ['BIGINT'|'VARCHAR'|'VECTOR', optional size]}."""
         def action():
@@ -247,9 +267,9 @@ class Database:
             raise DBError('unknown table')
         return self.catalog[name]
 
-    def rows(self, name):
+    def rows(self, name, *, scalar_only=False):
         table = self._table(name)
-        yield from self._rows_of(table)
+        yield from self._rows_of(table,scalar_only=scalar_only)
 
     def _rows_of(self, table, scalar_only=False):
         for filename in [table['file']] + table.get('segments', []):
@@ -331,13 +351,13 @@ class Database:
             if isinstance(run,dict):
                 src.seek(run['key_offset']);remaining=run['key_count']
             while remaining is None or remaining>0:
-                raw = src.read(8)
+                raw=src.read(8192 if remaining is None else min(8192,remaining*8))
                 if not raw:
                     if remaining:raise DBError('incomplete primary index')
                     return
-                if len(raw)!=8:raise DBError('incomplete primary index')
-                yield struct.unpack('<q',raw)[0]
-                if remaining is not None:remaining-=1
+                if len(raw)%8:raise DBError('incomplete primary index')
+                for (key,) in struct.iter_unpack('<q',raw):yield key
+                if remaining is not None:remaining-=len(raw)//8
 
     def _keys(self, table):
         yield from heapq.merge(*(self._filekeys(f) for f in [table['keys']]+table.get('key_segments',[])))
@@ -383,16 +403,15 @@ class Database:
             if not ready:break
             level=min(ready)
             chosen=[name for name in segments if levels[name]==level][:self.SEGMENT_FANOUT]
-            def rows():
-                for name in chosen:yield from self._rows_of({'file':name})
-            merged=self._write(rows());position=segments.index(chosen[0]);selected=set(chosen)
+            merged=self._merge_rows({'file':chosen[0],'segments':chosen[1:]})
+            position=segments.index(chosen[0]);selected=set(chosen)
             # Preserve the relative order of untouched immutable segments.
             segments=[name for name in segments if name not in selected]
             segments.insert(position,merged)
             for name in chosen:del levels[name]
             levels[merged]=level+1
         if len(segments)>self.SEGMENT_LIMIT:
-            file=self._write(self._rows_of(dict(table,segments=segments)))
+            file=self._merge_rows(dict(table,segments=segments))
             return self._detach_keys(dict(table,file=file,segments=[],segment_levels={}))
         return dict(table,segments=segments,segment_levels=levels)
 
@@ -411,7 +430,7 @@ class Database:
             segments = table.get('segments', []) + [staged]
             result = dict(table, segments=segments, keys=keys, key_segments=key_segments)
             if 'index' in table:
-                result = self._detach_keys(dict(result, file=self._write(self._rows_of(result)), segments=[],segment_levels={}))
+                result = self._detach_keys(dict(result, file=self._merge_rows(result), segments=[],segment_levels={}))
             else:
                 result=self._compact_segments(result)
             self.pending[name] = self._indexed(result)
@@ -445,7 +464,7 @@ class Database:
             if updates is None:
                 from .sql import SQL
                 pk = table['primary']
-                ordered = SQL(self).external_sort(({pk:r[pk]} for r in self._rows_of(result)), lambda r:r[pk])
+                ordered = SQL(self).external_sort(({pk:r[pk]} for r in self._rows_of(result,scalar_only=True)), lambda r:r[pk])
                 result['keys'] = self._keyfile(r[pk] for r in ordered)
                 result['key_segments']=[]
             else:result=self._detach_keys(result)
@@ -458,24 +477,41 @@ class Database:
         if 'index' not in table:
             return table
         if table.get('segments'):
-            table = dict(table, file=self._write(self._rows_of(table)), segments=[],segment_levels={})
+            table = dict(table, file=self._merge_rows(table), segments=[],segment_levels={})
         table=self._detach_keys(table)
         index = dict(table['index'])
         column = index['column']
         dimension = table['columns'][column][1]
         path = self.root / ('index-' + uuid.uuid4().hex + '.bin')
         record = struct.Struct('<qQ' + 'f' * dimension)
+        prefix = struct.Struct('<qQ')
+        column_bytes=column.encode('utf-8')
         metadata = path.with_suffix('.meta')
-        with (self.root / table['file']).open('rb') as src, path.open('xb') as out, metadata.open('x', encoding='utf-8') as meta:
+        with (self.root / table['file']).open('rb') as src, path.open('xb') as out, metadata.open('xb') as meta:
             binary=table['file'].endswith('.rows')
             end=self._row_span(src) if binary else None
             while end is None or src.tell()<end:
                 offset = src.tell()
-                row=self._read_record(src) if binary else json.loads(line) if (line:=src.readline()) else None
-                if row is None:
-                    break
-                out.write(record.pack(row[table['primary']], offset, *row[column]))
-                meta.write(encode({key:value for key,value in row.items() if key!=column})+'\n')
+                if binary:
+                    header=src.read(self.ROW_HEADER.size)
+                    if not header:break
+                    if len(header)!=self.ROW_HEADER.size:raise DBError('incomplete row header')
+                    scalar_size,name_size,stored_dimension=self.ROW_HEADER.unpack(header)
+                    if stored_dimension!=dimension:raise DBError('vector dimension mismatch')
+                    scalar=src.read(scalar_size);name=src.read(name_size);vector=src.read(dimension*4)
+                    if len(scalar)!=scalar_size or len(name)!=name_size or len(vector)!=dimension*4:
+                        raise DBError('incomplete row data')
+                    if end is not None and src.tell()>end:raise DBError('row crosses key footer')
+                    if name!=column_bytes:raise DBError('invalid vector column')
+                    out.write(prefix.pack(json.loads(scalar)[table['primary']],offset))
+                    out.write(vector)
+                    meta.write(scalar+b'\n')
+                else:
+                    line=src.readline()
+                    if not line:break
+                    row=json.loads(line)
+                    out.write(record.pack(row[table['primary']], offset, *row[column]))
+                    meta.write((encode({key:value for key,value in row.items() if key!=column})+'\n').encode('utf-8'))
             out.flush()
             os.fsync(out.fileno())
             meta.flush()

@@ -143,3 +143,14 @@ validation/optimization-round7/transport-comparison.json。
 新增仅需Docker的复现及镜像离线分享入口，资源检查默认启用严格峰值门槛。
 本轮与第六至八轮的源码、Dockerfile、真实学习材料一起交付。
 逐项审核与正式接口差距见 COMPLIANCE.txt；最新运行步骤见 RUNNING.txt。
+
+
+队友方案借鉴：记录字节复用与延迟解码（2026-11-09）
+
+段合并改为256 KiB有界缓冲复制；建索引直接复用float32字节和标量JSON；
+主键目录按8 KiB读取；普通标量查询与删除后的主键重建跳过向量读取。
+相对63a98b84，1万条128维单轮专项对照：段合并0.4225→0.0230秒，
+索引准备0.7653→0.2422秒，标量扫描0.2264→0.1242秒，主键遍历
+0.01073→0.00875秒。合并文件、索引与元数据逐字节一致，重启全量核对
+通过，带过滤/无过滤精确TopK校验通过，27项相关检查通过。
+详细口径与结果见TEAM_PERFORMANCE_LEARNINGS.txt及validation/competitor-comparison/。

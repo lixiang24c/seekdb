@@ -238,7 +238,9 @@ class SQL:
             return math.sqrt(sum((a-b)**2 for a,b in zip(row[expr[1]],expr[2])))
         distances=None
         reuse_distance=[False]*len(expressions)
-        rows=(row for row in self.db.rows(name) if predicate(row))
+        needs_vector=any(e[0]=='distance' or schema[e[1]][0]=='VECTOR'
+                         for e in expressions+[e for e,desc in ordering])
+        rows=(row for row in self.db.rows(name,scalar_only=not needs_vector) if predicate(row))
         if ordering and len(ordering)==1 and ordering[0][0][0]=='distance' and not ordering[0][1] and limit is not None:
             expr=ordering[0][0]
             reuse_distance=[e==expr for e in expressions]
