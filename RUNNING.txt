@@ -8,6 +8,11 @@ MiniVectorDB 运行与复现
 本机无需安装 Python、NumPy、GCC 或 Python 头文件。
 
 回归检查：bash scripts/reproduce.sh unit（或 make container-test）。
+十万SQL生成与回放：bash scripts/reproduce.sh stress（或 make stress）。
+默认随机种子20261109、128个生成场景，另含5组官方样例；SQL与预期结果保存为
+gzip JSONL，逐条独立模型核对。Docker入口使用256MiB容纳测试驱动和数据库，
+其耗时与内存不作性能成绩。失败场景可通过scripts/stress.py run --case重放。
+完整性能对照、十万SQL和故障复现结果见 PERFORMANCE_COMPARISON.txt。
 运行示例：bash scripts/reproduce.sh run < examples/basic.sql
 首次示例使用空数据卷，默认卷名 minivectordb-team-data；可通过
 MINIVECTOR_VOLUME 指定另一卷。程序数据统一写入容器 /data。

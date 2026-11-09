@@ -100,7 +100,8 @@ def main():
         if args.docker:
             report['image_id']=subprocess.check_output(['docker','image','inspect','--format','{{.Id}}',args.image],text=True).strip()
             phase('regression',['docker','run','--rm','--network','none','--cpus','2','--memory',args.memory,'--memory-swap',args.memory,
-                               '-v',str(ROOT/'tests')+':/app/tests:ro','--entrypoint','python3',args.image,'-m','unittest','discover','-s','tests','-v'])
+                               '-v',str(ROOT/'tests')+':/app/tests:ro','-v',str(ROOT/'evaluation')+':/app/evaluation:ro',
+                               '-v',str(ROOT/'mysqltest')+':/app/mysqltest:ro','--entrypoint','python3',args.image,'-m','unittest','discover','-s','tests','-v'])
         else:phase('regression',[sys.executable,'-m','unittest','discover','-s','tests','-v'])
         phase('harness-self-test',[sys.executable,'-m','unittest','evaluation.test_harness','-v'])
         phase('material-format',[sys.executable,'scripts/check_conversation.py'])

@@ -8,10 +8,15 @@ def vector_sql(vector):
     return '[' + ','.join(format(float(x), '.9g') for x in vector) + ']'
 
 
-def prepare(seed, rows, dimension, queries):
+def prepare(seed, rows, dimension, queries, distribution='uniform'):
     rng = np.random.default_rng(seed)
-    vectors = rng.uniform(-1, 1, (rows,dimension)).astype(np.float32)
-    probes = rng.uniform(-1, 1, (queries,dimension)).astype(np.float32)
+    if distribution=='normal':
+        vectors=rng.normal(size=(rows,dimension)).astype(np.float32)
+        probes=rng.normal(size=(queries,dimension)).astype(np.float32)
+    elif distribution=='uniform':
+        vectors=rng.uniform(-1,1,(rows,dimension)).astype(np.float32)
+        probes=rng.uniform(-1,1,(queries,dimension)).astype(np.float32)
+    else:raise ValueError('unknown distribution')
     ids = np.arange(1, rows+1, dtype=np.int64)
     tags = ids % 10
     requests = []

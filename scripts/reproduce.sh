@@ -35,8 +35,28 @@ case "$action" in
     else
       docker run --rm --platform linux/amd64 --network none --cpus 2 --memory 128m --memory-swap 128m \
         --mount "type=bind,src=$repo_root/tests,dst=/app/tests,readonly" \
+        --mount "type=bind,src=$repo_root/evaluation,dst=/app/evaluation,readonly" \
+        --mount "type=bind,src=$repo_root/mysqltest,dst=/app/mysqltest,readonly" \
         --entrypoint python3 "$image" -m unittest discover -s tests -q
     fi ;;
+  stress)
+    ensure_image
+    target="${2:-100000}"
+    stamp="$(date +%Y%m%d-%H%M%S)-$$"
+    destination="$repo_root/artifacts/stress-$stamp"
+    mkdir -p "$destination/data"
+    common=(--rm --platform linux/amd64 --network none --cpus 2 --memory 256m --memory-swap 256m
+      --mount "type=bind,src=$repo_root/scripts,dst=/checks,readonly"
+      --mount "type=bind,src=$repo_root/evaluation,dst=/checks/evaluation,readonly"
+      --mount "type=bind,src=$repo_root/mysqltest,dst=/cases,readonly"
+      --mount "type=bind,src=$destination,dst=/reports"
+      --mount "type=bind,src=$destination/data,dst=/data"
+      --entrypoint python3)
+    docker run "${common[@]}" "$image" /checks/stress.py generate --public /cases \
+      --suite /reports/suite.jsonl.gz --operations "$target" --scenarios "${MINIVECTOR_STRESS_SCENARIOS:-128}" --seed "${MINIVECTOR_STRESS_SEED:-20261109}"
+    docker run "${common[@]}" "$image" /checks/stress.py run --suite /reports/suite.jsonl.gz \
+      --output /reports/run --data-root /data
+    echo "测试包及报告：$destination" ;;
   run)
     ensure_image
     exec docker run --rm -i --platform linux/amd64 --network none \
@@ -54,5 +74,5 @@ case "$action" in
   load)
     if [[ -z "${2:-}" ]]; then echo '用法：bash scripts/reproduce.sh load 镜像.tar.gz' >&2; exit 1; fi
     gzip -dc -- "$2" | docker load ;;
-  *) echo '用法：bash scripts/reproduce.sh {check|unit|build|run|export [文件]|load 文件}' >&2; exit 1 ;;
+  *) echo '用法：bash scripts/reproduce.sh {check|unit|stress [SQL数量]|build|run|export [文件]|load 文件}' >&2; exit 1 ;;
 esac

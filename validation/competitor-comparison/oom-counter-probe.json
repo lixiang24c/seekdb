@@ -1,0 +1,40 @@
+{
+  "scope": "diagnostic rerun of SELECT id with idle PID1 supervisor so cgroup counters remain readable after database death",
+  "query": "SELECT id FROM t",
+  "rows": 140000,
+  "memory_limit": 67108864,
+  "before_events": {
+    "low": 0,
+    "high": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_kill": 0,
+    "oom_group_kill": 0
+  },
+  "after_events": {
+    "low": 0,
+    "high": 0,
+    "max": 307,
+    "oom": 1,
+    "oom_kill": 1,
+    "oom_group_kill": 0
+  },
+  "observed": "database exited: 137",
+  "database_exec_exit_code": 137,
+  "resources": {
+    "memory_peak_bytes": 67108864,
+    "io_by_device": {
+      "8:48": {
+        "rbytes": 49225728,
+        "wbytes": 0,
+        "rios": 318,
+        "wios": 0,
+        "dbytes": 0,
+        "dios": 0
+      }
+    },
+    "io_bytes": 49225728,
+    "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+  },
+  "oom_kill_delta": 1
+}

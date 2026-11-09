@@ -1,0 +1,158 @@
+{
+  "scope": "common-subset diagnostic: bare vector literals, SELECT id TopK; not official admission or score",
+  "configuration": {
+    "rows": 100000,
+    "dimensions": 128,
+    "queries": 1000,
+    "rounds": 1,
+    "cpus": 2,
+    "memory_bytes": 134217728,
+    "swap": false,
+    "warmup_queries": 10,
+    "distribution": "normal",
+    "fixed_seed": 42,
+    "verification_memory": "1g",
+    "reuse_writer_data": true
+  },
+  "resource_scope": "write: startup and load; query: cold reopen, index preparation, warmup and queries; whole cgroup, all I/O devices",
+  "images": {
+    "ours": {
+      "tag": "minivectordb:team",
+      "id": "sha256:7683202814300e5397ee681ea64b56c2b460aab23a190f8b0aeab6df08498fbd"
+    },
+    "teammate": {
+      "tag": "minivectordb:teammate-e5af6d16",
+      "id": "sha256:14bacb30a8755b9c3afcf1ce5d0883caea4cf9f82b6f6c9f6b45732a0686c0b4"
+    }
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "seed": 42,
+      "version": "ours",
+      "write": {
+        "seconds": 55.768543853017036,
+        "resources": {
+          "memory_peak_bytes": 113266688,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 271933440,
+              "rios": 0,
+              "wios": 2212,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 271933440,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device",
+          "within_memory_cap": true
+        },
+        "restart_content_correct": true
+      },
+      "query": {
+        "seconds": 14.714994965004735,
+        "resources": {
+          "memory_peak_bytes": 134217728,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 55590912,
+              "wbytes": 110211072,
+              "rios": 700,
+              "wios": 113,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 165801984,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device",
+          "within_memory_cap": true
+        },
+        "exact_order_queries": 1000,
+        "total_queries": 1000,
+        "recall": {
+          "False": 1.0,
+          "True": 1.0
+        }
+      },
+      "status": "PASS"
+    },
+    {
+      "round": 1,
+      "seed": 42,
+      "version": "teammate",
+      "write": {
+        "seconds": 17.204827114997897,
+        "resources": {
+          "memory_peak_bytes": 75509760,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 121999360,
+              "rios": 0,
+              "wios": 2142,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 121999360,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device",
+          "within_memory_cap": true
+        },
+        "restart_content_correct": true
+      },
+      "query": {
+        "seconds": 19.999810595007148,
+        "resources": {
+          "memory_peak_bytes": 69668864,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 58695680,
+              "wbytes": 4096,
+              "rios": 436,
+              "wios": 1,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 58699776,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device",
+          "within_memory_cap": true
+        },
+        "exact_order_queries": 1000,
+        "total_queries": 1000,
+        "recall": {
+          "False": 1.0,
+          "True": 1.0
+        }
+      },
+      "status": "PASS"
+    }
+  ],
+  "status": "PASS",
+  "datasets": {
+    "42": "83cbd405ea0c64ff8c6a4032698de7352c0f19722e34fa987dbee34e279929c0"
+  },
+  "resume_history": [
+    {
+      "prior_status": "FAIL",
+      "prior_error": "TimeoutExpired(['docker', 'run', '--rm', '-i', '--name', 'minivector-common-52942667696d4a8688d2c688bfc11f1b', '--platform', 'linux/amd64', '--network', 'none', '--cpus', '2', '--memory', '1g', '--memory-swap', '1g', '-v', '/home/recoletas/oceanbase/competition_seekdb/artifacts/competitor-benchmark-100k/ours/1/write/data:/data', 'minivectordb:team'], 10)"
+    }
+  ],
+  "summary": {
+    "ours": {
+      "write_seconds_median": 55.768543853017036,
+      "query_seconds_median": 14.714994965004735,
+      "query_peak_bytes_median": 134217728,
+      "write_io_bytes_median": 271933440,
+      "query_io_bytes_median": 165801984
+    },
+    "teammate": {
+      "write_seconds_median": 17.204827114997897,
+      "query_seconds_median": 19.999810595007148,
+      "query_peak_bytes_median": 69668864,
+      "write_io_bytes_median": 121999360,
+      "query_io_bytes_median": 58699776
+    }
+  }
+}

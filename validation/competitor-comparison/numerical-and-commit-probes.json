@@ -1,0 +1,145 @@
+{
+  "scope": "numerical probes use bare vectors to isolate distance errors from quoted-input failures",
+  "ours": [
+    {
+      "name": "quoted_vector",
+      "status": "PASS"
+    },
+    {
+      "name": "distance_projection",
+      "status": "PASS"
+    },
+    {
+      "name": "finite_overflow_order",
+      "status": "PASS"
+    },
+    {
+      "name": "tiny_underflow_order",
+      "status": "PASS"
+    }
+  ],
+  "teammate": [
+    {
+      "name": "quoted_vector",
+      "status": "FAIL",
+      "sql": "INSERT INTO t VALUES(1,'[3,4]')",
+      "expected": {
+        "affected_rows": 1
+      },
+      "actual": {
+        "error": true,
+        "message": "ERROR vector dimension mismatch for column v"
+      },
+      "error": "success/error mismatch"
+    },
+    {
+      "name": "distance_projection",
+      "status": "FAIL",
+      "sql": "SELECT id,L2_DISTANCE(v,[0,0]) AS d FROM t ORDER BY d LIMIT 2",
+      "expected": {
+        "columns": [
+          "id",
+          "d"
+        ],
+        "rows": [
+          [
+            2,
+            0.0
+          ],
+          [
+            1,
+            5.0
+          ]
+        ]
+      },
+      "actual": {
+        "error": true,
+        "message": "ERROR expected FROM"
+      },
+      "error": "success/error mismatch"
+    },
+    {
+      "name": "finite_overflow_order",
+      "status": "FAIL",
+      "sql": "SELECT id FROM t ORDER BY L2_DISTANCE(v,[0,0]) LIMIT 2",
+      "expected": {
+        "rows": [
+          [
+            2
+          ],
+          [
+            1
+          ]
+        ]
+      },
+      "actual": {
+        "rows": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ],
+        "text_rows": true
+      },
+      "error": "rows/order/value mismatch"
+    },
+    {
+      "name": "tiny_underflow_order",
+      "status": "FAIL",
+      "sql": "SELECT id FROM t ORDER BY L2_DISTANCE(v,[0,0]) LIMIT 2",
+      "expected": {
+        "rows": [
+          [
+            2
+          ],
+          [
+            1
+          ]
+        ]
+      },
+      "actual": {
+        "rows": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ],
+        "text_rows": true
+      },
+      "error": "rows/order/value mismatch"
+    }
+  ],
+  "teammate_cross_table_cut": {
+    "setup": [
+      "CREATE TABLE a(id BIGINT PRIMARY KEY,n BIGINT)",
+      "CREATE TABLE b(id BIGINT PRIMARY KEY,n BIGINT)",
+      "INSERT INTO a VALUES(1,0)",
+      "INSERT INTO b VALUES(1,0)",
+      "BEGIN",
+      "UPDATE a SET n=1 WHERE id=1",
+      "UPDATE b SET n=1 WHERE id=1"
+    ],
+    "observed": "database exited: -9",
+    "exit_code": -9,
+    "recovered_state": [
+      1,
+      0
+    ],
+    "allowed_states": [
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "atomic": false,
+    "fault": "SIGKILL before second table WAL append, after first table WAL fdatasync; no COMMIT success received"
+  }
+}

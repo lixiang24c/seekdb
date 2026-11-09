@@ -1,7 +1,10 @@
 PYTHON ?= python3
 MINIVECTOR_EVAL_FLAGS ?=
 
-.PHONY: native native-check test evaluate evaluate-quick reproduce public-check container-test image-save
+.PHONY: native native-check test evaluate evaluate-quick reproduce public-check container-test image-save stress
+
+stress:
+	bash scripts/reproduce.sh stress
 
 reproduce public-check:
 	bash scripts/reproduce.sh check

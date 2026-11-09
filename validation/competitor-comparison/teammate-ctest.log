@@ -1,0 +1,18 @@
+Internal ctest changing into directory: /home/recoletas/oceanbase/comparison/minivectordb-dev/minivectordb/build
+Test project /home/recoletas/oceanbase/comparison/minivectordb-dev/minivectordb/build
+    Start 1: exact
+1/6 Test #1: exact ............................   Passed    0.07 sec
+    Start 2: store
+2/6 Test #2: store ............................   Passed    2.34 sec
+    Start 3: pager
+3/6 Test #3: pager ............................   Passed    0.15 sec
+    Start 4: sql
+4/6 Test #4: sql ..............................   Passed    0.00 sec
+    Start 5: db
+5/6 Test #5: db ...............................   Passed    0.02 sec
+    Start 6: e2e
+6/6 Test #6: e2e ..............................   Passed    0.02 sec
+
+100% tests passed, 0 tests failed out of 6
+
+Total Test time (real) =   2.62 sec

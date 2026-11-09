@@ -1,0 +1,58 @@
+{
+  "scope": "common bare-vector SQL; 64 MiB database cgroup, host driver excluded; large-data correctness only",
+  "rows": 140000,
+  "dimension": 128,
+  "memory_limit": 67108864,
+  "results": {
+    "ours": {
+      "status": "PASS",
+      "image": "minivectordb:team",
+      "data_bytes": 77535644,
+      "data_larger_than_memory": true,
+      "topk_correct": 3,
+      "resources_before_full_scan": {
+        "memory_peak_bytes": 51912704,
+        "io_by_device": {
+          "8:48": {
+            "rbytes": 42147840,
+            "wbytes": 0,
+            "rios": 325,
+            "wios": 0,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "io_bytes": 42147840,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "full_scan_rows": 140000,
+      "exit_code": 0,
+      "oom_killed": false
+    },
+    "teammate": {
+      "status": "FAIL",
+      "image": "minivectordb:teammate-e5af6d16",
+      "data_bytes": 82069230,
+      "data_larger_than_memory": true,
+      "topk_correct": 3,
+      "resources_before_full_scan": {
+        "memory_peak_bytes": 45580288,
+        "io_by_device": {
+          "8:48": {
+            "rbytes": 32755712,
+            "wbytes": 0,
+            "rios": 254,
+            "wios": 0,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "io_bytes": 32755712,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "error": "RuntimeError('database exited: None')",
+      "exit_code": 137,
+      "oom_killed": false
+    }
+  }
+}

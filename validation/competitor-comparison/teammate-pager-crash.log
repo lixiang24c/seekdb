@@ -1,0 +1,61 @@
+round  0: confirmed>=  0 recovered m=  0 killed=True
+round  1: confirmed>=  0 recovered m=  0 killed=True
+round  2: confirmed>=  1 recovered m=  2 killed=True
+round  3: confirmed>=  1 recovered m=  2 killed=True
+round  4: confirmed>=  1 recovered m=  2 killed=True
+round  5: confirmed>=  6 recovered m=  7 killed=True
+round  6: confirmed>=  9 recovered m= 10 killed=True
+round  7: confirmed>=  9 recovered m= 10 killed=True
+round  8: confirmed>= 14 recovered m= 15 killed=True
+round  9: confirmed>= 16 recovered m= 17 killed=True
+round 10: confirmed>= 18 recovered m= 19 killed=True
+round 11: confirmed>= 18 recovered m= 20 killed=True
+round 12: confirmed>= 23 recovered m= 24 killed=True
+round 13: confirmed>= 25 recovered m= 26 killed=True
+round 14: confirmed>= 25 recovered m= 27 killed=True
+round 15: confirmed>= 25 recovered m= 28 killed=True
+round 16: confirmed>= 25 recovered m= 29 killed=True
+round 17: confirmed>= 25 recovered m= 30 killed=True
+round 18: confirmed>= 33 recovered m= 34 killed=True
+round 19: confirmed>= 36 recovered m= 37 killed=True
+round 20: confirmed>= 40 recovered m= 41 killed=True
+round 21: confirmed>= 40 recovered m= 42 killed=True
+round 22: confirmed>= 44 recovered m= 45 killed=True
+round 23: confirmed>= 44 recovered m= 45 killed=True
+round 24: confirmed>= 48 recovered m= 49 killed=True
+round 25: confirmed>= 52 recovered m= 53 killed=True
+round 26: confirmed>= 55 recovered m= 56 killed=True
+round 27: confirmed>= 58 recovered m= 59 killed=True
+round 28: confirmed>= 63 recovered m= 64 killed=True
+round 29: confirmed>= 63 recovered m= 64 killed=True
+round 30: confirmed>= 63 recovered m= 65 killed=True
+round 31: confirmed>= 63 recovered m= 66 killed=True
+round 32: confirmed>= 67 recovered m= 68 killed=True
+round 33: confirmed>= 69 recovered m= 70 killed=True
+round 34: confirmed>= 69 recovered m= 71 killed=True
+round 35: confirmed>= 73 recovered m= 74 killed=True
+round 36: confirmed>= 75 recovered m= 76 killed=True
+round 37: confirmed>= 75 recovered m= 76 killed=True
+round 38: confirmed>= 78 recovered m= 79 killed=True
+round 39: confirmed>= 82 recovered m= 83 killed=True
+round 40: confirmed>= 84 recovered m= 85 killed=True
+round 41: confirmed>= 86 recovered m= 87 killed=True
+round 42: confirmed>= 90 recovered m= 91 killed=True
+round 43: confirmed>= 92 recovered m= 93 killed=True
+round 44: confirmed>= 95 recovered m= 96 killed=True
+round 45: confirmed>= 97 recovered m= 98 killed=True
+round 46: confirmed>=100 recovered m=101 killed=True
+round 47: confirmed>=104 recovered m=105 killed=True
+round 48: confirmed>=107 recovered m=108 killed=True
+round 49: confirmed>=107 recovered m=108 killed=True
+round 50: confirmed>=111 recovered m=112 killed=True
+round 51: confirmed>=114 recovered m=115 killed=True
+round 52: confirmed>=117 recovered m=118 killed=True
+round 53: confirmed>=117 recovered m=118 killed=True
+round 54: confirmed>=117 recovered m=119 killed=True
+round 55: confirmed>=117 recovered m=119 killed=True
+round 56: confirmed>=117 recovered m=120 killed=True
+round 57: confirmed>=117 recovered m=120 killed=True
+round 58: confirmed>=122 recovered m=123 killed=True
+round 59: confirmed>=124 recovered m=125 killed=True
+pager crash test passed: 60 rounds, 60 writer kills, final m=400
