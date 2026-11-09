@@ -1,0 +1,67 @@
+{
+  "scope": "single paired write comparison; two CPUs, 128 MiB, no swap, offline containers",
+  "rows": 40000,
+  "dimension": 128,
+  "batch_size": 100,
+  "seed": 42,
+  "distribution": "normal",
+  "expected_content_sha256": "51ea1342177d841b528f4e9d13024ca53799d6d587959d6f8069a93e1c80d146",
+  "results": {
+    "baseline": {
+      "image": "minivectordb:team",
+      "image_id": "sha256:7683202814300e5397ee681ea64b56c2b460aab23a190f8b0aeab6df08498fbd",
+      "seconds": 38.26979959302116,
+      "resources": {
+        "memory_peak_bytes": 54722560,
+        "io_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 69398528,
+            "rios": 0,
+            "wios": 854,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "io_bytes": 69398528,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "persisted": {
+        "records": 40000,
+        "sha256": "51ea1342177d841b528f4e9d13024ca53799d6d587959d6f8069a93e1c80d146"
+      },
+      "status": "PASS"
+    },
+    "candidate": {
+      "image": "minivectordb:tiered-write",
+      "image_id": "sha256:20f1cea16a1da048f00d07348d6792280d8d66711bba36f0dbb7e0d400240ed5",
+      "seconds": 38.274429649987724,
+      "resources": {
+        "memory_peak_bytes": 39559168,
+        "io_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 49491968,
+            "rios": 0,
+            "wios": 835,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "io_bytes": 49491968,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "persisted": {
+        "records": 40000,
+        "sha256": "51ea1342177d841b528f4e9d13024ca53799d6d587959d6f8069a93e1c80d146"
+      },
+      "status": "PASS"
+    }
+  },
+  "ratios": {
+    "time": 1.000120984614913,
+    "io": 0.7131558755828366,
+    "memory": 0.7229041916167664
+  },
+  "status": "PASS"
+}

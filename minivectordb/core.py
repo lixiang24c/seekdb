@@ -368,6 +368,34 @@ class Database:
                 if key==previous:raise DBError('duplicate primary key')
                 previous=key
 
+    SEGMENT_FANOUT=128
+    SEGMENT_LIMIT=128
+
+    def _compact_segments(self,table):
+        segments=list(table.get('segments',[]))
+        levels={name:table.get('segment_levels',{}).get(name,0) for name in segments}
+        while True:
+            counts={}
+            for name in segments:counts[levels[name]]=counts.get(levels[name],0)+1
+            ready=[level for level,count in counts.items() if count>=self.SEGMENT_FANOUT]
+            if not ready and len(segments)>=self.SEGMENT_LIMIT:
+                ready=[level for level,count in counts.items() if count>=2]
+            if not ready:break
+            level=min(ready)
+            chosen=[name for name in segments if levels[name]==level][:self.SEGMENT_FANOUT]
+            def rows():
+                for name in chosen:yield from self._rows_of({'file':name})
+            merged=self._write(rows());position=segments.index(chosen[0]);selected=set(chosen)
+            # Preserve the relative order of untouched immutable segments.
+            segments=[name for name in segments if name not in selected]
+            segments.insert(position,merged)
+            for name in chosen:del levels[name]
+            levels[merged]=level+1
+        if len(segments)>self.SEGMENT_LIMIT:
+            file=self._write(self._rows_of(dict(table,segments=segments)))
+            return self._detach_keys(dict(table,file=file,segments=[],segment_levels={}))
+        return dict(table,segments=segments,segment_levels=levels)
+
     def insert(self, name, rows):
         def action():
             from .sql import SQL
@@ -382,8 +410,10 @@ class Database:
                 key_segments=[]
             segments = table.get('segments', []) + [staged]
             result = dict(table, segments=segments, keys=keys, key_segments=key_segments)
-            if len(segments) >= 128 or 'index' in table:
-                result = self._detach_keys(dict(result, file=self._write(self._rows_of(result)), segments=[]))
+            if 'index' in table:
+                result = self._detach_keys(dict(result, file=self._write(self._rows_of(result)), segments=[],segment_levels={}))
+            else:
+                result=self._compact_segments(result)
             self.pending[name] = self._indexed(result)
             self._collect()
         return self._statement(action)
@@ -411,7 +441,7 @@ class Database:
                         row = self._validate(table, dict(row, **updates))
                     yield row
             replacement = self._write(changed())
-            result = dict(table, file=replacement, segments=[])
+            result = dict(table, file=replacement, segments=[],segment_levels={})
             if updates is None:
                 from .sql import SQL
                 pk = table['primary']
@@ -428,7 +458,7 @@ class Database:
         if 'index' not in table:
             return table
         if table.get('segments'):
-            table = dict(table, file=self._write(self._rows_of(table)), segments=[])
+            table = dict(table, file=self._write(self._rows_of(table)), segments=[],segment_levels={})
         table=self._detach_keys(table)
         index = dict(table['index'])
         column = index['column']
