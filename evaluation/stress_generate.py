@@ -8,6 +8,7 @@ import random
 from collections import Counter
 from pathlib import Path
 from .stress_model import Model,MIN_I64,MAX_I64
+from .public_cases import steps
 
 LABELS=['','a','a\'b','中','😀','甲','乙','é','é','[0,0]','x;y','--x','八'*8]
 DIMS=[1,2,4,31,32,128,131]
@@ -38,10 +39,7 @@ class Generator:
         manifest=json.loads((root/'manifest.json').read_text())
         for case in manifest['cases']:
             self.case('public-'+case['id'],profile='upstream',seed=self.seed)
-            statements=[line for line in (root/'cases'/(case['id']+'.test')).read_text().splitlines() if line.strip()]
-            expected=json.loads((root/'cases'/(case['id']+'.result')).read_text())
-            assert len(statements)==len(expected)==case['statements']
-            for text,wanted in zip(statements,expected):self.sql(text.rstrip(';'),wanted,'official')
+            for step in steps(root,case):self.emit(step)
             self.emit({'kind':'end'})
     def scenario(self,number,budget):
         seed=self.seed+number*1000003;rng=random.Random(seed);model=Model()
@@ -185,7 +183,9 @@ class Generator:
 
 def generate(path,public_root,operations=100000,scenarios=128,seed=20261109):
     if scenarios<1:raise ValueError('positive scenario count required')
-    if operations<32+scenarios*20:raise ValueError('operations must allow at least 20 SQL per generated scenario')
+    manifest=json.loads((Path(public_root)/'manifest.json').read_text())
+    official_count=sum(case['statements'] for case in manifest['cases'])
+    if operations<official_count+scenarios*20:raise ValueError('operations must allow at least 20 SQL per generated scenario')
     path=Path(path)
     if path.exists():raise FileExistsError(path)
     path.parent.mkdir(parents=True,exist_ok=True)

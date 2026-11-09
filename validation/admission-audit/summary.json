@@ -1,0 +1,22 @@
+{
+  "submitted_baseline": "7eb0dcc40a8b0b630fd063bbb24ad8d5a76b41b6",
+  "upstream": "9f6df2ba5acf871376e22b64a3d0724e4b575044",
+  "scope": "local upstream public-case contract and submission packaging audit; platform failure cause not available",
+  "image_id": "sha256:6e126aae9d7638fea0517f89c516b1cf0f456ae608ba2b823a56003f43bfa92c",
+  "source_sha256": {
+    "Dockerfile": "e17243407453a6dc3b8857126ffcf4609012627e8690b955996c74ace3e2fcef",
+    "minivectordb/server.py": "1d9e921499ec6691d8b14ce90fdf9145ae6e29a3d41347c987e84d6fdda30af3",
+    "minivectordb/core.py": "47f70463c2344d4ef898c666cd62d7e64e1ac446b8cc4bfa35b16bfbe6aaac50",
+    "evaluation/public_cases.py": "6fb7f9a46bf5bd0c3dab76e9699486dcff131884aa15d923fc8c6a3692689e37",
+    "mysqltest/manifest.json": "a05fc8ff810affb8c899df4a2c1e31c35450178635d62b3efd6ae6ac15056aae"
+  },
+  "public_cases": 20,
+  "sql": 95,
+  "normal_restarts": 7,
+  "mode_switches": 1,
+  "expected_errors": 4,
+  "regressions_passed": 89,
+  "agent_material_bytes": 39682,
+  "formal_admission": "NOT_VERIFIED",
+  "platform_failure_root_cause": "UNKNOWN"
+}

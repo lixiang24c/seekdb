@@ -1,7 +1,7 @@
 MiniVectorDB 本地评测接口 v1
 
 这是项目自带的本地接口，并非组织方正式 mysqltest 协议。
-官方分支 a3dba559c1e7ebdc48bc990ffb1a4c75d1c1075c 提供5组公开SQL用例；mysqltest/README.md明确这些文件未定义进程通信协议。
+官方分支9f6df2ba5acf871376e22b64a3d0724e4b575044提供20组公开样例、95条SQL；README明确题包不包含完整运行驱动。
 SQL 执行与本地传输分开，组织方提供协议后只需替换 server/driver 适配层。
 
 请求
@@ -13,13 +13,14 @@ stdin 接收以分号结束的 UTF-8 SQL。字符串、反引号标识符、注�
 响应
 非查询：一行 {"ok":true,"result":...}，INSERT/UPDATE/DELETE 的结果可包含 affected。
 查询：一行 {"columns":[...]}; 每条结果一行 {"row":[...]}; 最后一行 {"ok":true}。
-错误：一行 {"ok":false,"error":"错误描述"}，不将尚未约定的描述冒充正式错误码。
+错误：一行 {"ok":false,"error":"错误描述","error_code":"语义错误码"}。公开映射未冻结，当前检查非空错误码；正式映射由驱动约定。
 query 完成标识之前的所有结果行属于同一个 SQL 请求；驱动为每次等待读取设置超时。
 日志写入stderr。小结果一次刷新，大结果分块刷新，完整回复在处理下一条SQL前刷新。
 
 模式
 启动参数 --mode exact（默认）或 --mode ann。
-当前 ann 回退到相同精确路径，不进行近似剪枝。
+当前ann使用同一精确路径。独立行 --mode ann / --mode exact 可在不重启或结束事务的情况下切换，并返回mode状态。
+公开 --restart 由驱动关闭和重开进程处理，不作为SQL送入数据库。
 
 本地测试和正式评分的区别
 本地用例、独立真值和工作负载公开，不能推断隐藏用例已通过。

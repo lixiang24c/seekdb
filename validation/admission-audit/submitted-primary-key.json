@@ -1,0 +1,13 @@
+{
+  "scope": "upstream public SQL and directives over local process adapter",
+  "version": "minivectordb-public-v4",
+  "error_code_policy": "nonempty code; semantic mapping not frozen",
+  "cases": [
+    {
+      "id": "sql_primary_key",
+      "status": "FAIL",
+      "error": "sql_primary_key SQL 3: INSERT INTO docs VALUES (1, '重复')\nexpected nonempty error code; actual={'error': True, 'message': 'duplicate primary key', 'error_code': None}"
+    }
+  ],
+  "status": "FAIL"
+}

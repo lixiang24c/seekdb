@@ -1,4 +1,4 @@
 Source: https://github.com/oceanbase/seekdb
 Branch: 2026-competition-round2
-Commit: a3dba559c1e7ebdc48bc990ffb1a4c75d1c1075c
+Commit: 9f6df2ba5acf871376e22b64a3d0724e4b575044
 README.md, manifest.json and cases/ copied unchanged from this upstream commit.

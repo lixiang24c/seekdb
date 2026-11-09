@@ -1,97 +1,52 @@
 #!/usr/bin/env python3
-"""Run upstream public SQL assertions through the local stdin/stdout adapter."""
+"""Run the upstream public assertions and driver directives over the local adapter."""
 import argparse
 import json
-import math
-import queue
-import subprocess
 import sys
 import tempfile
-import threading
 from pathlib import Path
-
-
-def matches(actual,expected):
-    if type(expected) is float:
-        return type(actual) in (int,float) and math.isfinite(actual) and math.isclose(actual,expected,rel_tol=1e-5,abs_tol=1e-5)
-    if type(actual) is not type(expected):return False
-    if isinstance(expected,list):return len(actual)==len(expected) and all(matches(a,b) for a,b in zip(actual,expected))
-    return actual==expected
-
-
-def check_reply(actual,expected):
-    for key,value in expected.items():
-        if key in ('unordered','rows'):continue
-        if key not in actual or not matches(actual[key],value):
-            raise AssertionError(f'{key}: expected {value!r}, got {actual.get(key)!r}')
-    if 'rows' not in expected:return
-    remaining=list(actual.get('rows',[]))
-    if expected.get('unordered'):
-        for row in expected['rows']:
-            found=next((i for i,candidate in enumerate(remaining) if matches(candidate,row)),None)
-            if found is None:raise AssertionError(f'missing row: {row!r}')
-            remaining.pop(found)
-        if remaining:raise AssertionError(f'unexpected rows: {remaining!r}')
-    elif not matches(remaining,expected['rows']):
-        raise AssertionError(f'rows: expected {expected["rows"]!r}, got {remaining!r}')
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+from evaluation.public_cases import steps
+from evaluation.stress_run import Process,check
 
 
 def run_case(root,case,data_root):
-    statements=[line.strip() for line in (root/'cases'/(case['id']+'.test')).read_text(encoding='utf-8').splitlines() if line.strip()]
-    expected=json.loads((root/'cases'/(case['id']+'.result')).read_text(encoding='utf-8'))
-    if len(statements)!=case['statements'] or len(expected)!=len(statements):raise AssertionError('case/manifest statement count mismatch')
+    records=steps(root,case);counts={'statements':0,'restarts':0,'mode_switches':0,'errors_checked':0}
     with tempfile.TemporaryDirectory(prefix=case['id']+'-',dir=data_root) as directory:
-        process=subprocess.Popen([sys.executable,'-u','-m','minivectordb','--data',directory],
-                                 stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
-        messages=queue.Queue()
-        def reader():
-            try:
-                for line in process.stdout:messages.put(line)
-            finally:messages.put(None)
-        thread=threading.Thread(target=reader,daemon=True);thread.start()
-        def read():
-            line=messages.get(timeout=20)
-            if line is None:raise RuntimeError(f'database exited: {process.poll()}')
-            return line
+        process=Process([sys.executable,'-u','-m','minivectordb','--data','{data}'],directory,sys.stderr)
         try:
-            if read()!='LOCAL_SQL_READY\n':raise AssertionError('unexpected local readiness')
-            for number,(sql,wanted) in enumerate(zip(statements,expected),1):
-                process.stdin.write(sql.rstrip(';')+';\n');process.stdin.flush();actual={};rows=[]
-                while True:
-                    frame=json.loads(read())
-                    if 'columns' in frame:actual['columns']=frame['columns'];actual['rows']=rows
-                    if 'row' in frame:rows.append(frame['row'])
-                    if 'ok' in frame:
-                        if frame['ok'] is not True:raise AssertionError(f'{case["id"]} SQL {number}: {frame}')
-                        result=frame.get('result')
-                        if isinstance(result,dict) and 'affected' in result:actual['affected_rows']=result['affected']
-                        break
-                try:check_reply(actual,wanted)
-                except AssertionError as error:raise AssertionError(f'{case["id"]} SQL {number}: {sql}\n{error}') from error
-        finally:
-            process.stdin.close()
-            try:process.wait(timeout=10)
-            except subprocess.TimeoutExpired:process.kill();process.wait();raise
-            thread.join(timeout=2);process.stdout.close()
-        if process.returncode:raise AssertionError(f'database exit code: {process.returncode}')
-    return len(statements)
+            for record in records:
+                if record['kind']=='restart':
+                    process.restart();counts['restarts']+=1
+                elif record['kind']=='mode':
+                    process.set_mode(record['mode']);counts['mode_switches']+=1
+                else:
+                    counts['statements']+=1
+                    actual=process.execute(record['sql'])
+                    try:check(actual,record['expected'])
+                    except AssertionError as error:
+                        raise AssertionError(f"{case['id']} SQL {counts['statements']}: {record['sql']}\n{error}; actual={actual!r}") from error
+                    counts['errors_checked']+=bool(record['expected'].get('error'))
+        finally:process.stop()
+    return counts
 
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--cases',type=Path,default=Path('mysqltest'))
     parser.add_argument('--data-root',type=Path,default=Path('/data'))
-    parser.add_argument('--case')
-    parser.add_argument('--report',type=Path)
+    parser.add_argument('--case');parser.add_argument('--report',type=Path)
     args=parser.parse_args();args.data_root.mkdir(parents=True,exist_ok=True)
     manifest=json.loads((args.cases/'manifest.json').read_text(encoding='utf-8'))
     cases=[case for case in manifest['cases'] if not args.case or args.case==case['id']]
     if not cases:parser.error('unknown case')
-    report={'scope':'upstream public SQL cases through local process adapter','version':manifest['version'],'cases':[],'status':'PASS'}
+    report={'scope':'upstream public SQL and directives over local process adapter',
+            'version':manifest['version'],'error_code_policy':'nonempty code; semantic mapping not frozen',
+            'cases':[],'status':'PASS'}
     for case in cases:
         try:
-            count=run_case(args.cases,case,args.data_root)
-            report['cases'].append({'id':case['id'],'statements':count,'status':'PASS'})
+            counts=run_case(args.cases,case,args.data_root)
+            report['cases'].append({'id':case['id'],**counts,'status':'PASS'})
         except Exception as error:
             report['status']='FAIL';report['cases'].append({'id':case['id'],'status':'FAIL','error':str(error)})
     if args.report:

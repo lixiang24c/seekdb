@@ -4,12 +4,12 @@ MiniVectorDB 运行与复现
 在 2026-competition-round2 仓库根目录执行：
   bash scripts/reproduce.sh check
 自动从源码构建 linux/amd64 镜像，并在禁网、2 CPU、128 MiB、无 swap
-容器中执行最新官方5组公开用例。报告：artifacts/team/public-report.json。
+容器中执行最新官方20组公开用例（95条SQL）。报告：artifacts/team/public-report.json。
 本机无需安装 Python、NumPy、GCC 或 Python 头文件。
 
 回归检查：bash scripts/reproduce.sh unit（或 make container-test）。
 十万SQL生成与回放：bash scripts/reproduce.sh stress（或 make stress）。
-默认随机种子20261109、128个生成场景，另含5组官方样例；SQL与预期结果保存为
+默认随机种子20261109、128个生成场景，另含20组官方样例；SQL与预期结果保存为
 gzip JSONL，逐条独立模型核对。Docker入口使用256MiB容纳测试驱动和数据库，
 其耗时与内存不作性能成绩。失败场景可通过scripts/stress.py run --case重放。
 完整性能对照、十万SQL和故障复现结果见 PERFORMANCE_COMPARISON.txt。
@@ -68,12 +68,12 @@ VARCHAR中的数组形字符串仍作为字符串。向量拒绝维度错误、b
 映射缓存8MiB、过滤位置/位图缓存2MiB、标量缓存4MiB；大数据分块处理和外部排序。
 
 验证与正式接口状态
-官方公开用例来自 a3dba559c1e7ebdc48bc990ffb1a4c75d1c1075c，文件保持原样，
-位置 mysqltest/。check比较所有列名、受影响行数、记录、顺序及浮点距离。
-当前公开用例5/5通过，共32条SQL；容器回归67项通过。
-官方 mysqltest/README.md 明确公开用例未定义进程通信封装。
-正式通信协议、错误码、退出/模式约定及冻结资源配置仍待官方发布，
-当前LOCAL_SQL_READY和结果帧是本地适配层。公开用例验证与正式准入分开记录。
+官方公开样例同步自9f6df2ba5acf871376e22b64a3d0724e4b575044，42个文件逐字节一致。
+20例/95条SQL、7次正常重启、1次模式切换、4项预期错误及89项回归通过。
+错误响应增加非空error_code；公开错误码映射尚未冻结，按官方README当前要求核对。
+官方README明确公开包不包含完整运行驱动；LOCAL_SQL_READY和JSON结果帧仍属
+本地传输约定。正式就绪、结果、退出和模式协议须通过平台环境预检确认。
+本轮没有正式29例的通过记录，平台上一次失败的具体阶段尚未获得。
 
 开发与完整本地测评（可选）
 宿主机使用CPython 3.9～3.12时：

@@ -28,10 +28,11 @@ case "$action" in
     mkdir -p "$repo_root/artifacts/team"
     if [[ "$action" == check ]]; then
       docker run --rm --platform linux/amd64 --network none --cpus 2 --memory 128m --memory-swap 128m \
-        --mount "type=bind,src=$repo_root/scripts,dst=/checks,readonly" \
+        --mount "type=bind,src=$repo_root/scripts,dst=/checks/scripts,readonly" \
+        --mount "type=bind,src=$repo_root/evaluation,dst=/checks/evaluation,readonly" \
         --mount "type=bind,src=$repo_root/mysqltest,dst=/cases,readonly" \
         --mount "type=bind,src=$repo_root/artifacts/team,dst=/reports" \
-        --entrypoint python3 "$image" /checks/check_public.py --cases /cases --report /reports/public-report.json
+        --entrypoint python3 "$image" /checks/scripts/check_public.py --cases /cases --report /reports/public-report.json
     else
       docker run --rm --platform linux/amd64 --network none --cpus 2 --memory 128m --memory-swap 128m \
         --mount "type=bind,src=$repo_root/tests,dst=/app/tests,readonly" \
@@ -46,15 +47,15 @@ case "$action" in
     destination="$repo_root/artifacts/stress-$stamp"
     mkdir -p "$destination/data"
     common=(--rm --platform linux/amd64 --network none --cpus 2 --memory 256m --memory-swap 256m
-      --mount "type=bind,src=$repo_root/scripts,dst=/checks,readonly"
+      --mount "type=bind,src=$repo_root/scripts,dst=/checks/scripts,readonly"
       --mount "type=bind,src=$repo_root/evaluation,dst=/checks/evaluation,readonly"
       --mount "type=bind,src=$repo_root/mysqltest,dst=/cases,readonly"
       --mount "type=bind,src=$destination,dst=/reports"
       --mount "type=bind,src=$destination/data,dst=/data"
       --entrypoint python3)
-    docker run "${common[@]}" "$image" /checks/stress.py generate --public /cases \
+    docker run "${common[@]}" "$image" /checks/scripts/stress.py generate --public /cases \
       --suite /reports/suite.jsonl.gz --operations "$target" --scenarios "${MINIVECTOR_STRESS_SCENARIOS:-128}" --seed "${MINIVECTOR_STRESS_SEED:-20261109}"
-    docker run "${common[@]}" "$image" /checks/stress.py run --suite /reports/suite.jsonl.gz \
+    docker run "${common[@]}" "$image" /checks/scripts/stress.py run --suite /reports/suite.jsonl.gz \
       --output /reports/run --data-root /data
     echo "测试包及报告：$destination" ;;
   run)

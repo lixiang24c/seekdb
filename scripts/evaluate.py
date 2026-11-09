@@ -107,9 +107,9 @@ def main():
         phase('material-format',[sys.executable,'scripts/check_conversation.py'])
         if args.docker:
             phase('public-cases',['docker','run','--rm','--network','none','--cpus','2','--memory',args.memory,'--memory-swap',args.memory,
-                  '-v',str(ROOT/'scripts')+':/checks:ro','-v',str(ROOT/'mysqltest')+':/cases:ro',
+                  '-v',str(ROOT/'scripts')+':/checks/scripts:ro','-v',str(ROOT/'evaluation')+':/checks/evaluation:ro','-v',str(ROOT/'mysqltest')+':/cases:ro',
                   '-v',str(args.output)+':/reports','--entrypoint','python3',args.image,
-                  '/checks/check_public.py','--cases','/cases','--report','/reports/public-report.json'])
+                  '/checks/scripts/check_public.py','--cases','/cases','--report','/reports/public-report.json'])
         else:
             phase('public-cases',[sys.executable,'scripts/check_public.py','--cases',str(ROOT/'mysqltest'),
                   '--data-root',str(args.output/'public-data'),'--report',str(args.output/'public-report.json')])

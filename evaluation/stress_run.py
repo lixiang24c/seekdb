@@ -15,6 +15,7 @@ class Process:
     def __init__(self,command,data,stderr,protocol='json',cwd=None,timeout=15,env=None):
         self.command=[part.replace('{data}',str(data)) for part in command]
         self.stderr=stderr;self.protocol=protocol;self.cwd=cwd;self.timeout=timeout;self.env=env
+        self.mode='exact'
         self.start()
     def start(self):
         self.process=subprocess.Popen(self.command,stdin=subprocess.PIPE,stdout=subprocess.PIPE,
@@ -27,6 +28,7 @@ class Process:
             finally:messages.put(None)
         self.thread=threading.Thread(target=reader,daemon=True);self.thread.start()
         if self.protocol=='json' and self.read()!='LOCAL_SQL_READY\n':raise RuntimeError('unexpected readiness')
+        if self.mode!='exact':self.set_mode(self.mode)
     def read(self):
         line=self.messages.get(timeout=self.timeout)
         if line is None:raise RuntimeError('database exited: '+str(self.process.poll()))
@@ -51,7 +53,7 @@ class Process:
             if 'columns' in frame:actual['columns']=frame['columns']
             if 'row' in frame:actual['rows'].append(frame['row'])
             if 'ok' in frame:
-                if frame['ok'] is not True:return {'error':True,'message':frame.get('error')}
+                if frame['ok'] is not True:return {'error':True,'message':frame.get('error'),'error_code':frame.get('error_code')}
                 result=frame.get('result')
                 if isinstance(result,dict) and 'affected' in result:actual['affected_rows']=result['affected']
                 return actual
@@ -65,6 +67,11 @@ class Process:
         self.thread.join(timeout=2);process.stdout.close()
         if not kill and process.returncode:raise RuntimeError('abnormal normal exit: '+str(process.returncode))
     def restart(self,kill=False):self.stop(kill);self.start()
+    def set_mode(self,mode):
+        if mode not in ('exact','ann'):raise ValueError('unknown mode')
+        result=self.execute('--mode '+mode)
+        if result.get('error'):raise AssertionError('mode switch rejected: '+str(result))
+        self.mode=mode
 
 
 def equal(actual,expected):
@@ -92,7 +99,9 @@ def decode_text(actual,expected):
 
 def check(actual,expected):
     if bool(actual.get('error'))!=bool(expected.get('error')):raise AssertionError('success/error mismatch')
-    if expected.get('error'):return
+    if expected.get('error'):
+        if isinstance(expected['error'],str) and not actual.get('error_code'):raise AssertionError('expected nonempty error code')
+        return
     if 'affected_rows' in expected and actual.get('affected_rows')!=expected['affected_rows']:raise AssertionError('affected_rows mismatch')
     if 'columns' in expected and not actual.get('text_rows') and actual.get('columns')!=expected['columns']:raise AssertionError('columns missing/mismatch')
     if 'rows' not in expected:return
@@ -152,6 +161,8 @@ def run(suite,output,command,protocol='json',cwd=None,case_filter=None,data_root
                         print(f'{protocol}: {report["sql_completed"]} SQL complete, {report["sql_failed"]} failed',flush=True);save()
                 elif kind=='restart':
                     process.restart(record.get('kill',False));current['restarts']+=1;report['restarts']+=1
+                elif kind=='mode':
+                    process.set_mode(record['mode']);current['mode_switches']=current.get('mode_switches',0)+1
                 elif kind=='end':
                     process.stop();process=None;log.close();log=None
                     current['status']='PASS' if not current['failed'] else 'FAIL'
