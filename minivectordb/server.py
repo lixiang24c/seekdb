@@ -1,40 +1,28 @@
 """Local SQL transport: semicolon terminated SQL, tabular JSON rows on stdout.
 Official transport can adapt SQL.execute without changing storage semantics.
 """
-import argparse,json,sys,signal
+import argparse,json,sys,signal,re
 from .core import Database
 from .sql import SQL
 
+# Scan complete quoted regions and delimiters in C rather than visiting every
+# character in Python. Incomplete quotes/comments remain buffered across lines.
+BOUNDARY=re.compile(r"'(?:''|[^'])*'|`[^`]*`|--[^\n]*(?:\n|$)|/\*.*?\*/|['`]|/\*|;",re.S)
+
 def statements(source):
-    buffer=[];quoted=False;backtick=False;comment=False;block=False
+    buffer=''
     for line in source:
-        i=0
-        while i<len(line):
-            c=line[i];pair=line[i:i+2]
-            if block:
-                buffer.append(c)
-                if pair=='*/':buffer.append('/');i+=1;block=False
-            elif comment:
-                buffer.append(c)
-                if c=='\n':comment=False
-            elif not quoted and not backtick and pair=='/*':
-                block=True;buffer.extend('/*');i+=1
-            elif not quoted and not backtick and pair=='--':
-                comment=True;buffer.extend('--');i+=1
-            elif c=="'" and not backtick:
-                buffer.append(c)
-                if quoted and line[i+1:i+2]=="'":buffer.append("'");i+=1
-                else:quoted=not quoted
-            elif c=='`' and not quoted:backtick=not backtick;buffer.append(c)
-            elif c==';' and not quoted and not backtick:
-                yield ''.join(buffer);buffer=[]
-            else:buffer.append(c)
-            i+=1
-    remainder=''.join(buffer)
-    if quoted or backtick or block:
-        # Pass incomplete text to the parser so it produces a visible error.
-        yield remainder
-    elif remainder.strip():yield remainder
+        buffer+=line
+        start=0
+        for match in BOUNDARY.finditer(buffer):
+            token=match.group()
+            if token in ("'",'`','/*'):
+                break
+            if token==';':
+                yield buffer[start:match.start()]
+                start=match.end()
+        buffer=buffer[start:]
+    if buffer.strip():yield buffer
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--data',default='/data');parser.add_argument('--mode',choices=('exact','ann'),default='exact');args=parser.parse_args()

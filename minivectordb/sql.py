@@ -1,9 +1,10 @@
 """SQL subset executor. Result transport is kept separate from execution."""
 import re
 import math
+import json
 from .core import DBError
 
-TOKEN=re.compile(r"\s+|--[^\n]*|/\*.*?\*/|'(?:''|[^'])*'|`[^`]+`|(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[A-Za-z_][A-Za-z_0-9]*|<=|>=|!=|<>|[(),;*=<>\[\]+-]",re.S)
+TOKEN=re.compile(r"\s+|--[^\n]*|/\*.*?\*/|'(?:''|[^'])*'|`[^`]+`|\[(?:/\*.*?\*/|--[^\n]*(?:\n|$)|[^\[\]])*\]|(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[A-Za-z_][A-Za-z_0-9]*|<=|>=|!=|<>|[(),;*=<>\[\]+-]",re.S)
 
 class SQL:
     def __init__(self, db): self.db=db
@@ -37,6 +38,16 @@ class SQL:
     def literal(self):
         token=self.pop()
         if token.startswith("'"):return token[1:-1].replace("''", "'")
+        if token.startswith('[') and token!='[':
+            cleaned=re.sub(r'--[^\n]*|/\*.*?\*/',' ',token,flags=re.S)
+            try:
+                return json.loads(cleaned)
+            except (ValueError,OverflowError):
+                parts=cleaned[1:-1].split(',')
+                numeric=r'[+-]?\s*(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?'
+                if not all(re.fullmatch(numeric,part.strip()) for part in parts):
+                    raise DBError('invalid vector literal')
+                return [float(re.sub(r'\s+','',part)) for part in parts]
         if token=='[':
             result=[]
             if not self.take(']'):
@@ -75,6 +86,7 @@ class SQL:
                 x=row[col]
                 if not {'=':lambda:x==val,'<':lambda:x<val,'<=':lambda:x<=val,'>':lambda:x>val,'>=':lambda:x>=val}[op]():return False
             return True
+        matches.terms=terms
         return matches
     def parse(self):
         if self.take('BEGIN'):

@@ -20,5 +20,9 @@
     "Local stdin/stdout adapter; official driver and error-code protocol absent from the upstream round2 commit.",
     "No official baseline, rank, performance score or Agent prompt score is claimed.",
     "Raw generated transcripts and data are not committed; rerunning evaluation produces them."
-  ]
+  ],
+  "latest_validation": "validation/optimization/candidate/report.json",
+  "latest_comparison": "validation/optimization/comparison.json",
+  "optimized_local_delivery_validated": true,
+  "current_regression_test_count": 31
 }

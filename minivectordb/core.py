@@ -4,6 +4,7 @@ This correctness-first implementation rewrites affected tables; it is not yet th
 performance implementation. All database and temporary files live under data_dir.
 """
 import heapq
+from collections import OrderedDict
 import json
 import math
 import os
@@ -28,6 +29,8 @@ class Database:
         self.committed = json.loads(self.manifest.read_text()) if self.manifest.exists() else {}
         self.pending = None
         self.failed = False
+        self._filter_cache=OrderedDict()
+        self._filter_cache_bytes=0
         self._collect()
         import shutil
         for abandoned in self.root.glob('sort-*'):
@@ -39,16 +42,21 @@ class Database:
         live.update(v['index']['file'] for v in self.committed.values() if 'index' in v)
         live.update(v['index']['metadata'] for v in self.committed.values() if 'index' in v)
         live.update(v['keys'] for v in self.committed.values())
+        live.update(f for v in self.committed.values() for f in v.get('key_segments',[]))
         live.update(f for v in self.committed.values() for f in v.get('segments', []))
         if self.pending is not None:
             live.update(v['file'] for v in self.pending.values())
             live.update(v['index']['file'] for v in self.pending.values() if 'index' in v)
             live.update(v['index']['metadata'] for v in self.pending.values() if 'index' in v)
             live.update(v['keys'] for v in self.pending.values())
+            live.update(f for v in self.pending.values() for f in v.get('key_segments',[]))
             live.update(f for v in self.pending.values() for f in v.get('segments', []))
-        for p in list(self.root.glob('table-*.jsonl')) + list(self.root.glob('index-*.bin')) + list(self.root.glob('keys-*.bin')) + list(self.root.glob('index-*.meta')):
+        for p in list(self.root.glob('table-*.jsonl')) + list(self.root.glob('table-*.rows')) + list(self.root.glob('index-*.bin')) + list(self.root.glob('keys-*.bin')) + list(self.root.glob('index-*.meta')):
             if p.name not in live:
                 p.unlink()
+        for key in list(self._filter_cache):
+            if key[0] not in live:
+                self._filter_cache_bytes-=self._filter_cache.pop(key)[1]
         for p in self.root.glob('manifest-*.tmp'):
             p.unlink()
 
@@ -113,13 +121,43 @@ class Database:
             raise
 
     def _newfile(self):
-        return self.root / ('table-' + uuid.uuid4().hex + '.jsonl')
+        return self.root / ('table-' + uuid.uuid4().hex + '.rows')
+
+    ROW_MAGIC = b'MVDBROW1\n'
+    ROW_HEADER = struct.Struct('<III')
+
+    @classmethod
+    def _read_record(cls, source):
+        header = source.read(cls.ROW_HEADER.size)
+        if not header:
+            return None
+        if len(header) != cls.ROW_HEADER.size:
+            raise DBError('incomplete row header')
+        scalar_size, name_size, dimension = cls.ROW_HEADER.unpack(header)
+        scalar = source.read(scalar_size)
+        name = source.read(name_size)
+        vector = source.read(dimension * 4)
+        if len(scalar)!=scalar_size or len(name)!=name_size or len(vector)!=dimension*4:
+            raise DBError('incomplete row data')
+        row = json.loads(scalar)
+        if dimension:
+            row[name.decode('utf-8')] = list(struct.unpack('<'+str(dimension)+'f',vector))
+        return row
 
     def _write(self, rows):
         path = self._newfile()
-        with path.open('x', encoding='utf-8') as out:
+        with path.open('xb') as out:
+            out.write(self.ROW_MAGIC)
             for row in rows:
-                out.write(encode(row) + '\n')
+                column = next((key for key,value in row.items() if isinstance(value,list)),None)
+                name = column.encode('utf-8') if column is not None else b''
+                vector = row[column] if column is not None else []
+                scalar = encode({key:value for key,value in row.items() if key!=column}).encode('utf-8')
+                out.write(self.ROW_HEADER.pack(len(scalar),len(name),len(vector)))
+                out.write(scalar)
+                out.write(name)
+                if vector:
+                    out.write(struct.pack('<'+str(len(vector))+'f',*vector))
             out.flush()
             os.fsync(out.fileno())
         return path.name
@@ -156,9 +194,19 @@ class Database:
 
     def _rows_of(self, table):
         for filename in [table['file']] + table.get('segments', []):
-            with (self.root / filename).open(encoding='utf-8') as src:
-                for line in src:
-                    yield json.loads(line)
+            if filename.endswith('.jsonl'):
+                # Existing snapshots remain readable after the format upgrade.
+                with (self.root / filename).open(encoding='utf-8') as src:
+                    for line in src:
+                        yield json.loads(line)
+            else:
+                with (self.root / filename).open('rb') as src:
+                    if src.read(len(self.ROW_MAGIC))!=self.ROW_MAGIC:
+                        raise DBError('unknown row format')
+                    while True:
+                        row=self._read_record(src)
+                        if row is None:break
+                        yield row
 
     def _validate(self, table, row):
         if set(row) != set(table['columns']):
@@ -185,17 +233,15 @@ class Database:
     def vector(value, dimension):
         if not isinstance(value, (list, tuple)) or len(value) != dimension:
             raise DBError('vector dimension mismatch')
-        result = []
-        for number in value:
-            try:
-                if type(number) not in (float, int):
-                    raise ValueError()
-                f = struct.unpack('<f', struct.pack('<f', number))[0]
-                if not math.isfinite(f):
-                    raise ValueError()
-            except (OverflowError, ValueError, struct.error) as e:
-                raise DBError('invalid float32') from e
-            result.append(f)
+        try:
+            if any(type(number) not in (float,int) for number in value):
+                raise ValueError()
+            fmt='<'+str(dimension)+'f'
+            result=list(struct.unpack(fmt,struct.pack(fmt,*value)))
+            if not all(math.isfinite(number) for number in result):
+                raise ValueError()
+        except (OverflowError,ValueError,struct.error) as error:
+            raise DBError('invalid float32') from error
         return result
 
     def _keyfile(self, keys):
@@ -211,15 +257,34 @@ class Database:
             os.fsync(out.fileno())
         return path.name
 
-    def _keys(self, table):
-        with (self.root / table['keys']).open('rb') as src:
+    def _filekeys(self, filename):
+        with (self.root / filename).open('rb') as src:
             while True:
                 raw = src.read(8)
-                if not raw:
-                    return
-                if len(raw) != 8:
-                    raise DBError('incomplete primary index')
-                yield struct.unpack('<q', raw)[0]
+                if not raw:return
+                if len(raw)!=8:raise DBError('incomplete primary index')
+                yield struct.unpack('<q',raw)[0]
+
+    def _keys(self, table):
+        yield from heapq.merge(*(self._filekeys(f) for f in [table['keys']]+table.get('key_segments',[])))
+
+    def _key_range(self, filename):
+        with (self.root/filename).open('rb') as src:
+            first=src.read(8)
+            if not first:return None
+            src.seek(-8,os.SEEK_END)
+            return struct.unpack('<q',first)[0],struct.unpack('<q',src.read(8))[0]
+
+    def _check_keys(self, table, incoming):
+        bounds=self._key_range(incoming)
+        if bounds is None:return
+        for filename in [table['keys']]+table.get('key_segments',[]):
+            old=self._key_range(filename)
+            if old is None or old[1]<bounds[0] or bounds[1]<old[0]:continue
+            previous=None
+            for key in heapq.merge(self._filekeys(filename),self._filekeys(incoming)):
+                if key==previous:raise DBError('duplicate primary key')
+                previous=key
 
     def insert(self, name, rows):
         def action():
@@ -232,9 +297,15 @@ class Database:
             ordered = SQL(self).external_sort(
                 ({pk: row[pk]} for row in self._rows_of(incoming)), lambda row: row[pk])
             newkeys = (row[pk] for row in ordered)
-            keys = self._keyfile(heapq.merge(self._keys(table), newkeys))
+            incoming_keys=self._keyfile(newkeys)
+            self._check_keys(table,incoming_keys)
+            key_segments=table.get('key_segments',[])+[incoming_keys]
+            keys=table['keys']
+            if len(key_segments)>=32:
+                keys=self._keyfile(heapq.merge(self._keys(table),self._filekeys(incoming_keys)))
+                key_segments=[]
             segments = table.get('segments', []) + [staged]
-            result = dict(table, segments=segments, keys=keys)
+            result = dict(table, segments=segments, keys=keys, key_segments=key_segments)
             if len(segments) >= 128 or 'index' in table:
                 result = dict(result, file=self._write(self._rows_of(result)), segments=[])
             self.pending[name] = self._indexed(result)
@@ -270,6 +341,7 @@ class Database:
                 pk = table['primary']
                 ordered = SQL(self).external_sort(({pk:r[pk]} for r in self._rows_of(result)), lambda r:r[pk])
                 result['keys'] = self._keyfile(r[pk] for r in ordered)
+                result['key_segments']=[]
             self.pending[name] = self._indexed(result)
             self._collect()
             return count
@@ -287,12 +359,14 @@ class Database:
         record = struct.Struct('<qQ' + 'f' * dimension)
         metadata = path.with_suffix('.meta')
         with (self.root / table['file']).open('rb') as src, path.open('xb') as out, metadata.open('x', encoding='utf-8') as meta:
+            binary=table['file'].endswith('.rows')
+            if binary and src.read(len(self.ROW_MAGIC))!=self.ROW_MAGIC:
+                raise DBError('unknown row format')
             while True:
                 offset = src.tell()
-                line = src.readline()
-                if not line:
+                row=self._read_record(src) if binary else json.loads(line) if (line:=src.readline()) else None
+                if row is None:
                     break
-                row = json.loads(line)
                 out.write(record.pack(row[table['primary']], offset, *row[column]))
                 meta.write(encode({key:value for key,value in row.items() if key!=column})+'\n')
             out.flush()
@@ -330,6 +404,65 @@ class Database:
                     yield squared, row[table['primary']], row
         return [(row,math.sqrt(d)) for d,_,row in heapq.nsmallest(k,candidates(),key=lambda x:(x[0],x[1]))]
 
+    FILTER_CACHE_LIMIT=4*1024*1024
+
+    def _filter_chunk(self, meta, count, terms, np, predicate):
+        import sys
+        columns=tuple(sorted({term[0] for term in terms}))
+        key=(Path(meta.name).name,meta.tell(),columns)
+        cached=self._filter_cache.pop(key,None)
+        if cached is not None:
+            arrays,size,end=cached
+            self._filter_cache[key]=cached
+            meta.seek(end)
+        else:
+            values_by_column={column:[] for column in columns}
+            fallback_mask=np.ones(count,dtype=bool)
+            temporary_bytes=512
+            cacheable=True
+            for position in range(count):
+                line=meta.readline()
+                if not line:raise DBError('incomplete index metadata')
+                row=json.loads(line)
+                fallback_mask[position]=predicate(row)
+                if cacheable:
+                    temporary_bytes+=sum(sys.getsizeof(row[column])+8 for column in columns)
+                    if temporary_bytes>self.FILTER_CACHE_LIMIT:
+                        cacheable=False
+                        values_by_column.clear()
+                    else:
+                        for column in columns:values_by_column[column].append(row[column])
+            if not cacheable:
+                return fallback_mask
+            arrays={}
+            size=512
+            for column,values in values_by_column.items():
+                numeric=not values or type(values[0]) is int
+                array=np.asarray(values,dtype=np.int64 if numeric else object)
+                arrays[column]=array
+                size+=array.nbytes+sys.getsizeof(array)
+                if not numeric:size+=sum(sys.getsizeof(value) for value in values)
+            end=meta.tell()
+            if size<=self.FILTER_CACHE_LIMIT:
+                while self._filter_cache and self._filter_cache_bytes+size>self.FILTER_CACHE_LIMIT:
+                    self._filter_cache_bytes-=self._filter_cache.popitem(last=False)[1][1]
+                self._filter_cache[key]=(arrays,size,end)
+                self._filter_cache_bytes+=size
+        mask=np.ones(count,dtype=bool)
+        for column,op,value in terms:
+            array=arrays[column]
+            if array.dtype==np.dtype('int64') and (value<-(1<<63) or value>=(1<<63)):
+                outside_high=value>=(1<<63)
+                passes=(op in ('<','<=') if outside_high else op in ('>','>='))
+                if not passes:mask[:]=False
+                continue
+            if op=='=':mask &= array==value
+            elif op=='<':mask &= array<value
+            elif op=='<=':mask &= array<=value
+            elif op=='>':mask &= array>value
+            elif op=='>=':mask &= array>=value
+        return mask
+
     def _index_topk(self, table, index, query, k, predicate):
         if k == 0:
             return []
@@ -339,6 +472,9 @@ class Database:
             np = None
         dimension = len(query)
         record = struct.Struct('<qQ' + 'f'*dimension)
+        terms=getattr(predicate,'terms',None)
+        query_array=np.asarray(query,dtype=np.float64) if np is not None else None
+        dtype=np.dtype([('pk','<i8'),('offset','<u8'),('vector','<f4',(dimension,))]) if np is not None else None
         def candidates():
             with (self.root/index['file']).open('rb') as src, (self.root/index['metadata']).open(encoding='utf-8') as meta:
                 while True:
@@ -348,20 +484,25 @@ class Database:
                     if len(raw)%record.size:
                         raise DBError('incomplete vector index')
                     count = len(raw)//record.size
-                    mask = []
-                    for position in range(count):
-                        line = meta.readline()
-                        if not line:
-                            raise DBError('incomplete index metadata')
-                        if predicate(json.loads(line)):
-                            mask.append(position)
+                    if np is not None and terms is not None:
+                        mask=self._filter_chunk(meta,count,terms,np,predicate) if terms else slice(None)
+                    else:
+                        mask=[]
+                        for position in range(count):
+                            line=meta.readline()
+                            if not line:raise DBError('incomplete index metadata')
+                            if predicate(json.loads(line)):mask.append(position)
                     if np is not None:
-                        dtype=np.dtype([('pk','<i8'),('offset','<u8'),('vector','<f4',(dimension,))])
                         entries=np.frombuffer(raw,dtype=dtype)
                         selected=entries[mask]
-                        delta=selected['vector'].astype(np.float64)-np.asarray(query,dtype=np.float64)
+                        delta=selected['vector'].astype(np.float64)-query_array
                         squared=np.einsum('ij,ij->i',delta,delta)
-                        order=np.lexsort((selected['pk'],squared))[:k]
+                        if len(squared)>k:
+                            boundary=np.partition(squared,k-1)[k-1]
+                            eligible=np.flatnonzero(squared<=boundary)
+                        else:
+                            eligible=np.arange(len(squared))
+                        order=eligible[np.lexsort((selected['pk'][eligible],squared[eligible]))[:k]]
                         for i in order:
                             yield float(squared[i]),int(selected['pk'][i]),int(selected['offset'][i])
                     else:
@@ -373,5 +514,6 @@ class Database:
         with (self.root/table['file']).open('rb') as data:
             for distance,pk,offset in winners:
                 data.seek(offset)
-                result.append((json.loads(data.readline()),math.sqrt(distance)))
+                row=self._read_record(data) if table['file'].endswith('.rows') else json.loads(data.readline())
+                result.append((row,math.sqrt(distance)))
         return result

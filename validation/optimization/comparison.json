@@ -1,0 +1,70 @@
+{
+  "scope": "same-host local container comparison, not official rank or score",
+  "baseline_version": "f0c9edecf4de2a7e069ee0ddc55295960a8ce43a",
+  "configuration": "2 CPUs, 128MiB, offline, 10000 rows, 128 dimensions, 1000 queries, 3 rounds, seeds 720/721/722",
+  "tracks": {
+    "write": {
+      "seconds": {
+        "before": 13.802894808992278,
+        "after": 3.3917550379992463,
+        "before_over_after": 4.069543541426987,
+        "reduction_fraction": 0.7542721954390615
+      },
+      "io_bytes": {
+        "before": 30535680,
+        "after": 6848512,
+        "before_over_after": 4.458732057416268,
+        "reduction_fraction": 0.7757209926224011
+      },
+      "memory_peak_bytes": {
+        "before": 39989248,
+        "after": 16814080,
+        "before_over_after": 2.3783191230207064,
+        "reduction_fraction": 0.5795349790023558
+      }
+    },
+    "query": {
+      "seconds": {
+        "before": 34.047508504998405,
+        "after": 6.151729295001132,
+        "before_over_after": 5.534623984944405,
+        "reduction_fraction": 0.8193192522707493
+      },
+      "io_bytes": {
+        "before": 61587456,
+        "after": 17776640,
+        "before_over_after": 3.464516129032258,
+        "reduction_fraction": 0.7113594040968343
+      },
+      "memory_peak_bytes": {
+        "before": 71249920,
+        "after": 33927168,
+        "before_over_after": 2.100084510443076,
+        "reduction_fraction": 0.523828686404139
+      }
+    }
+  },
+  "local_E": {
+    "scope": "local comparison only; not an official rank or score",
+    "baseline_medians": {
+      "write": {
+        "seconds": 13.802894808992278,
+        "io_bytes": 30535680,
+        "memory_peak_bytes": 39989248
+      },
+      "query": {
+        "seconds": 34.047508504998405,
+        "io_bytes": 61587456,
+        "memory_peak_bytes": 71249920
+      }
+    },
+    "round_E": [
+      0.7915265336066438,
+      0.7924004450430858,
+      0.7871058131123462
+    ],
+    "median_E": 0.7915265336066438,
+    "ranking_E": "0.791527"
+  },
+  "correctness": "31 regressions, 5 harness self-tests, 11 SQL cases, exact ID/order checks, both Recall@10 groups=1.0 each round; 64MiB resource test passed"
+}

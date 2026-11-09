@@ -1,0 +1,43 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 413B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 107B done
+#3 DONE 0.0s
+
+#4 [internal] load build context
+#4 transferring context: 42.85kB done
+#4 DONE 0.0s
+
+#5 [1/5] FROM docker.io/library/python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0
+#5 resolve docker.io/library/python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0 0.0s done
+#5 DONE 0.0s
+
+#6 [2/5] WORKDIR /app
+#6 CACHED
+
+#7 [3/5] COPY requirements.txt /app/requirements.txt
+#7 CACHED
+
+#8 [4/5] RUN pip install --no-cache-dir -r /app/requirements.txt
+#8 CACHED
+
+#9 [5/5] COPY minivectordb /app/minivectordb
+#9 DONE 0.0s
+
+#10 exporting to image
+#10 exporting layers 0.1s done
+#10 exporting manifest sha256:1049598bee9f46b7dfc07679b64b59c5736d5a6d30847f75252f4ab64dc1be02
+#10 exporting manifest sha256:1049598bee9f46b7dfc07679b64b59c5736d5a6d30847f75252f4ab64dc1be02 0.0s done
+#10 exporting config sha256:c766b76f54243c722925ed40679c8d4dc68f587ec1219f841351d55d302f79e4 0.0s done
+#10 exporting attestation manifest sha256:0eae858033483cc2ce5dfb70e27153a286c5733548ffc9059a663e822bef9d72 0.0s done
+#10 exporting manifest list sha256:90d97f6bcc6c4858bb976d5d021e97789a77660fcec4015786062d6c1495b20a 0.0s done
+#10 naming to docker.io/library/minivectordb:optimized-release done
+#10 unpacking to docker.io/library/minivectordb:optimized-release 0.0s done
+#10 DONE 0.2s

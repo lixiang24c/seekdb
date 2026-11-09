@@ -16,6 +16,11 @@
       "id": "u-local-evaluation",
       "role": "student",
       "content": "那你继续做到能本地测评，交付为止"
+    },
+    {
+      "id": "u-optimize",
+      "role": "student",
+      "content": "优化"
     }
   ],
   "experiments": [
@@ -67,6 +72,13 @@
       "command": "python3 scripts/evaluate.py --docker --skip-build",
       "output": "PASS; 24 container regression tests; 5 harness self-tests; 9 black-box SQL cases; basic.test/basic.result and recovery.test/recovery.result passed.",
       "scope": "Local fixture format and adapter."
+    },
+    {
+      "id": "optimization-final",
+      "source": "tool",
+      "command": "python3 scripts/evaluate.py --docker --image minivectordb:optimized-release --benchmark --resource --rows 10000 --queries 1000 --rounds 3",
+      "output": "{\"write\": {\"seconds\": {\"before\": 13.802894808992278, \"after\": 3.3917550379992463, \"before_over_after\": 4.069543541426987, \"reduction_fraction\": 0.7542721954390615}, \"io_bytes\": {\"before\": 30535680, \"after\": 6848512, \"before_over_after\": 4.458732057416268, \"reduction_fraction\": 0.7757209926224011}, \"memory_peak_bytes\": {\"before\": 39989248, \"after\": 16814080, \"before_over_after\": 2.3783191230207064, \"reduction_fraction\": 0.5795349790023558}}, \"query\": {\"seconds\": {\"before\": 34.047508504998405, \"after\": 6.151729295001132, \"before_over_after\": 5.534623984944405, \"reduction_fraction\": 0.8193192522707493}, \"io_bytes\": {\"before\": 61587456, \"after\": 17776640, \"before_over_after\": 3.464516129032258, \"reduction_fraction\": 0.7113594040968343}, \"memory_peak_bytes\": {\"before\": 71249920, \"after\": 33927168, \"before_over_after\": 2.100084510443076, \"reduction_fraction\": 0.523828686404139}}}",
+      "scope": "31 regressions, 5 harness self-tests, 11 SQL cases, exact ID/order checks, both Recall@10 groups=1.0 each round; 64MiB resource test passed; comparison against measured prior version; no official performance or learning score claimed."
     }
   ],
   "limitations": [

@@ -1,0 +1,353 @@
+{
+  "schema": "minivectordb-local-evaluation-v1",
+  "scope": "LOCAL ONLY; no official driver or official score",
+  "status": "PASS",
+  "git_commit": "f0c9edecf4de2a7e069ee0ddc55295960a8ce43a",
+  "working_tree_dirty": false,
+  "implementation_sha256": "fc4bcd0b8f942e7865724d75fdd85e13d14fc9cacd8f70594f37894b682412f0",
+  "harness_sha256": "aca2eb940d3d20e6609df2b41dedc3a9a7d8f8d5f602eb273207777f4572967b",
+  "configuration": {
+    "docker": true,
+    "image": "minivectordb:baseline-f0c9edec",
+    "skip_build": true,
+    "benchmark": true,
+    "resource": false,
+    "rows": 10000,
+    "queries": 1000,
+    "rounds": 3,
+    "memory": "128m",
+    "timeout": 30,
+    "keep_data": false,
+    "output": "/tmp/minivector-optimization-baseline"
+  },
+  "phases": {
+    "regression": {
+      "status": "PASS",
+      "seconds": 2.4027643890003674,
+      "log": "regression.log"
+    },
+    "harness-self-test": {
+      "status": "PASS",
+      "seconds": 1.130713933991501,
+      "log": "harness-self-test.log"
+    },
+    "material-format": {
+      "status": "PASS",
+      "seconds": 0.030489245982607827,
+      "log": "material-format.log"
+    }
+  },
+  "cases": [
+    {
+      "name": "sql_types",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 8826880,
+        "io_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 16384,
+            "rios": 0,
+            "wios": 4,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "io_bytes": 16384,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.47168483800487593
+    },
+    {
+      "name": "unicode_order",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 8863744,
+        "io_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 16384,
+            "rios": 0,
+            "wios": 4,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "io_bytes": 16384,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.4585566860041581
+    },
+    {
+      "name": "statement_atomicity",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 8790016,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.7931587389903143
+    },
+    {
+      "name": "filtering",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 8871936,
+        "io_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 16384,
+            "rios": 0,
+            "wios": 4,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "io_bytes": 16384,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.4658826489758212
+    },
+    {
+      "name": "index_transactions",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 16957440,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 1.3740647610102315
+    },
+    {
+      "name": "crash",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 8876032,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 1.1027212550106924
+    },
+    {
+      "name": "eof_rollback",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 8253440,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.8288459999894258
+    },
+    {
+      "name": "rejected_sql",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 8241152,
+        "io_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 4096,
+            "rios": 0,
+            "wios": 1,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "io_bytes": 4096,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.4517416559974663
+    },
+    {
+      "name": "random_model",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 8896512,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 1.2106743839976843
+    },
+    {
+      "name": "fixture-basic",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 8798208,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.7948821540048812
+    },
+    {
+      "name": "fixture-recovery",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 8646656,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 1.2330424170068
+    }
+  ],
+  "image_id": "sha256:51f4babe577f71954de8613d049192fe4885059ae3456f3082870bc405aff12c",
+  "elapsed_seconds": 238.02142502000788,
+  "benchmark": [
+    {
+      "round": 1,
+      "seed": 720,
+      "write": {
+        "seconds": 13.549370819004253,
+        "resources": {
+          "memory_peak_bytes": 40390656,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 30535680,
+              "rios": 0,
+              "wios": 301,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 30535680,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "persistence_correct": true
+      },
+      "query": {
+        "seconds": 34.08551902099862,
+        "index_prepare_seconds": 2.6054254600021522,
+        "resources": {
+          "memory_peak_bytes": 70180864,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 61591552,
+              "rios": 0,
+              "wios": 331,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 61591552,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "recall_at_10": {
+          "unfiltered": 1.0,
+          "filtered": 1.0
+        },
+        "exact_ids_and_order_correct": true
+      },
+      "status": "PASS"
+    },
+    {
+      "round": 2,
+      "seed": 721,
+      "write": {
+        "seconds": 13.89759235701058,
+        "resources": {
+          "memory_peak_bytes": 39538688,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 30535680,
+              "rios": 0,
+              "wios": 301,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 30535680,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "persistence_correct": true
+      },
+      "query": {
+        "seconds": 33.801948170992546,
+        "index_prepare_seconds": 2.4683397139888257,
+        "resources": {
+          "memory_peak_bytes": 71249920,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 61587456,
+              "rios": 0,
+              "wios": 332,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 61587456,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "recall_at_10": {
+          "unfiltered": 1.0,
+          "filtered": 1.0
+        },
+        "exact_ids_and_order_correct": true
+      },
+      "status": "PASS"
+    },
+    {
+      "round": 3,
+      "seed": 722,
+      "write": {
+        "seconds": 13.802894808992278,
+        "resources": {
+          "memory_peak_bytes": 39989248,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 30535680,
+              "rios": 0,
+              "wios": 301,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 30535680,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "persistence_correct": true
+      },
+      "query": {
+        "seconds": 34.047508504998405,
+        "index_prepare_seconds": 2.5099753919930663,
+        "resources": {
+          "memory_peak_bytes": 71340032,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 61587456,
+              "rios": 0,
+              "wios": 331,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 61587456,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "recall_at_10": {
+          "unfiltered": 1.0,
+          "filtered": 1.0
+        },
+        "exact_ids_and_order_correct": true
+      },
+      "status": "PASS"
+    }
+  ],
+  "benchmark_summary": {
+    "write_seconds_median": 13.802894808992278,
+    "query_seconds_median": 34.047508504998405,
+    "official_E": null,
+    "reason": "No frozen official baseline or dedicated data-device configuration is available."
+  }
+}
