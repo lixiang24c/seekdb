@@ -1,0 +1,59 @@
+{
+  "material_scope": "当前开发记录节选；不是完整历史。未记录学生对技术结果的解释，不将 Agent 实现或解释归为学生贡献。",
+  "synthetic": false,
+  "conversations": [
+    {
+      "id": "u1",
+      "role": "student",
+      "content": "你先开始吧"
+    },
+    {
+      "id": "u2",
+      "role": "student",
+      "content": "你做的什么玩意，给我全做完，做一点就停下什么意思"
+    }
+  ],
+  "experiments": [
+    {
+      "id": "local-tests",
+      "source": "tool",
+      "command": "python3 -m unittest discover -s tests -q",
+      "output": "Ran 18 tests in 0.447s\nOK",
+      "scope": "本地回归，包含继承测试重复执行，不等于18个独立证据实例或正式准入用例。"
+    },
+    {
+      "id": "local-benchmark",
+      "source": "tool",
+      "command": "python3 scripts/benchmark_local.py --rows 1000 --queries 100",
+      "output": "{\"rows\":1000,\"queries\":100,\"write_seconds\":0.9291943349817302,\"query_seconds\":3.666699106019223,\"process_peak_rss_kib\":12672}",
+      "scope": "本地诊断，不包含正式 cgroup I/O 和峰值内存统计。"
+    },
+    {
+      "id": "local-final-regression",
+      "source": "tool",
+      "command": "python3 -m unittest discover -s tests -q",
+      "output": "Ran 24 tests in 1.829s\nOK",
+      "scope": "本地回归，包括继承重复执行。覆盖随机模型、索引真值对照、恢复中断和I/O错误。不是官方准入成绩。"
+    },
+    {
+      "id": "docker-validation",
+      "source": "tool",
+      "command": "python3 tests/integration_container.py; docker run --rm --network none --cpus 2 --memory 128m --memory-swap 128m -v tests:/app/tests:ro --entrypoint python3 minivectordb:round2-local -m unittest discover -s tests -q",
+      "output": "PASS: Docker build/runtime, offline network, 2 CPUs/128MiB, SQL/index, confirmed commit, SIGKILL recovery, EOF rollback/restart\nRan 24 tests in 2.025s\nOK",
+      "scope": "本地接口集成验证，未执行官方驱动。"
+    },
+    {
+      "id": "cgroup-over-memory",
+      "source": "tool",
+      "command": "docker run --rm --network none --cpus 2 --memory 64m --memory-swap 64m -v data:/data -v tests:/app/tests:ro --entrypoint python3 minivectordb:round2-local -m tests.resource_container",
+      "output": "{\"result\":\"PASS\",\"rows\":80000,\"data_bytes\":84630589,\"cgroup_memory_peak\":67108864,\"cgroup_memory_limit\":67108864}",
+      "scope": "通过SQL分批写入，容器cgroup含页缓存；数据量超过内存限制，重新打开并扫描通过。非官方资源配置。"
+    }
+  ],
+  "limitations": [
+    "材料不完整，只包含当前节选。",
+    "没有学生解释测试结果、修正或迁移的记录，不能据此认定学生已理解。",
+    "已完成本地Docker构建与测试，仍未执行官方协议驱动。"
+  ],
+  "redaction": "未包含账号凭据或访问密钥。"
+}

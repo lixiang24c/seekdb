@@ -1,0 +1,49 @@
+MiniVectorDB 本地实现
+
+运行环境：Python 3.12；本地测试使用系统 python3；NumPy 2.0.1 用于分块向量数学运算，不承担存储或索引实现。无 NumPy 时核心可回退到纯 Python。
+启动 SQL 入口：python3 -m minivectordb.server --data /data
+示例：python3 -m minivectordb.server --data /tmp/minivectordb-example < examples/basic.sql
+测试：python3 -m unittest discover -s tests -v
+性能诊断：python3 scripts/benchmark_local.py --rows 1000 --queries 100
+容器构建：docker build -t minivectordb .
+容器运行：docker run --rm -i -v minivectordb-data:/data minivectordb
+
+当前 SQL 输入按分号分隔，支持多行、字符串内分号、双单引号转义。
+本地输出为 LOCAL_SQL_READY，其后每个操作输出 JSON；查询依次输出列名、逐行数据和完成标识。
+这是本地适配格式，尚未对接正式 mysqltest 驱动，不应当宣称通过正式准入。
+SQL 错误返回 ok=false，不静默接受未实现的语句。完整执行前检查尾部语法。
+关闭输入流正常退出并回滚未提交事务。SIGKILL 后再次启动复用数据目录。
+
+持久化与恢复
+每张表的数据以 UTF-8 JSON 行写入不可变分段，向量存储值先舍入为 float32。主键以有序定长二进制索引保存，批量查重通过外部排序与归并完成。
+普通插入追加分段，达到128段时合并；更新删除流式产生新一代文件；提交先 fsync 文件，再原子替换 manifest，最后 fsync 数据目录。
+未提交数据文件不在已提交 manifest 中；恢复清理不可见版本，无需全库读入内存。
+显式事务通过独立 catalog 视图实现读己之写；每条修改语句成功后才替换该表引用。
+提交落盘失败后进程停止接收工作，避免不确定提交被错误回收。
+恢复可重复执行；单进程独占目录，不支持多客户端或多个进程同时打开。
+
+索引与查询
+自实现平面向量索引，二进制保存主键、记录偏移和 float32 向量。
+exact 查询分块扫描索引，NumPy 计算距离，通过标量元数据先过滤，最终候选回表读取。索引更新采用整表重建。
+先过滤再 TopK，平局主键升序，返回欧氏距离；距离以双精度累加存储值差平方。
+普通排序使用有界分块及最多32路归并。TopK 使用 O(K) 堆。
+
+已知差距
+正式协议、错误码、模式参数尚未接入，不能直接正式提测。
+支持 --mode exact 或 ann；ann 当前回退到精确扫描，Recall 为精确结果，不宣称实现近似剪枝。
+普通插入不重写表，但索引维护、更新删除与分段合并仍会重写表，存在写放大。
+SQL 解析当前将单条语句及其 INSERT 值放入内存，大事务可写磁盘，但超大单语句仍需限额验证。
+主键检查使用磁盘有序索引及有界外部排序；当前每次提交需重写主键索引。
+尚未完成官方大于内存数据集、资源硬限制及全部语法兼容性验证。
+Docker 镜像已实际构建，基础镜像锁定摘要；24项回归在禁网、2 CPU、128MiB 容器内通过，容器强杀与退出回滚验证通过。
+公开回归成功不能替代隐藏用例准入。
+
+学习材料
+agent/conversation.json 仅记录已发生交互及实际测试结果，不编造学生理解或学习贡献。
+文件只作为当前开发记录，不承诺任何学习评价得分。
+
+官方分支状态
+已从 oceanbase/seekdb 的 2026-competition-round2 拉取 c842a368c3394748d0499386c18f6b465242e141。该提交包含空 Dockerfile 和 conversation.json，占位之外未提供评测驱动、协议或正式资源配置。当前本地接口不冒充官方协议，正式准入尚未验证。
+
+容器资源验证
+禁网、2 CPU、64MiB cgroup（含页缓存）、禁用swap：通过SQL批量写入80000条记录，数据84630589字节，峰值67108864字节，重启扫描80000行成功。复现：将 tests 挂载至 /app/tests 并以 python3 -m tests.resource_container 启动全新 /data 容器。资源配置仅为本地自测，不代替官方冻结配置。

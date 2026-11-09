@@ -1,0 +1,10 @@
+CREATE TABLE documents (id BIGINT PRIMARY KEY, category VARCHAR(12), embedding VECTOR(2));
+INSERT INTO documents VALUES (1,'文档',[0,0]),(2,'文档',[1,0]),(3,'图像',[0,1]);
+CREATE VECTOR INDEX embedding_index ON documents(embedding);
+SELECT id,L2_DISTANCE(embedding,[0,0]) AS distance FROM documents WHERE category='文档' ORDER BY distance LIMIT 10;
+BEGIN;
+UPDATE documents SET embedding=[0,0] WHERE id=3;
+DELETE FROM documents WHERE id=1;
+SELECT * FROM documents ORDER BY id;
+ROLLBACK;
+SELECT * FROM documents ORDER BY id;
