@@ -11,6 +11,11 @@
       "id": "u2",
       "role": "student",
       "content": "你做的什么玩意，给我全做完，做一点就停下什么意思"
+    },
+    {
+      "id": "u-local-evaluation",
+      "role": "student",
+      "content": "那你继续做到能本地测评，交付为止"
     }
   ],
   "experiments": [
@@ -48,6 +53,20 @@
       "command": "docker run --rm --network none --cpus 2 --memory 64m --memory-swap 64m -v data:/data -v tests:/app/tests:ro --entrypoint python3 minivectordb:round2-local -m tests.resource_container",
       "output": "{\"result\":\"PASS\",\"rows\":80000,\"data_bytes\":84630589,\"cgroup_memory_peak\":67108864,\"cgroup_memory_limit\":67108864}",
       "scope": "通过SQL分批写入，容器cgroup含页缓存；数据量超过内存限制，重新打开并扫描通过。非官方资源配置。"
+    },
+    {
+      "id": "complete-local-evaluation",
+      "source": "tool",
+      "command": "python3 scripts/evaluate.py --docker --benchmark --resource --rows 10000 --queries 1000 --rounds 3",
+      "output": "PASS; 24 container regression tests; 9 black-box SQL cases; 3 benchmark rounds. Every round: filtered Recall@10=1.0, unfiltered Recall@10=1.0, exact IDs/order correct. Median write=13.813245884986827s, query=34.5960221659916s. Resource case: 80000 rows, 84630589 data bytes, memory.peak=67108864, memory.max=67108864.",
+      "scope": "Local evaluation only. No official admission, baseline, rank or learning score is claimed."
+    },
+    {
+      "id": "editable-fixtures",
+      "source": "tool",
+      "command": "python3 scripts/evaluate.py --docker --skip-build",
+      "output": "PASS; 24 container regression tests; 5 harness self-tests; 9 black-box SQL cases; basic.test/basic.result and recovery.test/recovery.result passed.",
+      "scope": "Local fixture format and adapter."
     }
   ],
   "limitations": [

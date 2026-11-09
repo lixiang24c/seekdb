@@ -1,0 +1,12 @@
+-- Local SQL case. Each statement ends at the end of a line with a semicolon.
+CREATE TABLE items(id BIGINT PRIMARY KEY, label VARCHAR(4), v VECTOR(2));
+INSERT INTO items VALUES (3,'中文',[1,0]),(1,'中文',[0,0]),(2,'其他',[-1,0]);
+SELECT id,label FROM items ORDER BY id;
+--error
+INSERT INTO items VALUES (4,'ok',[0,0]),(1,'ok',[0,0]);
+SELECT id FROM items WHERE label='中文' ORDER BY L2_DISTANCE(v,[0,0]) LIMIT 10;
+BEGIN;
+DELETE FROM items WHERE id=1;
+ROLLBACK;
+--restart
+SELECT id FROM items ORDER BY id;

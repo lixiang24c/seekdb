@@ -1,0 +1,24 @@
+{
+  "status": "LOCAL_DELIVERY_VALIDATED",
+  "official_admission_verified": false,
+  "implementation_commit": "6ece4c00377dc7a3dee17b52bfe56b10792cf5e5",
+  "validation_reports": [
+    "validation/full/report.json",
+    "validation/fixtures/report.json"
+  ],
+  "validated": [
+    "Docker build with pinned base image and NumPy",
+    "24 regression tests in offline 128MiB container",
+    "9 independent process-level SQL cases",
+    "2 editable SQL fixture cases",
+    "5 evaluator self-tests",
+    "3 rounds of 10000 rows, 128 dimensions, 1000 queries",
+    "both filtered and unfiltered Recall@10=1.0 in all rounds",
+    "80000 rows, 84630589 persisted bytes in 64MiB cgroup including page cache"
+  ],
+  "limits": [
+    "Local stdin/stdout adapter; official driver and error-code protocol absent from the upstream round2 commit.",
+    "No official baseline, rank, performance score or Agent prompt score is claimed.",
+    "Raw generated transcripts and data are not committed; rerunning evaluation produces them."
+  ]
+}

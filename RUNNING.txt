@@ -47,3 +47,33 @@ agent/conversation.json 仅记录已发生交互及实际测试结果，不编�
 
 容器资源验证
 禁网、2 CPU、64MiB cgroup（含页缓存）、禁用swap：通过SQL批量写入80000条记录，数据84630589字节，峰值67108864字节，重启扫描80000行成功。复现：将 tests 挂载至 /app/tests 并以 python3 -m tests.resource_container 启动全新 /data 容器。资源配置仅为本地自测，不代替官方冻结配置。
+
+完整本地评测交付入口
+依赖：Linux x86_64、Python 3、Docker daemon；驱动端执行 python3 -m pip install -r requirements.txt。
+一条命令：make evaluate
+该命令构建镜像，在禁网容器中运行回归和独立SQL用例，执行三轮10000行/128维/1000次查询负载，并执行64MiB超内存数据测试。
+快速检查：make evaluate-quick（1000行、20次查询、1轮，不执行超内存压力测试）。
+原生快速功能检查：python3 scripts/evaluate.py。
+所有输出进入 artifacts/<时间戳>/report.json、各阶段 .log 和每个进程的 transcript.jsonl/stderr.log。
+返回码0代表所选择的本地检查全部通过，非0代表失败；失败数据保留用于重现。成功数据默认清理，可加 --keep-data 保留。
+通过 --output 指定一个尚不存在的输出目录；评测不会覆盖旧报告。
+当前完整命令使用128MiB作为功能/性能内存限制，资源测试单独使用64MiB，不冒充官方冻结配置。
+详细接口见 evaluation/PROTOCOL.txt。
+
+可编辑SQL用例
+在 tests/sql/ 新建同名 .test 和 .result，评测入口会自动发现。
+.test 支持多行SQL，语句最后一行以分号结束；支持 --error、--restart、--kill、--sorted_result 独立指令行。
+.result 是每条SQL对应的 {"error":布尔值,"rows":结果数组} 的JSON数组；重启指令不产生结果项。
+--sorted_result 将下一条查询的行按JSON文本排序，预期文件需保持相同顺序，用于未指定ORDER BY的集合比较。
+这是一套明确的本地用例格式，不声称与组织方 mysqltest 完全兼容。
+
+性能比较
+python3 scripts/score_local.py --baseline 基线report.json --candidate 候选report.json
+两份报告必须均通过、均包含三轮完整指标，且负载与内存配置相同。
+工具按题面 epsilon、f(R)、写入/查询权重和六位四舍五入计算本地E；缺失指标或召回率不足会拒绝计算。
+基线须是实际测量报告；组织方基线尚未提供，当前不生成赛事名次和分数。
+
+随仓库交付的验证快照
+validation/summary.json 汇总本地验证范围；validation/full/report.json 保存三轮完整负载结果；validation/fixtures/report.json 保存额外文件用例和工具自测结果。
+随附阶段日志，原始SQL逐次交互记录在运行输出目录中生成，不将大体积转录和数据文件写入仓库。
+这些快照是开发验证记录；执行 make evaluate 可从源码重新构建并自行复测。
