@@ -6,7 +6,7 @@ from minivectordb.core import Database,DBError
 class CombinedSegmentTests(unittest.TestCase):
     def test_persist_combined_file_before_manifest_publication(self):
         with tempfile.TemporaryDirectory() as root:
-            db=Database(root);db.create('t',{'id':['BIGINT'],'v':['VECTOR',1]},'id')
+            db=Database(root,wal=False);db.create('t',{'id':['BIGINT'],'v':['VECTOR',1]},'id')
             events=[];sync=os.fsync;replace=os.replace
             def fsync(fd):events.append(('sync',os.readlink('/proc/self/fd/'+str(fd))));return sync(fd)
             def publish(a,b):events.append(('publish',str(b)));return replace(a,b)

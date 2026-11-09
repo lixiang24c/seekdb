@@ -1,0 +1,153 @@
+{
+  "scope": "common-subset diagnostic: bare vector literals, SELECT id TopK; not official admission or score",
+  "configuration": {
+    "rows": 10000,
+    "dimensions": 128,
+    "queries": 1000,
+    "rounds": 1,
+    "cpus": 2,
+    "memory_bytes": 134217728,
+    "swap": false,
+    "warmup_queries": 10,
+    "complete_resource_window": true,
+    "distribution": "uniform",
+    "fixed_seed": 720,
+    "verification_memory": "256m",
+    "reuse_writer_data": true
+  },
+  "resource_scope": "write: startup and load; query: cold reopen, index preparation, warmup and queries; whole cgroup, all I/O devices",
+  "images": {
+    "ours": {
+      "tag": "minivectordb:raw-storage",
+      "id": "sha256:f34b7c31cfef2c006a5ebd791df472af2918013544a1103e94f56610b9488bc1"
+    },
+    "teammate": {
+      "tag": "minivectordb:storage-migration",
+      "id": "sha256:2536a5403d800df389a34860f3bf0b6190b4813b795a77aaef42869eae6b830a"
+    }
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "seed": 720,
+      "version": "ours",
+      "write": {
+        "seconds": 4.450751225056592,
+        "resources": {
+          "memory_peak_bytes": 16924672,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 6750208,
+              "rios": 0,
+              "wios": 206,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 6750208,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device; includes shell supervisor, database shutdown and filesystem writeback",
+          "within_memory_cap": true
+        },
+        "restart_content_correct": true
+      },
+      "query": {
+        "seconds": 3.07580178900389,
+        "resources": {
+          "memory_peak_bytes": 37150720,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 5828608,
+              "wbytes": 12300288,
+              "rios": 305,
+              "wios": 17,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 18128896,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device; includes shell supervisor, database shutdown and filesystem writeback",
+          "within_memory_cap": true
+        },
+        "exact_order_queries": 1000,
+        "total_queries": 1000,
+        "recall": {
+          "False": 1.0,
+          "True": 1.0
+        }
+      },
+      "status": "PASS"
+    },
+    {
+      "round": 1,
+      "seed": 720,
+      "version": "teammate",
+      "write": {
+        "seconds": 2.984239700017497,
+        "resources": {
+          "memory_peak_bytes": 23969792,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 12562432,
+              "rios": 0,
+              "wios": 307,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 12562432,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device; includes shell supervisor, database shutdown and filesystem writeback",
+          "within_memory_cap": true
+        },
+        "restart_content_correct": true
+      },
+      "query": {
+        "seconds": 3.6621461259783246,
+        "resources": {
+          "memory_peak_bytes": 29966336,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 5828608,
+              "wbytes": 5971968,
+              "rios": 305,
+              "wios": 11,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 11800576,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device; includes shell supervisor, database shutdown and filesystem writeback",
+          "within_memory_cap": true
+        },
+        "exact_order_queries": 1000,
+        "total_queries": 1000,
+        "recall": {
+          "False": 1.0,
+          "True": 1.0
+        }
+      },
+      "status": "PASS"
+    }
+  ],
+  "status": "PASS",
+  "datasets": {
+    "720": "8590ff38fbe59812cd90acb8c80a83f1f6c51a3f0c39fbe6491223684759a9c8"
+  },
+  "summary": {
+    "ours": {
+      "write_seconds_median": 4.450751225056592,
+      "query_seconds_median": 3.07580178900389,
+      "query_peak_bytes_median": 37150720,
+      "write_io_bytes_median": 6750208,
+      "query_io_bytes_median": 18128896
+    },
+    "teammate": {
+      "write_seconds_median": 2.984239700017497,
+      "query_seconds_median": 3.6621461259783246,
+      "query_peak_bytes_median": 29966336,
+      "write_io_bytes_median": 12562432,
+      "query_io_bytes_median": 11800576
+    }
+  }
+}

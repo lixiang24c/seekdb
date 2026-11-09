@@ -3,16 +3,16 @@ from unittest.mock import patch
 from minivectordb.core import Database,DBError
 
 class IOErrorTests(unittest.TestCase):
- def test_data_sync_failure_rolls_back_only_statement(self):
+ def test_staging_failure_rolls_back_only_statement(self):
   with tempfile.TemporaryDirectory() as root:
    db=Database(root);db.create('t',{'id':['BIGINT']},'id');db.begin();db.insert('t',[{'id':1}])
-   with patch('minivectordb.core.os.fsync',side_effect=OSError('injected sync failure')):
+   with patch.object(db,'_sync_file',side_effect=OSError('injected staging failure')):
     with self.assertRaises(OSError):db.insert('t',[{'id':2}])
    self.assertEqual(list(db.rows('t')),[{'id':1}]);db.commit();db.close()
    db=Database(root);self.assertEqual(list(db.rows('t')),[{'id':1}]);db.close()
  def test_commit_publication_uncertainty_requires_reopen(self):
   with tempfile.TemporaryDirectory() as root:
-   db=Database(root);db.create('t',{'id':['BIGINT']},'id');db.begin();db.insert('t',[{'id':1}])
+   db=Database(root,wal=False);db.create('t',{'id':['BIGINT']},'id');db.begin();db.insert('t',[{'id':1}])
    import os
    original=os.replace
    def replace_then_fail(source,target):

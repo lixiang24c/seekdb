@@ -61,6 +61,7 @@ def main():
             db.create_vector_index('ix','t','v')
             item.update(index_prepare_seconds=time.perf_counter()-wall,index_prepare_cpu_seconds=time.process_time()-cpu)
             index=db.catalog['t']['index']
+            item['index_layout']=index.get('layout','flat')
             item['index_sha256']=file_hash(Path(directory)/index['file'])
             item['metadata_sha256']=file_hash(Path(directory)/index['metadata'])
             db.close();db=cls(directory);actual=hashlib.sha256();count=0
@@ -79,11 +80,36 @@ def main():
                     assert [row['id'] for row,distance in actual_rows]==ordered.tolist(),'TopK differs'
                     assert np.allclose([distance for row,distance in actual_rows],np.sqrt(squared[ordered]),rtol=1e-12,atol=1e-12)
                     checks+=1
-            item['exact_topk_checks']=checks;item['status']='PASS';db.close()
+            item['exact_topk_checks']=checks
+            before={path.name for path in Path(directory).iterdir()}
+            wal=Path(directory)/'database.wal'
+            item['mutation_wal_bytes_before']=wal.stat().st_size if wal.exists() else 0
+            wall=time.perf_counter()
+            from minivectordb.sql import SQL
+            sql=SQL(db)
+            db.modify('t',sql.predicate('t',[('id','=',args.rows-1)]),{'v':[0.]*128})
+            db.modify('t',sql.predicate('t',[('id','=',0)]))
+            item['mutation_seconds']=time.perf_counter()-wall
+            item['mutation_retained_new_data_bytes']=sum(path.stat().st_size for path in Path(directory).iterdir() if path.name not in before and path.name!='database.wal')
+            item['mutation_wal_bytes_after']=wal.stat().st_size if wal.exists() else 0
+            assert db.topk('t','v',[0.]*128,1)[0][0]['id']==args.rows-1
+            db.close();db=cls(directory);expected_after=hashlib.sha256();actual_after=hashlib.sha256()
+            for key in range(1,args.rows):
+                expected_after.update(struct.pack('<qq',key,key%10))
+                expected_after.update(vectors[key].tobytes() if key!=args.rows-1 else bytes(128*4))
+            # Versioned scans are unordered; compare in primary-key order with a bounded external sort.
+            from minivectordb.sql import SQL
+            ordered=SQL(db).external_sort(db.rows('t'),lambda row:row['id'])
+            for row in ordered:
+                actual_after.update(struct.pack('<qq',row['id'],row['tag']));actual_after.update(struct.pack('<128f',*row['v']))
+            assert actual_after.hexdigest()==expected_after.hexdigest(),'mutated contents differ'
+            item['mutated_content_sha256']=actual_after.hexdigest()
+            item['status']='PASS';db.close()
             report['results'][label]=item
     old=report['results']['baseline'];new=report['results']['candidate']
-    for key in ('merged_sha256','index_sha256','metadata_sha256'):assert old[key]==new[key],key+' differs'
-    report['ratios']={key:new[key]/old[key] for key in ('merge_seconds','merge_cpu_seconds','index_prepare_seconds','index_prepare_cpu_seconds','scalar_scan_seconds','scalar_scan_cpu_seconds','primary_scan_seconds','primary_scan_cpu_seconds')}
+    for key in ('merged_sha256','metadata_sha256'):assert old[key]==new[key],key+' differs'
+    if old['index_layout']==new['index_layout']:assert old['index_sha256']==new['index_sha256'],'index differs'
+    report['ratios']={key:new[key]/old[key] for key in ('merge_seconds','merge_cpu_seconds','index_prepare_seconds','index_prepare_cpu_seconds','scalar_scan_seconds','scalar_scan_cpu_seconds','primary_scan_seconds','primary_scan_cpu_seconds','mutation_seconds','mutation_retained_new_data_bytes')}
     report['status']='PASS'
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(report,indent=2)+'\n')

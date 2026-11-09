@@ -1,0 +1,21 @@
+{
+  "baseline_commit": "451ec10fe0f849014ad6ea71fd5f7640bf97191c",
+  "source_sha256": {
+    "minivectordb/core.py": "47f70463c2344d4ef898c666cd62d7e64e1ac446b8cc4bfa35b16bfbe6aaac50",
+    "minivectordb/wal.py": "f118fb5b2b6906a59a907ddcb4ad0907ca1ba082e3ba031b0583f5b40d1989cd",
+    "minivectordb/native.py": "67372b1fca35fff5acff1032b4051d98d35b7c2c1f5c4e51c36e0676f3e5da9c",
+    "minivectordb/sql.py": "009fa86916f209f0225b4d1066db029be868dbd29a219a82302d9b1fd90f72b3",
+    "native/topk.c": "176be1ad96dda1621661fc73e9a4a65ea5a81ff35b7f2c1837389285ee7389c5"
+  },
+  "image_id": "sha256:6e2a0998b89361269f0dc3ed877a01e386153d09a6cf3e0de5d2e33cdbac8869",
+  "performance_labels": {
+    "ours": "baseline 451ec10f",
+    "teammate": "candidate WAL + owned vector storage"
+  },
+  "test_results": {
+    "regressions_passed": 81,
+    "native_additional_passed": 7,
+    "total_distinct_passed": 88,
+    "unresolved_skips": 0
+  }
+}

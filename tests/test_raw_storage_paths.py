@@ -42,13 +42,17 @@ class RawStorageTests(unittest.TestCase):
             with patch.object(db,'_read_record',side_effect=AssertionError('vector decoding')):
                 db.create_vector_index('ix','t','向量')
             table=db.catalog['t'];index=table['index']
-            stride=16+16;raw=(Path(root)/index['file']).read_bytes()
+            indirect=index.get('layout')=='indirect'
+            stride=24 if indirect else 32;raw=(Path(root)/index['file']).read_bytes()
             with (Path(root)/table['file']).open('rb') as source:
                 for position,row in enumerate(expected):
                     key,offset=struct.unpack_from('<qQ',raw,position*stride)
+                    vector_offset=struct.unpack_from('<Q',raw,position*stride+16)[0] if indirect else position*stride+16
                     self.assertEqual(key,row['id']);source.seek(offset)
                     self.assertEqual(db._read_record(source),row)
-                    self.assertEqual(raw[position*stride+16:(position+1)*stride],struct.pack('<4f',*row['向量']))
+                    if indirect:source.seek(vector_offset);vector=source.read(16)
+                    else:vector=raw[vector_offset:vector_offset+16]
+                    self.assertEqual(vector,struct.pack('<4f',*row['向量']))
             self.assertEqual([json.loads(s) for s in (Path(root)/index['metadata']).read_text().splitlines()],
                              [{k:v for k,v in r.items() if k!='向量'} for r in expected])
             db.close();db=Database(root)
@@ -57,15 +61,11 @@ class RawStorageTests(unittest.TestCase):
             self.assertEqual([r['id'] for r,_ in db.topk('t','向量',[0,0,3e38,0],3)],[2,7,-9])
             db.close()
 
-    def test_failed_merge_sync_preserves_transaction_and_retry(self):
+    def test_failed_index_staging_preserves_transaction_and_retry(self):
         with tempfile.TemporaryDirectory() as root:
             db=Database(root);db.create('t',{'id':['BIGINT'],'v':['VECTOR',1]},'id');db.insert('t',[{'id':1,'v':[1.]}]);db.begin()
             db.insert('t',[{'id':2,'v':[2.]}])
-            original=db._merge_rows
-            def fail(table):
-                with patch('minivectordb.core.os.fsync',side_effect=OSError('merge sync fault')):
-                    return original(table)
-            with patch.object(db,'_merge_rows',side_effect=fail):
+            with patch.object(db,'_sync_file',side_effect=OSError('index staging fault')):
                 with self.assertRaises(OSError):db.create_vector_index('ix','t','v')
             self.assertEqual(list(db.rows('t')),[{'id':1,'v':[1.]},{'id':2,'v':[2.]}]);db.create_vector_index('ix','t','v');db.commit();db.close()
             db=Database(root);self.assertEqual(list(db.rows('t')),[{'id':1,'v':[1.]},{'id':2,'v':[2.]}]);db.close()

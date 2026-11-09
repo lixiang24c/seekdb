@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import statistics
 import subprocess
 import sys
@@ -23,12 +24,14 @@ from evaluation.stress_run import Process,decode_text
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--ours',default='minivectordb:team')
 parser.add_argument('--teammate',default='minivectordb:teammate-e5af6d16')
+parser.add_argument('--teammate-protocol',choices=('json','text'),default='text')
 parser.add_argument('--rows',type=int,default=10000);parser.add_argument('--queries',type=int,default=1000)
 parser.add_argument('--rounds',type=int,default=3);parser.add_argument('--output',type=Path,required=True)
 parser.add_argument('--distribution',choices=('normal','uniform'),default='uniform')
 parser.add_argument('--seed',type=int)
 parser.add_argument('--verify-memory',default='128m',help='Post-measurement persistence verifier container memory')
 parser.add_argument('--resume',action='store_true')
+parser.add_argument('--complete-resource-window',action='store_true',help='Retain container cgroup through database shutdown and filesystem writeback')
 parser.add_argument('--reuse-write-data',action='store_true',help='Query cold-reopens persisted writer data instead of loading it again')
 args=parser.parse_args();args.output=args.output.resolve();args.output.mkdir(parents=True,exist_ok=args.resume)
 report={'scope':'common-subset diagnostic: bare vector literals, SELECT id TopK; not official admission or score',
@@ -36,6 +39,7 @@ report={'scope':'common-subset diagnostic: bare vector literals, SELECT id TopK;
                          'cpus':2,'memory_bytes':128*1024*1024,'swap':False,'warmup_queries':10},
         'resource_scope':'whole database container cgroup; all I/O devices; host oracle excluded',
         'images':{},'rounds':[],'status':'RUNNING'}
+report['configuration']['complete_resource_window']=args.complete_resource_window
 report['configuration'].update(distribution=args.distribution,fixed_seed=args.seed,verification_memory=args.verify_memory)
 if args.resume:
     previous=json.loads((args.output/'report.json').read_text())
@@ -59,18 +63,41 @@ def session(version,number,track,data_override=None):
     memory=args.verify_memory if track=='write-verify' else '128m'
     command=['docker','run','--rm','-i','--name',name,'--platform','linux/amd64','--network','none',
              '--cpus','2','--memory',memory,'--memory-swap',memory,'-v',str(data)+':/data',report['images'][version]['tag']]
+    if args.complete_resource_window:
+        fifo=data/'.bench-release';fifo.unlink(missing_ok=True);os.mkfifo(fifo)
+        marker=data/'.bench-exit';marker.unlink(missing_ok=True)
+        config=json.loads(subprocess.check_output(['docker','inspect',report['images'][version]['tag']],text=True))[0]['Config']
+        entry=(config.get('Entrypoint') or [])+(config.get('Cmd') or [])
+        script=shlex.join(entry)+'; status=$?; printf \"%s\" \"$status\" > /data/.bench-exit; read -r release < /data/.bench-release; exit \"$status\"'
+        command=command[:-1]+['--entrypoint','/bin/sh',report['images'][version]['tag'],'-c',script]
     with (directory/'stderr.log').open('w') as log:
-        process=Process(command,data,log,'json' if version=='ours' else 'text',timeout=60)
+        process=Process(command,data,log,'json' if version=='ours' else args.teammate_protocol,timeout=60)
+        if args.complete_resource_window:process.retained=(data,marker,fifo);process.released=False
         try:
             yield process,name
         finally:
-            try:process.stop()
+            try:
+                if args.complete_resource_window and not process.released:metrics(name,process)
+                process.stop()
             finally:subprocess.run(['docker','rm','-f',name],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 
-def metrics(name):
+def metrics(name,client=None):
+    retained=getattr(client,'retained',None)
+    if retained:
+        client.process.stdin.close()
+        data,marker,fifo=retained;deadline=time.monotonic()+30
+        while not marker.exists():
+            if time.monotonic()>deadline:raise TimeoutError('database shutdown did not complete')
+            time.sleep(.01)
+        if marker.read_text()!='0':raise RuntimeError('database shutdown failed')
+        subprocess.run(['sync','-f',str(data)],check=True)
     pid=int(subprocess.check_output(['docker','inspect','-f','{{.State.Pid}}',name],text=True))
     result=Client.metrics(SimpleNamespace(pid=pid))
     result['within_memory_cap']=result['memory_peak_bytes']<=128*1024*1024
+    if retained:
+        with fifo.open('w') as release:release.write('done\n')
+        client.released=True
+        result['scope']+='; includes shell supervisor, database shutdown and filesystem writeback'
     return result
 
 def execute(client,sql):
@@ -136,7 +163,7 @@ try:
             if 'query' in item:continue
             if 'write' not in item:
                 with session(version,number,'write') as (client,name):
-                    item['write']={'seconds':load(client,batches),'resources':metrics(name)}
+                    item['write']={'seconds':load(client,batches),'resources':metrics(name,client)}
                     print(version,'write',item['write']['seconds'],flush=True)
                     save()
             # Verify confirmed writes after a process/container restart, outside write timing.
@@ -159,7 +186,7 @@ try:
                 execute(client,'CREATE VECTOR INDEX ix ON t(v)')
                 for sql in common[:10]:execute(client,sql)
                 started=time.perf_counter();answers=[execute(client,sql) for sql in common]
-                elapsed=time.perf_counter()-started;resources=metrics(name)
+                elapsed=time.perf_counter()-started;resources=metrics(name,client)
                 print(version,'query',elapsed,flush=True)
             exact=0;recalls={False:[],True:[]}
             for index,(actual,wanted) in enumerate(zip(answers,truth)):

@@ -1,0 +1,36 @@
+{
+  "scope": "64 MiB compatibility and resource probe; source vectors are [(key%97-48)/8]*128, tag=key%7",
+  "source_manifest_sha256": "77b990f811b3a53d369132829ca8d9fc81efd284d7f009243e41a8d00ef9ad4c",
+  "source_bytes": 77535644,
+  "rows": 140000,
+  "memory_limit_bytes": 67108864,
+  "image_id": "sha256:6e2a0998b89361269f0dc3ed877a01e386153d09a6cf3e0de5d2e33cdbac8869",
+  "topk_checks": 3,
+  "full_scan_rows": 140000,
+  "resources": {
+    "memory_peak_bytes": 67108864,
+    "io_by_device": {
+      "8:48": {
+        "rbytes": 404533248,
+        "wbytes": 180080640,
+        "rios": 3109,
+        "wios": 258,
+        "dbytes": 0,
+        "dios": 0
+      }
+    },
+    "io_bytes": 584613888,
+    "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+  },
+  "memory_events": {
+    "low": 0,
+    "high": 0,
+    "max": 2776,
+    "oom": 0,
+    "oom_kill": 0,
+    "oom_group_kill": 0
+  },
+  "status": "PASS",
+  "exit_code": 0,
+  "oom_killed": false
+}

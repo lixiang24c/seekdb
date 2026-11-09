@@ -1,4 +1,4 @@
-"""Disk-backed vector engine with immutable segments and atomic manifest commit.
+"""Disk-backed vector engine with immutable segments, global redo and checkpoints.
 All database and temporary files live under data_dir.
 """
 import heapq
@@ -28,13 +28,20 @@ def encode(value):
 
 
 class Database:
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, *, wal=True):
         self.root = Path(data_dir)
         self.root.mkdir(parents=True, exist_ok=True)
         self.manifest = self.root / 'manifest.json'
         self.committed = json.loads(self.manifest.read_text()) if self.manifest.exists() else {}
         self.pending = None
         self.failed = False
+        self._dirty_files=set()
+        from .wal import RedoLog
+        self.wal=RedoLog(self.root) if wal or (self.root/'database.wal').exists() else None
+        if self.wal is not None and self.wal.size:
+            self.committed=self.wal.recover(self.committed)
+            self._dirty_files.update(self._catalog_files(self.committed))
+            self._checkpoint()
         self._filter_cache=OrderedDict()
         self._filter_cache_bytes=0
         self._scan_maps=OrderedDict()
@@ -47,22 +54,26 @@ class Database:
             if abandoned.is_dir():
                 shutil.rmtree(abandoned)
 
+    def _catalog_files(self,catalog):
+        files=set()
+        for table in catalog.values():
+            files.update([table['file'],table['keys']])
+            files.update(table.get('segments',[]))
+            files.update(self._key_name(run) for run in table.get('key_segments',[]))
+            for change in table.get('changes',[]):
+                files.add(self._key_name(change['keys']))
+                if change.get('file'):files.add(change['file'])
+            index=table.get('index',{})
+            files.update(index[key] for key in ('file','metadata','quantized') if index.get(key))
+        return files
+
+    def _sync_file(self,out):
+        out.flush()
+        if self.wal is None:os.fsync(out.fileno())
+
     def _collect(self):
-        live = {v['file'] for v in self.committed.values()}
-        live.update(v['index']['file'] for v in self.committed.values() if 'index' in v)
-        live.update(v['index']['metadata'] for v in self.committed.values() if 'index' in v)
-        live.update(v['index']['quantized'] for v in self.committed.values() if v.get('index',{}).get('quantized'))
-        live.update(v['keys'] for v in self.committed.values())
-        live.update(self._key_name(f) for v in self.committed.values() for f in v.get('key_segments',[]))
-        live.update(f for v in self.committed.values() for f in v.get('segments', []))
-        if self.pending is not None:
-            live.update(v['file'] for v in self.pending.values())
-            live.update(v['index']['file'] for v in self.pending.values() if 'index' in v)
-            live.update(v['index']['metadata'] for v in self.pending.values() if 'index' in v)
-            live.update(v['index']['quantized'] for v in self.pending.values() if v.get('index',{}).get('quantized'))
-            live.update(v['keys'] for v in self.pending.values())
-            live.update(self._key_name(f) for v in self.pending.values() for f in v.get('key_segments',[]))
-            live.update(f for v in self.pending.values() for f in v.get('segments', []))
+        live=self._catalog_files(self.committed)
+        if self.pending is not None:live.update(self._catalog_files(self.pending))
         for p in list(self.root.glob('table-*.jsonl')) + list(self.root.glob('table-*.rows')) + list(self.root.glob('index-*.bin')) + list(self.root.glob('keys-*.bin')) + list(self.root.glob('index-*.meta')) + list(self.root.glob('index-*.q8')):
             if p.name not in live:
                 p.unlink()
@@ -88,37 +99,53 @@ class Database:
         self.pending = dict(self.catalog)
 
     def rollback(self):
+        if self.failed:raise DBError('I/O failure: reopen database before continuing')
         if self.pending is None:
             raise DBError('no transaction')
         self.pending = None
         self._collect()
 
+    def _publish(self,catalog):
+        temp=self.root/('manifest-'+uuid.uuid4().hex+'.tmp')
+        with temp.open('x',encoding='utf-8') as out:
+            out.write(encode(catalog));out.flush();os.fsync(out.fileno())
+        os.replace(temp,self.manifest)
+        fd=os.open(self.root,os.O_RDONLY|os.O_DIRECTORY)
+        try:os.fsync(fd)
+        finally:os.close(fd)
+
+    def _checkpoint(self):
+        live=self._catalog_files(self.committed)
+        for filename in sorted(live & self._dirty_files):
+            with (self.root/filename).open('rb') as source:os.fsync(source.fileno())
+        self._publish(self.committed)
+        self.wal.reset()
+        self._dirty_files.clear()
+
     def commit(self):
-        if self.pending is None:
-            raise DBError('no transaction')
-        # No success is reported until both file contents and directory entry persist.
-        temp = self.root / ('manifest-' + uuid.uuid4().hex + '.tmp')
+        if self.failed:raise DBError('I/O failure: reopen database before continuing')
+        if self.pending is None:raise DBError('no transaction')
         try:
-            with temp.open('x', encoding='utf-8') as out:
-                out.write(encode(self.pending))
-                out.flush()
-                os.fsync(out.fileno())
-            os.replace(temp, self.manifest)
-            fd = os.open(self.root, os.O_RDONLY | os.O_DIRECTORY)
-            try:
-                os.fsync(fd)
-            finally:
-                os.close(fd)
+            if self.wal is None:self._publish(self.pending)
+            else:
+                files=self._catalog_files(self.pending)-self._catalog_files(self.committed)
+                self.wal.append(files,self.pending)
+                self._dirty_files.update(files)
         except OSError:
-            self.failed = True  # Publication may have succeeded; do not delete its files.
+            self.failed=True
             raise
-        self.committed = self.pending
-        self.pending = None
+        self.committed=self.pending;self.pending=None
         self._collect()
+        if self.wal is not None and self.wal.size>=self.wal.CHECKPOINT_BYTES:
+            try:self._checkpoint()
+            except OSError:self.failed=True;raise
 
     def close(self):
         if not self.failed and self.pending is not None:
             self.rollback()
+        if not self.failed and self.wal is not None and self.wal.size:
+            try:self._checkpoint()
+            except OSError:self.failed=True;raise
         self._scan_maps.clear();self._scan_map_bytes=0
         self._query_masks.clear();self._query_mask_bytes=0
         self._filter_cache.clear();self._filter_cache_bytes=0
@@ -144,6 +171,8 @@ class Database:
 
     ROW_MAGIC = b'MVDBROW1\n'
     ROW_WITH_KEYS_MAGIC = b'MVDBROW2\n'
+    ROW_REFERENCE_MAGIC = b'MVDBREF1\n'
+    VECTOR_REFERENCE=1<<31
     ROW_HEADER = struct.Struct('<III')
 
     @classmethod
@@ -157,10 +186,16 @@ class Database:
         scalar = source.read(scalar_size)
         if len(scalar)!=scalar_size:raise DBError('incomplete row data')
         if scalar_only:
-            source.seek(name_size+dimension*4,os.SEEK_CUR)
+            source.seek(name_size,os.SEEK_CUR)
+            if dimension & cls.VECTOR_REFERENCE:
+                length=source.read(2)
+                if len(length)!=2:raise DBError('incomplete vector reference')
+                source.seek(struct.unpack('<H',length)[0]+8,os.SEEK_CUR)
+            else:source.seek(dimension*4,os.SEEK_CUR)
             return json.loads(scalar)
         name = source.read(name_size)
-        vector = source.read(dimension * 4)
+        vector = cls._vector_bytes(source,dimension)
+        dimension &= ~cls.VECTOR_REFERENCE
         if len(scalar)!=scalar_size or len(name)!=name_size or len(vector)!=dimension*4:
             raise DBError('incomplete row data')
         row = json.loads(scalar)
@@ -169,9 +204,22 @@ class Database:
         return row
 
     @classmethod
+    def _vector_bytes(cls,source,dimension):
+        if not dimension & cls.VECTOR_REFERENCE:return source.read(dimension*4)
+        length=source.read(2)
+        if len(length)!=2:raise DBError('incomplete vector reference')
+        size=struct.unpack('<H',length)[0];raw=source.read(size+8)
+        if len(raw)!=size+8:raise DBError('incomplete vector reference')
+        name=raw[:size].decode('utf-8')
+        if not name or '/' in name or '\\' in name:raise DBError('invalid vector reference')
+        offset=struct.unpack_from('<Q',raw,size)[0]
+        with (Path(source.name).parent/name).open('rb') as vector:
+            vector.seek(offset);return vector.read((dimension & ~cls.VECTOR_REFERENCE)*4)
+
+    @classmethod
     def _row_span(cls, source):
         magic=source.read(len(cls.ROW_MAGIC))
-        if magic==cls.ROW_MAGIC:return None
+        if magic in (cls.ROW_MAGIC,cls.ROW_REFERENCE_MAGIC):return None
         if magic==cls.ROW_WITH_KEYS_MAGIC:
             raw=source.read(8)
             if len(raw)!=8:raise DBError('incomplete row span')
@@ -216,15 +264,14 @@ class Database:
                 for key in keys:
                     if key==previous:raise DBError('duplicate primary key')
                     out.write(struct.pack('<q',key));previous=key
-            out.flush()
-            os.fsync(out.fileno())
+            self._sync_file(out)
         if key_column is None:return path.name
         return path.name,{'file':path.name,'key_offset':data_end,'key_count':count}
 
     def _merge_rows(self, table):
         """Copy immutable binary record spans; omit embedded primary-key footers."""
         filenames=[table['file']]+table.get('segments',[])
-        if any(name.endswith('.jsonl') for name in filenames):
+        if table.get('changes') or any(name.endswith('.jsonl') for name in filenames):
             return self._write(self._rows_of(table))
         path=self._newfile()
         with path.open('xb') as out:
@@ -238,7 +285,7 @@ class Database:
                         block=src.read(min(256*1024,remaining))
                         if not block:raise DBError('incomplete row data')
                         out.write(block);remaining-=len(block)
-            out.flush();os.fsync(out.fileno())
+            self._sync_file(out)
         return path.name
 
     def create(self, name, columns, primary):
@@ -271,7 +318,7 @@ class Database:
         table = self._table(name)
         yield from self._rows_of(table,scalar_only=scalar_only)
 
-    def _rows_of(self, table, scalar_only=False):
+    def _base_rows(self, table, scalar_only=False):
         for filename in [table['file']] + table.get('segments', []):
             if filename.endswith('.jsonl'):
                 # Existing snapshots remain readable after the format upgrade.
@@ -286,6 +333,75 @@ class Database:
                         if row is None:break
                         if end is not None and src.tell()>end:raise DBError('row crosses key footer')
                         yield row
+
+    def _rows_of(self,table,scalar_only=False,*,changes_only=False):
+        changes=table.get('changes',[])
+        if not changes:
+            if not changes_only:yield from self._base_rows(table,scalar_only=scalar_only)
+            return
+        import contextlib
+        with contextlib.ExitStack() as stack:
+            runs=[]
+            for change in changes:
+                run=change['keys'];source=stack.enter_context((self.root/self._key_name(run)).open('rb'))
+                start=run['key_offset'] if isinstance(run,dict) else 0
+                count=run['key_count'] if isinstance(run,dict) else os.fstat(source.fileno()).st_size//8
+                runs.append((source,start,count))
+            sources=[] if changes_only else [(table,runs)]
+            sources.extend(({'file':change['file']},runs[i+1:]) for i,change in enumerate(changes) if change.get('file'))
+            for source,later in sources:
+                for row in self._base_rows(source,scalar_only=scalar_only):
+                    if not any(self._contains_key(run,row[table['primary']]) for run in later):yield row
+
+    @staticmethod
+    def _contains_key(run,key):
+        source,start,count=run;lo=0;hi=count
+        while lo<hi:
+            middle=(lo+hi)//2;source.seek(start+middle*8);raw=source.read(8)
+            if len(raw)!=8:raise DBError('incomplete primary index')
+            value=struct.unpack('<q',raw)[0]
+            if value<key:lo=middle+1
+            else:hi=middle
+        if lo>=count:return False
+        source.seek(start+lo*8)
+        return struct.unpack('<q',source.read(8))[0]==key
+
+    def _consolidate(self,table):
+        file=self._merge_rows(table)
+        result=dict(table,file=file,segments=[],segment_levels={},changes=[])
+        if table.get('changes'):
+            from .sql import SQL
+            pk=table['primary']
+            rows=({pk:row[pk]} for row in self._base_rows(result,scalar_only=True))
+            ordered=SQL(self).external_sort(rows,lambda row:row[pk])
+            result=dict(result,keys=self._keyfile(row[pk] for row in ordered),key_segments=[])
+        return result
+
+    CHANGE_LIMIT=8
+
+    def _modify_delta(self,table,predicate,updates):
+        from .sql import SQL
+        pk=table['primary'];count=0;total=0
+        def matched():
+            nonlocal count,total
+            scalar_only=getattr(predicate,'terms',None) is not None and (updates is None or
+                all(spec[0]!='VECTOR' or column in updates for column,spec in table['columns'].items()))
+            for row in self._rows_of(table,scalar_only=scalar_only):
+                total+=1
+                if predicate(row):
+                    count+=1
+                    yield {pk:row[pk]} if updates is None else self._validate(table,dict(row,**updates))
+        if updates is None:
+            ordered=SQL(self).external_sort(matched(),lambda row:row[pk])
+            change={'keys':self._keyfile(row[pk] for row in ordered)}
+        else:
+            file,keys=self._write(matched(),key_column=pk)
+            change={'file':file,'keys':keys}
+        if not count:return table,0
+        result=dict(table,changes=table.get('changes',[])+[change])
+        if len(result['changes'])>=self.CHANGE_LIMIT or count>max(64,total//4):
+            result=self._consolidate(result)
+        return result,count
 
     def _validate(self, table, row):
         if set(row) != set(table['columns']):
@@ -337,8 +453,7 @@ class Database:
                     raise DBError('duplicate primary key')
                 out.write(struct.pack('<q', key))
                 previous = key
-            out.flush()
-            os.fsync(out.fileno())
+            self._sync_file(out)
         return path.name
 
     @staticmethod
@@ -419,6 +534,7 @@ class Database:
         def action():
             from .sql import SQL
             table = self._table(name)
+            if table.get('changes'):table=self._consolidate(table)
             pk = table['primary']
             staged,incoming_keys=self._write((self._validate(table,row) for row in rows),key_column=pk)
             self._check_keys(table,incoming_keys)
@@ -449,35 +565,64 @@ class Database:
                 for col, spec in table['columns'].items():
                     probe[col] = 0 if spec[0]=='BIGINT' else '' if spec[0]=='VARCHAR' else [0.0]*spec[1]
                 self._validate(table, dict(probe, **updates))
-            count = 0
-            def changed():
-                nonlocal count
-                for row in self.rows(name):
-                    if predicate(row):
-                        count += 1
-                        if updates is None:
-                            continue
-                        row = self._validate(table, dict(row, **updates))
-                    yield row
-            replacement = self._write(changed())
-            result = dict(table, file=replacement, segments=[],segment_levels={})
-            if updates is None:
-                from .sql import SQL
-                pk = table['primary']
-                ordered = SQL(self).external_sort(({pk:r[pk]} for r in self._rows_of(result,scalar_only=True)), lambda r:r[pk])
-                result['keys'] = self._keyfile(r[pk] for r in ordered)
-                result['key_segments']=[]
-            else:result=self._detach_keys(result)
-            self.pending[name] = self._indexed(result)
+            result,count=self._modify_delta(table,predicate,updates)
+            self.pending[name]=self._indexed(result) if count and not result.get('changes') else result
             self._collect()
             return count
         return self._statement(action)
 
+    def _raw_records(self,table,column):
+        for filename in [table['file']]+table.get('segments',[]):
+            if filename.endswith('.jsonl'):
+                for row in self._base_rows({'file':filename}):
+                    scalar=encode({k:v for k,v in row.items() if k!=column}).encode('utf-8')
+                    yield scalar,column.encode('utf-8'),struct.pack('<'+'f'*len(row[column]),*row[column])
+                continue
+            with (self.root/filename).open('rb') as source:
+                end=self._row_span(source)
+                while end is None or source.tell()<end:
+                    header=source.read(self.ROW_HEADER.size)
+                    if not header:break
+                    if len(header)!=self.ROW_HEADER.size:raise DBError('incomplete row header')
+                    scalar_size,name_size,dimension=self.ROW_HEADER.unpack(header)
+                    scalar=source.read(scalar_size);name=source.read(name_size)
+                    vector=self._vector_bytes(source,dimension)
+                    if len(scalar)!=scalar_size or len(name)!=name_size or len(vector)!=(dimension & ~self.VECTOR_REFERENCE)*4:
+                        raise DBError('incomplete row data')
+                    if end is not None and source.tell()>end:raise DBError('row crosses key footer')
+                    yield scalar,name,vector
+
+    def _owned_index(self,table):
+        if table.get('changes'):table=self._consolidate(table)
+        table=self._detach_keys(table)
+        index=dict(table['index']);column=index['column'];dimension=table['columns'][column][1]
+        path=self.root/('index-'+uuid.uuid4().hex+'.bin');metadata=path.with_suffix('.meta')
+        rows_path=self._newfile();name=path.name.encode('utf-8');column_bytes=column.encode('utf-8')
+        prefix=struct.Struct('<qQ');reference=struct.pack('<H',len(name))+name
+        with path.open('xb') as out,metadata.open('xb') as meta,rows_path.open('xb') as rows:
+            rows.write(self.ROW_REFERENCE_MAGIC)
+            for scalar,column_name,vector in self._raw_records(table,column):
+                if column_name!=column_bytes or len(vector)!=dimension*4:raise DBError('invalid vector record')
+                key=json.loads(scalar)[table['primary']];offset=rows.tell();vector_offset=out.tell()+16
+                out.write(prefix.pack(key,offset));out.write(vector)
+                rows.write(self.ROW_HEADER.pack(len(scalar),len(column_bytes),dimension|self.VECTOR_REFERENCE))
+                rows.write(scalar);rows.write(column_bytes);rows.write(reference);rows.write(struct.pack('<Q',vector_offset))
+                meta.write(scalar+b'\n')
+            for stream in (out,meta,rows):self._sync_file(stream)
+        index.update(file=path.name,metadata=metadata.name,layout='owned');index.pop('quantized',None)
+        from .native import build_quantized
+        quantized=path.with_suffix('.q8')
+        if build_quantized(path,quantized,dimension,self.SCAN_MAP_LIMIT,sync=self.wal is None):index['quantized']=quantized.name
+        return dict(table,file=rows_path.name,segments=[],segment_levels={},changes=[],index=index)
+
+    INDEX_LAYOUT='owned'
+
     def _indexed(self, table):
         if 'index' not in table:
             return table
-        if table.get('segments'):
-            table = dict(table, file=self._merge_rows(table), segments=[],segment_levels={})
+        if self.INDEX_LAYOUT=='owned':return self._owned_index(table)
+        if table.get('segments') or table.get('changes'):
+            table=self._consolidate(table)
         table=self._detach_keys(table)
         index = dict(table['index'])
         column = index['column']
@@ -503,8 +648,8 @@ class Database:
                         raise DBError('incomplete row data')
                     if end is not None and src.tell()>end:raise DBError('row crosses key footer')
                     if name!=column_bytes:raise DBError('invalid vector column')
-                    out.write(prefix.pack(json.loads(scalar)[table['primary']],offset))
-                    out.write(vector)
+                    key=json.loads(scalar)[table['primary']]
+                    out.write(prefix.pack(key,offset));out.write(vector)
                     meta.write(scalar+b'\n')
                 else:
                     line=src.readline()
@@ -512,16 +657,15 @@ class Database:
                     row=json.loads(line)
                     out.write(record.pack(row[table['primary']], offset, *row[column]))
                     meta.write((encode({key:value for key,value in row.items() if key!=column})+'\n').encode('utf-8'))
-            out.flush()
-            os.fsync(out.fileno())
-            meta.flush()
-            os.fsync(meta.fileno())
+            self._sync_file(out)
+            self._sync_file(meta)
+        index.pop('layout',None)
         index['file'] = path.name
         index['metadata'] = metadata.name
         index.pop('quantized',None)
         from .native import build_quantized
         quantized=path.with_suffix('.q8')
-        if build_quantized(path,quantized,dimension,self.SCAN_MAP_LIMIT):
+        if build_quantized(path,quantized,dimension,self.SCAN_MAP_LIMIT,sync=self.wal is None):
             index['quantized']=quantized.name
         return dict(table, index=index)
 
@@ -544,6 +688,8 @@ class Database:
         query = self.vector(query, spec[1])
         index = table.get('index')
         if index and index['column'] == column:
+            if table.get('changes'):
+                return self._delta_topk(table,index,query,k,predicate,scalar_only,primary_only)
             return self._index_topk(table, index, query, k, predicate,scalar_only=scalar_only,primary_only=primary_only)
         def candidates():
             for row in self.rows(name):
@@ -551,6 +697,45 @@ class Database:
                     squared = sum((a-b)**2 for a,b in zip(row[column], query))
                     yield squared, row[table['primary']], row
         return [(row,math.sqrt(d)) for d,_,row in heapq.nsmallest(k,candidates(),key=lambda x:(x[0],x[1]))]
+
+    def _delta_topk(self,table,index,query,k,predicate,scalar_only,primary_only):
+        import contextlib
+        if not k:return []
+        with contextlib.ExitStack() as stack:
+            runs=[]
+            for change in table['changes']:
+                run=change['keys'];source=stack.enter_context((self.root/self._key_name(run)).open('rb'))
+                start=run['key_offset'] if isinstance(run,dict) else 0
+                count=run['key_count'] if isinstance(run,dict) else os.fstat(source.fileno()).st_size//8
+                runs.append((source,start,count))
+            pk=table['primary']
+            def visible(row):
+                return predicate(row) and not any(self._contains_key(run,row[pk]) for run in runs)
+            base=self._index_topk(table,index,query,k,visible,scalar_only=scalar_only,primary_only=primary_only,squared=True)
+            # Use the base index's accumulation order for identical-vector ties.
+            def distance_of(vector):return sum((a-b)**2 for a,b in zip(vector,query))
+            try:
+                import numpy as np
+                from .native import available,scan
+                if available():
+                    entry=np.zeros(1,dtype=[('pk','<i8'),('offset','<u8'),('vector','<f4',(len(query),))])
+                    query_array=np.asarray(query,dtype=np.float64)
+                    def distance_of(vector):
+                        entry['vector'][0]=vector
+                        return next(scan(entry,query_array,slice(None),1))[0]
+                else:
+                    def distance_of(vector):
+                        delta=np.asarray(vector,dtype=np.float64)-np.asarray(query,dtype=np.float64)
+                        return float(np.einsum('i,i->',delta,delta))
+            except ImportError:pass
+            def candidates():
+                for row,distance in base:yield distance,row[pk],row
+                for row in self._rows_of(table,changes_only=True):
+                    if predicate(row):
+                        distance=distance_of(row[index['column']])
+                        yield distance,row[pk],row
+            winners=heapq.nsmallest(k,candidates(),key=lambda hit:(hit[0],hit[1]))
+            return [({pk:key} if primary_only else row,math.sqrt(distance)) for distance,key,row in winners]
 
     FILTER_CACHE_LIMIT=4*1024*1024
 
@@ -656,7 +841,7 @@ class Database:
             self._query_masks[key]=(mask,size);self._query_mask_bytes+=size
         return mask
 
-    def _index_topk(self, table, index, query, k, predicate, *, scalar_only=False, primary_only=False):
+    def _index_topk(self, table, index, query, k, predicate, *, scalar_only=False, primary_only=False,squared=False):
         if k == 0:
             return []
         try:
@@ -731,11 +916,11 @@ class Database:
                             yield sum((a-b)**2 for a,b in zip(values[2:],query)),values[0],values[1]
         if winners is None:winners=heapq.nsmallest(k,candidates(),key=lambda x:(x[0],x[1]))
         if primary_only:
-            return [({table['primary']:pk},math.sqrt(distance)) for distance,pk,offset in winners]
+            return [({table['primary']:pk},distance if squared else math.sqrt(distance)) for distance,pk,offset in winners]
         result=[]
         with (self.root/table['file']).open('rb') as data:
             for distance,pk,offset in winners:
                 data.seek(offset)
                 row=self._read_record(data,scalar_only=scalar_only) if table['file'].endswith('.rows') else json.loads(data.readline())
-                result.append((row,math.sqrt(distance)))
+                result.append((row,distance if squared else math.sqrt(distance)))
         return result

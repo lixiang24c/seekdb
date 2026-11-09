@@ -52,6 +52,7 @@ class QuantizedScreenTests(unittest.TestCase):
         vectors=np.zeros((1200,32),dtype=np.float32);vectors[-1]=1
         self.check_vectors(vectors,np.zeros(32))
 
+    @patch.object(Database,'INDEX_LAYOUT','flat')
     def test_sidecar_restart_mutation_rollback_and_cache_budget(self):
         with tempfile.TemporaryDirectory() as root:
             db=Database(root);sql=SQL(db)
@@ -64,13 +65,16 @@ class QuantizedScreenTests(unittest.TestCase):
             self.assertEqual(list(sql.execute(query)['rows']),[[0],[17]])
             self.assertLessEqual(db._scan_map_bytes,db.SCAN_MAP_LIMIT)
             db.begin();sql.execute('DELETE FROM t WHERE id=0')
-            changed=db.catalog['t']['index']['quantized'];self.assertNotEqual(changed,original)
+            changed=db.catalog['t']['index']['quantized'];self.assertEqual(changed,original)
+            self.assertTrue(db.catalog['t']['changes'])
             self.assertEqual(list(sql.execute(query)['rows']),[[17],[34]])
             db.rollback();self.assertEqual(list(sql.execute(query)['rows']),[[0],[17]])
-            self.assertTrue((Path(root)/original).exists());self.assertFalse((Path(root)/changed).exists())
+            self.assertTrue((Path(root)/original).exists())
             sql.execute('UPDATE t SET v='+json.dumps([10]*32)+' WHERE id=0')
-            self.assertFalse((Path(root)/original).exists())
+            self.assertTrue((Path(root)/original).exists())
             self.assertEqual(list(sql.execute(query)['rows']),[[17],[34]])
+            for key in range(1,8):sql.execute('UPDATE t SET v='+json.dumps([10]*32)+' WHERE id='+str(key))
+            self.assertFalse((Path(root)/original).exists())
             with patch('minivectordb.native.available',return_value=False):
                 self.assertEqual(list(sql.execute(query)['rows']),[[17],[34]])
             db.close()

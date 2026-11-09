@@ -71,7 +71,7 @@ def scan(entries, query, mask, k, use_simd=True, quantization=None):
     return ((float(distance[i]),int(keys[i]),int(offsets[i])) for i in range(size))
 
 
-def build_quantized(source, destination, dimension, byte_limit):
+def build_quantized(source, destination, dimension, byte_limit, *, sync=True):
     """Build a bounded immutable byte-code sidecar; return whether one was built."""
     size=source.stat().st_size;stride=16+4*dimension
     if dimension<32 or dimension>4096 or size>byte_limit or size//stride<256 or not available():
@@ -91,7 +91,8 @@ def build_quantized(source, destination, dimension, byte_limit):
                 if valid:
                     codes.flush()
                     output.write(QUANT_HEADER.pack(QUANT_MAGIC,count,dimension,minimum.value,step.value))
-                    output.flush();os.fsync(output.fileno())
+                    output.flush()
+                    if sync:os.fsync(output.fileno())
             finally:codes._mmap.close()
         if not valid:destination.unlink()
         return bool(valid)
