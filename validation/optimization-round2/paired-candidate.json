@@ -1,0 +1,157 @@
+{
+  "status": "PASS",
+  "scope": "local paired benchmark, functional gates verified separately",
+  "configuration": {
+    "rows": 10000,
+    "queries": 1000,
+    "memory": "128m",
+    "docker": true
+  },
+  "image": "minivectordb:optimized-round2-release",
+  "benchmark": [
+    {
+      "round": 1,
+      "seed": 720,
+      "write": {
+        "seconds": 2.359215264033992,
+        "resources": {
+          "memory_peak_bytes": 16355328,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 6848512,
+              "rios": 0,
+              "wios": 305,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 6848512,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "persistence_correct": true
+      },
+      "query": {
+        "seconds": 4.168972151004709,
+        "index_prepare_seconds": 0.39098180498695,
+        "resources": {
+          "memory_peak_bytes": 33083392,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 17776640,
+              "rios": 0,
+              "wios": 317,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 17776640,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "recall_at_10": {
+          "unfiltered": 1.0,
+          "filtered": 1.0
+        },
+        "exact_ids_and_order_correct": true
+      },
+      "status": "PASS"
+    },
+    {
+      "round": 2,
+      "seed": 721,
+      "write": {
+        "seconds": 2.9330413319985382,
+        "resources": {
+          "memory_peak_bytes": 16519168,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 4096,
+              "wbytes": 6848512,
+              "rios": 1,
+              "wios": 305,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 6852608,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "persistence_correct": true
+      },
+      "query": {
+        "seconds": 4.121681137999985,
+        "index_prepare_seconds": 0.3895225859596394,
+        "resources": {
+          "memory_peak_bytes": 33804288,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 17776640,
+              "rios": 0,
+              "wios": 317,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 17776640,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "recall_at_10": {
+          "unfiltered": 1.0,
+          "filtered": 1.0
+        },
+        "exact_ids_and_order_correct": true
+      },
+      "status": "PASS"
+    },
+    {
+      "round": 3,
+      "seed": 722,
+      "write": {
+        "seconds": 2.4643604339798912,
+        "resources": {
+          "memory_peak_bytes": 16314368,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 4096,
+              "wbytes": 6848512,
+              "rios": 1,
+              "wios": 305,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 6852608,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "persistence_correct": true
+      },
+      "query": {
+        "seconds": 4.255760433967225,
+        "index_prepare_seconds": 0.3608202640316449,
+        "resources": {
+          "memory_peak_bytes": 32776192,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 17776640,
+              "rios": 0,
+              "wios": 317,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 17776640,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "recall_at_10": {
+          "unfiltered": 1.0,
+          "filtered": 1.0
+        },
+        "exact_ids_and_order_correct": true
+      },
+      "status": "PASS"
+    }
+  ]
+}

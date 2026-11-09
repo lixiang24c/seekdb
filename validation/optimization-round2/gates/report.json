@@ -1,0 +1,363 @@
+{
+  "schema": "minivectordb-local-evaluation-v1",
+  "scope": "LOCAL ONLY; no official driver or official score",
+  "status": "PASS",
+  "git_commit": "4575c6cf093e970aa45cd355834bf24329e32316",
+  "working_tree_dirty": true,
+  "implementation_sha256": "935922c29891fa74840d8038e829d0993b4568b6ec05417d7cc1eca047265774",
+  "harness_sha256": "aca2eb940d3d20e6609df2b41dedc3a9a7d8f8d5f602eb273207777f4572967b",
+  "configuration": {
+    "docker": true,
+    "image": "minivectordb:optimized-round2-release",
+    "skip_build": false,
+    "benchmark": true,
+    "resource": true,
+    "rows": 10000,
+    "queries": 1000,
+    "rounds": 3,
+    "memory": "128m",
+    "timeout": 30,
+    "keep_data": false,
+    "output": "/tmp/minivector-round2-release"
+  },
+  "phases": {
+    "build": {
+      "status": "PASS",
+      "seconds": 2.4410360640031286,
+      "log": "build.log"
+    },
+    "regression": {
+      "status": "PASS",
+      "seconds": 4.070088784035761,
+      "log": "regression.log"
+    },
+    "harness-self-test": {
+      "status": "PASS",
+      "seconds": 1.1385181320365518,
+      "log": "harness-self-test.log"
+    },
+    "material-format": {
+      "status": "PASS",
+      "seconds": 0.03250622301129624,
+      "log": "material-format.log"
+    },
+    "resource": {
+      "status": "PASS",
+      "seconds": 20.279059876978863,
+      "log": "resource.log"
+    }
+  },
+  "cases": [
+    {
+      "name": "sql_types",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 9252864,
+        "io_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 20480,
+            "rios": 0,
+            "wios": 5,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "io_bytes": 20480,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.3615146550000645
+    },
+    {
+      "name": "unicode_order",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 9019392,
+        "io_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 20480,
+            "rios": 0,
+            "wios": 5,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "io_bytes": 20480,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.3612831649952568
+    },
+    {
+      "name": "statement_atomicity",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 9052160,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.7707396749756299
+    },
+    {
+      "name": "filtering",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 8507392,
+        "io_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 20480,
+            "rios": 0,
+            "wios": 5,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "io_bytes": 20480,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.4852793670143001
+    },
+    {
+      "name": "index_transactions",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 16502784,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 1.4103585070115514
+    },
+    {
+      "name": "crash",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 9269248,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 1.3352237090002745
+    },
+    {
+      "name": "eof_rollback",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 8617984,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.8857390700140968
+    },
+    {
+      "name": "rejected_sql",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 8712192,
+        "io_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 8192,
+            "rios": 0,
+            "wios": 2,
+            "dbytes": 0,
+            "dios": 0
+          }
+        },
+        "io_bytes": 8192,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.3557519619935192
+    },
+    {
+      "name": "random_model",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 8998912,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 1.2111596610047854
+    },
+    {
+      "name": "fixture-basic",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 9236480,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 0.8785339070018381
+    },
+    {
+      "name": "fixture-recovery",
+      "status": "PASS",
+      "resources": {
+        "memory_peak_bytes": 9015296,
+        "io_by_device": {},
+        "io_bytes": 0,
+        "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+      },
+      "seconds": 1.3060406250297092
+    }
+  ],
+  "elapsed_seconds": 99.0662688940065,
+  "image_id": "sha256:5fb182393d5e9e0fc863df5a597cdf7c35a0ad7223a6e0acdf9dfe446dfeb974",
+  "benchmark": [
+    {
+      "round": 1,
+      "seed": 720,
+      "write": {
+        "seconds": 2.9673795850249007,
+        "resources": {
+          "memory_peak_bytes": 16334848,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 6848512,
+              "rios": 0,
+              "wios": 305,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 6848512,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "persistence_correct": true
+      },
+      "query": {
+        "seconds": 4.489388820016757,
+        "index_prepare_seconds": 0.3787578360061161,
+        "resources": {
+          "memory_peak_bytes": 34713600,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 17776640,
+              "rios": 0,
+              "wios": 317,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 17776640,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "recall_at_10": {
+          "unfiltered": 1.0,
+          "filtered": 1.0
+        },
+        "exact_ids_and_order_correct": true
+      },
+      "status": "PASS"
+    },
+    {
+      "round": 2,
+      "seed": 721,
+      "write": {
+        "seconds": 2.485030280018691,
+        "resources": {
+          "memory_peak_bytes": 16392192,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 6848512,
+              "rios": 0,
+              "wios": 305,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 6848512,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "persistence_correct": true
+      },
+      "query": {
+        "seconds": 4.215779332967941,
+        "index_prepare_seconds": 0.36238708900054917,
+        "resources": {
+          "memory_peak_bytes": 33214464,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 17776640,
+              "rios": 0,
+              "wios": 317,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 17776640,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "recall_at_10": {
+          "unfiltered": 1.0,
+          "filtered": 1.0
+        },
+        "exact_ids_and_order_correct": true
+      },
+      "status": "PASS"
+    },
+    {
+      "round": 3,
+      "seed": 722,
+      "write": {
+        "seconds": 2.4686153539805673,
+        "resources": {
+          "memory_peak_bytes": 16359424,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 6848512,
+              "rios": 0,
+              "wios": 305,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 6848512,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "persistence_correct": true
+      },
+      "query": {
+        "seconds": 4.323370157042518,
+        "index_prepare_seconds": 0.3753975229919888,
+        "resources": {
+          "memory_peak_bytes": 34463744,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 17776640,
+              "rios": 0,
+              "wios": 317,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "io_bytes": 17776640,
+          "scope": "whole local container cgroup; all devices, not an official dedicated data device"
+        },
+        "recall_at_10": {
+          "unfiltered": 1.0,
+          "filtered": 1.0
+        },
+        "exact_ids_and_order_correct": true
+      },
+      "status": "PASS"
+    }
+  ],
+  "benchmark_summary": {
+    "write_seconds_median": 2.485030280018691,
+    "query_seconds_median": 4.323370157042518,
+    "official_E": null,
+    "reason": "No frozen official baseline or dedicated data-device configuration is available."
+  }
+}

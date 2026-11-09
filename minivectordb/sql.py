@@ -4,7 +4,7 @@ import math
 import json
 from .core import DBError
 
-TOKEN=re.compile(r"\s+|--[^\n]*|/\*.*?\*/|'(?:''|[^'])*'|`[^`]+`|\[(?:/\*.*?\*/|--[^\n]*(?:\n|$)|[^\[\]])*\]|(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[A-Za-z_][A-Za-z_0-9]*|<=|>=|!=|<>|[(),;*=<>\[\]+-]",re.S)
+TOKEN=re.compile(r"\s+|--[^\n]*|/\*.*?\*/|'(?:''|[^'])*'|`[^`]+`|\[[0-9eE+.,\-\s]*\]|\[(?:/\*.*?\*/|--[^\n]*(?:\n|$)|[^\[\]])*\]|(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[A-Za-z_][A-Za-z_0-9]*|<=|>=|!=|<>|[(),;*=<>\[\]+-]",re.S)
 
 class SQL:
     def __init__(self, db): self.db=db
@@ -196,10 +196,15 @@ class SQL:
         def evaluate(expr,row):
             if expr[0]=='column':return row[expr[1]]
             return math.sqrt(sum((a-b)**2 for a,b in zip(row[expr[1]],expr[2])))
+        distances=None
+        reuse_distance=[False]*len(expressions)
         rows=(row for row in self.db.rows(name) if predicate(row))
         if ordering and len(ordering)==1 and ordering[0][0][0]=='distance' and not ordering[0][1] and limit is not None:
             expr=ordering[0][0]
-            rows=(row for row,distance in self.db.topk(name,expr[1],expr[2],limit,predicate))
+            winners=self.db.topk(name,expr[1],expr[2],limit,predicate)
+            distances={row[pk]:distance for row,distance in winners}
+            reuse_distance=[e==expr for e in expressions]
+            rows=(row for row,distance in winners)
         elif ordering:
             def compare(a,b):
                 for expr,desc in ordering:
@@ -214,7 +219,7 @@ class SQL:
         import itertools
         if limit is not None:rows=itertools.islice(rows,limit)
         return {'columns':[a or (e[1] if e[0]=='column' else 'L2_DISTANCE') for e,a in projection],
-                'rows':([evaluate(e,row) for e in expressions] for row in rows)}
+                'rows':([distances[row[pk]] if reuse_distance[i] else evaluate(e,row) for i,e in enumerate(expressions)] for row in rows)}
     def external_sort(self,rows,key):
         import tempfile,json,heapq,contextlib
         # Fan-in bounded by 32. Files belong to the metered data directory.

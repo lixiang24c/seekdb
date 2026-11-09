@@ -1,0 +1,62 @@
+{
+  "scope": "local paired comparison; no official rank or score",
+  "baseline_commit": "4575c6cf093e970aa45cd355834bf24329e32316",
+  "order": [
+    [
+      "baseline",
+      "candidate"
+    ],
+    [
+      "candidate",
+      "baseline"
+    ],
+    [
+      "baseline",
+      "candidate"
+    ]
+  ],
+  "configuration": "2 CPUs, 128MiB, network none; 10000 rows, 128 dimensions, 1000 queries; seeds 720/721/722",
+  "tracks": {
+    "write": {
+      "seconds": {
+        "before": 3.4825881310389377,
+        "after": 2.4643604339798912,
+        "before_over_after": 1.4131813199965355,
+        "reduction_fraction": 0.29237672063026454
+      },
+      "io_bytes": {
+        "before": 6848512,
+        "after": 6852608,
+        "before_over_after": 0.9994022713687986,
+        "reduction_fraction": -0.0005980861244019309
+      },
+      "memory_peak_bytes": {
+        "before": 16502784,
+        "after": 16355328,
+        "before_over_after": 1.0090157776108188,
+        "reduction_fraction": 0.008935219657483229
+      }
+    },
+    "query": {
+      "seconds": {
+        "before": 6.3602454389911145,
+        "after": 4.168972151004709,
+        "before_over_after": 1.5256147579345942,
+        "reduction_fraction": 0.34452652951927476
+      },
+      "io_bytes": {
+        "before": 17776640,
+        "after": 17776640,
+        "before_over_after": 1.0,
+        "reduction_fraction": 0.0
+      },
+      "memory_peak_bytes": {
+        "before": 33943552,
+        "after": 33083392,
+        "before_over_after": 1.0259997523833106,
+        "reduction_fraction": 0.02534089537830342
+      }
+    }
+  },
+  "gates": "34 regressions, 5 harness self-tests, 11 SQL cases, three paired benchmark rounds with exact ID/order and Recall@10=1.0 in both groups; 64MiB resource test passed."
+}

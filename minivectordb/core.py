@@ -127,7 +127,7 @@ class Database:
     ROW_HEADER = struct.Struct('<III')
 
     @classmethod
-    def _read_record(cls, source):
+    def _read_record(cls, source, scalar_only=False):
         header = source.read(cls.ROW_HEADER.size)
         if not header:
             return None
@@ -135,6 +135,10 @@ class Database:
             raise DBError('incomplete row header')
         scalar_size, name_size, dimension = cls.ROW_HEADER.unpack(header)
         scalar = source.read(scalar_size)
+        if len(scalar)!=scalar_size:raise DBError('incomplete row data')
+        if scalar_only:
+            source.seek(name_size+dimension*4,os.SEEK_CUR)
+            return json.loads(scalar)
         name = source.read(name_size)
         vector = source.read(dimension * 4)
         if len(scalar)!=scalar_size or len(name)!=name_size or len(vector)!=dimension*4:
@@ -192,7 +196,7 @@ class Database:
         table = self._table(name)
         yield from self._rows_of(table)
 
-    def _rows_of(self, table):
+    def _rows_of(self, table, scalar_only=False):
         for filename in [table['file']] + table.get('segments', []):
             if filename.endswith('.jsonl'):
                 # Existing snapshots remain readable after the format upgrade.
@@ -204,7 +208,7 @@ class Database:
                     if src.read(len(self.ROW_MAGIC))!=self.ROW_MAGIC:
                         raise DBError('unknown row format')
                     while True:
-                        row=self._read_record(src)
+                        row=self._read_record(src,scalar_only=scalar_only)
                         if row is None:break
                         yield row
 
@@ -293,10 +297,17 @@ class Database:
             staged = self._write(self._validate(table, row) for row in rows)
             incoming = dict(table, file=staged, segments=[])
             pk = table['primary']
-            # Sort only primary keys, using bounded disk runs for huge statements.
-            ordered = SQL(self).external_sort(
-                ({pk: row[pk]} for row in self._rows_of(incoming)), lambda row: row[pk])
-            newkeys = (row[pk] for row in ordered)
+            # Small SQL batches sort keys in bounded memory. Large statements
+            # retain the external-sort path instead of loading all keys.
+            import itertools
+            key_rows=lambda: ({pk: row[pk]} for row in self._rows_of(incoming,scalar_only=True))
+            prefix=list(itertools.islice(key_rows(),4097))
+            if len(prefix)<=4096:
+                newkeys=iter(sorted(row[pk] for row in prefix))
+            else:
+                prefix.clear()
+                ordered=SQL(self).external_sort(key_rows(),lambda row:row[pk])
+                newkeys=(row[pk] for row in ordered)
             incoming_keys=self._keyfile(newkeys)
             self._check_keys(table,incoming_keys)
             key_segments=table.get('key_segments',[])+[incoming_keys]
@@ -477,13 +488,17 @@ class Database:
         dtype=np.dtype([('pk','<i8'),('offset','<u8'),('vector','<f4',(dimension,))]) if np is not None else None
         def candidates():
             with (self.root/index['file']).open('rb') as src, (self.root/index['metadata']).open(encoding='utf-8') as meta:
-                while True:
-                    raw = src.read(record.size*1024)
-                    if not raw:
-                        break
-                    if len(raw)%record.size:
-                        raise DBError('incomplete vector index')
-                    count = len(raw)//record.size
+                file_size=os.fstat(src.fileno()).st_size
+                if file_size%record.size:raise DBError('incomplete vector index')
+                if not file_size:return
+                mapped=np.memmap(src,dtype=dtype,mode='r') if np is not None else None
+                block_rows=2048
+                for start in range(0,file_size//record.size,block_rows):
+                    count=min(block_rows,file_size//record.size-start)
+                    if mapped is None:
+                        raw=src.read(record.size*count)
+                    else:
+                        entries=mapped[start:start+count]
                     if np is not None and terms is not None:
                         mask=self._filter_chunk(meta,count,terms,np,predicate) if terms else slice(None)
                     else:
@@ -493,9 +508,8 @@ class Database:
                             if not line:raise DBError('incomplete index metadata')
                             if predicate(json.loads(line)):mask.append(position)
                     if np is not None:
-                        entries=np.frombuffer(raw,dtype=dtype)
                         selected=entries[mask]
-                        delta=selected['vector'].astype(np.float64)-query_array
+                        delta=np.subtract(selected['vector'],query_array,dtype=np.float64)
                         squared=np.einsum('ij,ij->i',delta,delta)
                         if len(squared)>k:
                             boundary=np.partition(squared,k-1)[k-1]

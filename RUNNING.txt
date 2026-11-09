@@ -82,3 +82,9 @@ validation/summary.json 汇总本地验证范围；validation/full/report.json �
 SQL以完整向量字面量分词，借助标准JSON解析器批量解析数值；语句边界用正则扫描完整引用区间，减少逐字符Python解释开销。SQL的非JSON数值语法和注释仍有校验及兼容路径。
 二进制行、分段主键和过滤缓存均保持原提交持久化协议；本轮对照使用相同2 CPU、128MiB容器、种子与10000行/128维/1000查询负载，结果见 validation/optimization/。
 旧格式兼容为单向升级：新版可读取旧JSON行快照，新写入采用二进制行和分段主键。回退旧程序时应使用独立的数据目录，旧程序不能读取新版快照。
+
+第二轮性能优化
+数值向量优先使用整段字符类分词，复杂注释/非JSON数值仍走原兼容解析。主键暂存扫描只读取标量字段，跳过向量载荷；不超过4096个主键的批次在有界内存中排序，更大批次仍使用外部排序。
+精确查询使用只读内存映射按2048条分块读取索引；映射不将全索引载入Python堆，实际页缓存仍计入cgroup。距离通过单次float64减法分配减少临时数组；结果投影复用同一查询的TopK距离，不重新计算。
+旧提交4575c6cf的实测镜像作为第二轮基线，保持同一配置、种子和精确校验。原有持久化成功确认时机与fsync步骤未放宽。
+第二轮交错实测结果见 validation/optimization-round2/summary.json。复现交错测量：python3 scripts/compare_images.py --baseline 已构建的旧镜像 --candidate 新镜像 --output 尚不存在的结果目录。本次归档的完整功能/资源记录在 validation/optimization-round2/gates/ 下，测试数量已增加到34。
