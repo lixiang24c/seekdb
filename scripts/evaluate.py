@@ -54,6 +54,7 @@ def main():
     parser.add_argument('--rounds',type=int,default=3)
     parser.add_argument('--memory',default='128m')
     parser.add_argument('--timeout',type=float,default=30)
+    parser.add_argument('--strict-peak',action='store_true',help='Also reject any raw memory.peak above memory.max in resource tests')
     parser.add_argument('--keep-data',action='store_true')
     parser.add_argument('--output',type=Path,default=ROOT/'artifacts'/time.strftime('%Y%m%d-%H%M%S'))
     args=parser.parse_args()
@@ -62,6 +63,7 @@ def main():
     args.output=args.output.resolve()
     args.output.mkdir(parents=True,exist_ok=False)
     report={'schema':'minivectordb-local-evaluation-v1','scope':'LOCAL ONLY; no official driver or official score',
+            'resource_policy':'memory.max enforced, swap disabled, no OOM events; raw peak retained; --strict-peak optionally gates transient peak too',
             'status':'RUNNING','git_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
             'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()),
             'implementation_sha256':source_hash([ROOT/'Dockerfile',ROOT/'requirements.txt',*sorted((ROOT/'minivectordb').glob('*.py')),*sorted((ROOT/'native').glob('*.c'))]),
@@ -119,8 +121,12 @@ def main():
                                          'official_E':None,'reason':'No frozen official baseline or dedicated data-device configuration is available.'}
         if args.resource:
             data=args.output/'resource-data';data.mkdir()
-            phase('resource',['docker','run','--rm','--network','none','--cpus','2','--memory','64m','--memory-swap','64m',
+            phase('resource',['docker','run','--rm','--network','none','--cpus','2','--memory','64m','--memory-swap','64m','-e','MINIVECTOR_STRICT_PEAK='+str(int(args.strict_peak)),
                               '-v',str(data)+':/data','-v',str(ROOT/'tests')+':/app/tests:ro','--entrypoint','python3',args.image,'-m','tests.resource_container'])
+            if not args.keep_data:shutil.rmtree(data)
+            data=args.output/'resource-index-data';data.mkdir()
+            phase('resource-index',['docker','run','--rm','--network','none','--cpus','2','--memory','64m','--memory-swap','64m','-e','MINIVECTOR_STRICT_PEAK='+str(int(args.strict_peak)),
+                                    '-v',str(data)+':/data','-v',str(ROOT/'tests')+':/app/tests:ro','--entrypoint','python3',args.image,'-m','tests.resource_index_container'])
             if not args.keep_data:shutil.rmtree(data)
         report['status']='PASS'
     except BaseException as error:

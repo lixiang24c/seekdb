@@ -101,3 +101,11 @@ Docker采用多阶段构建，在构建阶段以锁定版本GCC12编译，运行
 旧JSON行、MVDBROW1和旧主键分段保持读取兼容；旧程序不支持MVDBROW2及新描述符，回退须使用独立数据目录。
 float32类型校验和舍入增加CPython原生接口，严格区分bool、int和float，拒绝非有限值及转换溢出；使用当前解释器头文件编译，Docker固定为Python3.12。本地更换解释器后须执行make native重新构建，生成物不提交。
 make native-check现在同时检查TopK内核和CPython编码接口。后者使用malloc对象分配并关闭全解释器LSan汇总；部分列表的引用释放另由tracemalloc回归验证。
+
+第五轮性能优化
+原生精确扫描尽可能在一次调用中完成整个只读索引的TopK，减少分块候选在Python中的归并。过滤位图按不可变索引版本和完整WHERE条件缓存，每次查询仍计算当前向量的精确距离。
+保留映射对象的总文件长度预算8MiB，过滤位图预算2MiB，标量列缓存预算4MiB；大索引按需映射而不转换为全量Python堆数组。过滤记录数超过262144时使用分块路径。写入、回滚和索引重建按文件版本清理缓存，关闭数据库释放缓存引用。
+当已累积的非负平方距离严格大于当前第K名时，原生计算提前停止该候选。等于边界的候选继续计算，以保留距离并列时的主键顺序。投影不需要向量时，回表只解码标量字段并复用已计算的距离。
+新增完整向量资源测试：140000条128维记录建索引并重启，在64MiB cgroup下执行过滤和无过滤精确查询，数据与索引总量大于内存预算。
+资源测试区分内核控制器完成状态与严格峰值状态，原始memory.peak及OOM事件均保留；评分使用实际峰值，不裁剪。默认检查memory.max配置、禁用swap、无OOM事件和结果正确性；加 --strict-peak 可同时要求原始峰值不超过memory.max。make evaluate MINIVECTOR_EVAL_FLAGS=--strict-peak 可启用。
+Linux明确说明memory.max在特定情况下允许短时越界，因此原来的单独峰值断言可能因内核计量边界失败。本轮归档保留首次失败和诊断信息；本轮最终完整验收仍使用--strict-peak，两个资源测试同时满足严格峰值条件。参考 https://docs.kernel.org/admin-guide/cgroup-v2.html#memory-interface-files 。

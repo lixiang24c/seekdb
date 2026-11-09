@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <immintrin.h>
+#include <float.h>
 
 typedef struct { double distance; int64_t key; uint64_t offset; } Hit;
 static int less(Hit a, Hit b) {
@@ -14,16 +15,37 @@ static double scalar_l2(const float *v, const double *q, size_t dim) {
     for (size_t j=0;j<dim;j++) { double d=(double)v[j]-q[j];sum+=d*d; }
     return sum;
 }
+static double scalar_bounded_l2(const float *v,const double *q,size_t dim,double cutoff) {
+    if (dim<32) return scalar_l2(v,q,dim);
+    size_t split=dim-dim/4;double sum=0;
+    for (size_t j=0;j<split;j++) {double d=(double)v[j]-q[j];sum+=d*d;}
+    if (sum>cutoff) return sum;
+    for (size_t j=split;j<dim;j++) {double d=(double)v[j]-q[j];sum+=d*d;}
+    return sum;
+}
 __attribute__((target("avx2")))
-static double avx2_l2(const float *v, const double *q, size_t dim) {
+static double avx2_l2(const float *v,const double *q,size_t dim,double cutoff) {
     __m256d acc=_mm256_setzero_pd();size_t j=0;
+    size_t split=dim<32?0:(dim-dim/4)&~(size_t)3;
+    for (;j<split;j+=4) {
+        __m256d d=_mm256_sub_pd(_mm256_cvtps_pd(_mm_loadu_ps(v+j)),_mm256_loadu_pd(q+j));
+        acc=_mm256_add_pd(acc,_mm256_mul_pd(d,d));
+    }
+    double lanes[4];
+    if (split) {
+        _mm256_storeu_pd(lanes,acc);
+        double partial=(lanes[0]+lanes[1])+(lanes[2]+lanes[3]);
+        /* Nonnegative lane accumulation is monotone. Equality must continue:
+           a later row with a smaller primary key can still win a distance tie. */
+        if (partial>cutoff) return partial;
+    }
     for (;j+4<=dim;j+=4) {
         __m256d d=_mm256_sub_pd(_mm256_cvtps_pd(_mm_loadu_ps(v+j)),_mm256_loadu_pd(q+j));
         acc=_mm256_add_pd(acc,_mm256_mul_pd(d,d));
     }
-    double lanes[4];_mm256_storeu_pd(lanes,acc);
+    _mm256_storeu_pd(lanes,acc);
     double sum=(lanes[0]+lanes[1])+(lanes[2]+lanes[3]);
-    for (;j<dim;j++) { double d=(double)v[j]-q[j];sum+=d*d; }
+    for (;j<dim;j++) {double d=(double)v[j]-q[j];sum+=d*d;}
     return sum;
 }
 /* Return SIZE_MAX on allocation failure; otherwise output ascending (distance, key). */
@@ -40,7 +62,8 @@ size_t mv_topk(const unsigned char *rows,size_t count,size_t stride,size_t dim,
         const unsigned char *row=rows+i*stride;Hit hit;
         memcpy(&hit.key,row,8);memcpy(&hit.offset,row+8,8);
         const float *vector=(const float*)(row+16);
-        hit.distance=avx ? avx2_l2(vector,query,dim) : scalar_l2(vector,query,dim);
+        double cutoff=used==k?heap[0].distance:DBL_MAX;
+        hit.distance=avx ? avx2_l2(vector,query,dim,cutoff) : scalar_bounded_l2(vector,query,dim,cutoff);
         size_t at;
         if (used<k) {
             at=used++;heap[at]=hit;

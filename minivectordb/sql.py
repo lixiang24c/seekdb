@@ -201,9 +201,11 @@ class SQL:
         rows=(row for row in self.db.rows(name) if predicate(row))
         if ordering and len(ordering)==1 and ordering[0][0][0]=='distance' and not ordering[0][1] and limit is not None:
             expr=ordering[0][0]
-            winners=self.db.topk(name,expr[1],expr[2],limit,predicate)
-            distances={row[pk]:distance for row,distance in winners}
             reuse_distance=[e==expr for e in expressions]
+            need_vector=any((e[0]=='column' and schema[e[1]][0]=='VECTOR') or (e[0]=='distance' and not reuse_distance[i]) for i,e in enumerate(expressions))
+            primary_only=not need_vector and all(e[0]!='column' or e[1]==pk for e in expressions)
+            winners=self.db.topk(name,expr[1],expr[2],limit,predicate,scalar_only=not need_vector,primary_only=primary_only)
+            distances={row[pk]:distance for row,distance in winners}
             rows=(row for row,distance in winners)
         elif ordering:
             def compare(a,b):

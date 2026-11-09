@@ -39,6 +39,10 @@ class Database:
         self.failed = False
         self._filter_cache=OrderedDict()
         self._filter_cache_bytes=0
+        self._scan_maps=OrderedDict()
+        self._scan_map_bytes=0
+        self._query_masks=OrderedDict()
+        self._query_mask_bytes=0
         self._collect()
         import shutil
         for abandoned in self.root.glob('sort-*'):
@@ -65,6 +69,10 @@ class Database:
         for key in list(self._filter_cache):
             if key[0] not in live:
                 self._filter_cache_bytes-=self._filter_cache.pop(key)[1]
+        for key in list(self._scan_maps):
+            if key not in live:self._scan_map_bytes-=self._scan_maps.pop(key)[1]
+        for key in list(self._query_masks):
+            if key[0] not in live:self._query_mask_bytes-=self._query_masks.pop(key)[1]
         for p in self.root.glob('manifest-*.tmp'):
             p.unlink()
 
@@ -111,6 +119,9 @@ class Database:
     def close(self):
         if not self.failed and self.pending is not None:
             self.rollback()
+        self._scan_maps.clear();self._scan_map_bytes=0
+        self._query_masks.clear();self._query_mask_bytes=0
+        self._filter_cache.clear();self._filter_cache_bytes=0
 
     def _statement(self, action):
         automatic = self.pending is None
@@ -451,7 +462,7 @@ class Database:
             self.pending[table_name] = self._indexed(dict(table, index={'name':name, 'column':column}))
         return self._statement(action)
 
-    def topk(self, name, column, query, k, predicate=lambda row: True):
+    def topk(self, name, column, query, k, predicate=lambda row: True, *, scalar_only=False, primary_only=False):
         table = self._table(name)
         spec = table['columns'].get(column)
         if not spec or spec[0] != 'VECTOR' or type(k) is not int or k < 0:
@@ -459,7 +470,7 @@ class Database:
         query = self.vector(query, spec[1])
         index = table.get('index')
         if index and index['column'] == column:
-            return self._index_topk(table, index, query, k, predicate)
+            return self._index_topk(table, index, query, k, predicate,scalar_only=scalar_only,primary_only=primary_only)
         def candidates():
             for row in self.rows(name):
                 if predicate(row):
@@ -473,10 +484,10 @@ class Database:
         import sys
         columns=tuple(sorted({term[0] for term in terms}))
         key=(Path(meta.name).name,meta.tell(),columns)
-        cached=self._filter_cache.pop(key,None)
+        cached=self._filter_cache.get(key)
         if cached is not None:
             arrays,size,end=cached
-            self._filter_cache[key]=cached
+            self._filter_cache.move_to_end(key)
             meta.seek(end)
         else:
             values_by_column={column:[] for column in columns}
@@ -498,7 +509,7 @@ class Database:
             if not cacheable:
                 return fallback_mask
             arrays={}
-            size=512
+            size=512+sys.getsizeof(columns)+sum(sys.getsizeof(column) for column in columns)
             for column,values in values_by_column.items():
                 numeric=not values or type(values[0]) is int
                 array=np.asarray(values,dtype=np.int64 if numeric else object)
@@ -526,7 +537,48 @@ class Database:
             elif op=='>=':mask &= array>=value
         return mask
 
-    def _index_topk(self, table, index, query, k, predicate):
+    SCAN_MAP_LIMIT=8*1024*1024
+    QUERY_MASK_LIMIT=2*1024*1024
+    WHOLE_MASK_ROWS=262144
+
+    def _scan_map(self,index,dtype,np):
+        name=index['file']
+        cached=self._scan_maps.get(name)
+        if cached is not None:
+            self._scan_maps.move_to_end(name)
+            return cached[0]
+        path=self.root/name
+        size=path.stat().st_size
+        if size%dtype.itemsize:raise DBError('incomplete vector index')
+        if not size:return None
+        mapped=np.memmap(path,dtype=dtype,mode='r')
+        if size<=self.SCAN_MAP_LIMIT:
+            while self._scan_maps and self._scan_map_bytes+size>self.SCAN_MAP_LIMIT:
+                self._scan_map_bytes-=self._scan_maps.popitem(last=False)[1][1]
+            self._scan_maps[name]=(mapped,size);self._scan_map_bytes+=size
+        return mapped
+
+    def _query_mask(self,index,count,terms,np,predicate):
+        import sys
+        key=(index['file'],tuple(terms))
+        cached=self._query_masks.get(key)
+        if cached is not None:
+            self._query_masks.move_to_end(key)
+            return cached[0]
+        mask=np.empty(count,dtype=np.uint8)
+        with (self.root/index['metadata']).open(encoding='utf-8') as meta:
+            for start in range(0,count,2048):
+                size=min(2048,count-start)
+                mask[start:start+size]=self._filter_chunk(meta,size,terms,np,predicate)
+        mask.flags.writeable=False
+        size=mask.nbytes+sys.getsizeof(mask)+512+sys.getsizeof(key[1])+sum(sys.getsizeof(term) for term in terms)+sum(sys.getsizeof(value) for term in terms for value in term)
+        if size<=self.QUERY_MASK_LIMIT:
+            while self._query_masks and self._query_mask_bytes+size>self.QUERY_MASK_LIMIT:
+                self._query_mask_bytes-=self._query_masks.popitem(last=False)[1][1]
+            self._query_masks[key]=(mask,size);self._query_mask_bytes+=size
+        return mask
+
+    def _index_topk(self, table, index, query, k, predicate, *, scalar_only=False, primary_only=False):
         if k == 0:
             return []
         try:
@@ -538,12 +590,21 @@ class Database:
         terms=getattr(predicate,'terms',None)
         query_array=np.asarray(query,dtype=np.float64) if np is not None else None
         dtype=np.dtype([('pk','<i8'),('offset','<u8'),('vector','<f4',(dimension,))]) if np is not None else None
+        winners=None
+        if np is not None and terms is not None:
+            from .native import available,scan
+            if available():
+                mapped=self._scan_map(index,dtype,np)
+                if mapped is None:return []
+                if not terms or len(mapped)<=self.WHOLE_MASK_ROWS:
+                    mask=self._query_mask(index,len(mapped),terms,np,predicate) if terms else slice(None)
+                    winners=list(scan(mapped,query_array,mask,k))
         def candidates():
             with (self.root/index['file']).open('rb') as src, (self.root/index['metadata']).open(encoding='utf-8') as meta:
                 file_size=os.fstat(src.fileno()).st_size
                 if file_size%record.size:raise DBError('incomplete vector index')
                 if not file_size:return
-                mapped=np.memmap(src,dtype=dtype,mode='r') if np is not None else None
+                mapped=self._scan_map(index,dtype,np) if np is not None else None
                 block_rows=2048
                 for start in range(0,file_size//record.size,block_rows):
                     count=min(block_rows,file_size//record.size-start)
@@ -580,11 +641,13 @@ class Database:
                         for position in mask:
                             values=record.unpack_from(raw,position*record.size)
                             yield sum((a-b)**2 for a,b in zip(values[2:],query)),values[0],values[1]
-        winners=heapq.nsmallest(k,candidates(),key=lambda x:(x[0],x[1]))
+        if winners is None:winners=heapq.nsmallest(k,candidates(),key=lambda x:(x[0],x[1]))
+        if primary_only:
+            return [({table['primary']:pk},math.sqrt(distance)) for distance,pk,offset in winners]
         result=[]
         with (self.root/table['file']).open('rb') as data:
             for distance,pk,offset in winners:
                 data.seek(offset)
-                row=self._read_record(data) if table['file'].endswith('.rows') else json.loads(data.readline())
+                row=self._read_record(data,scalar_only=scalar_only) if table['file'].endswith('.rows') else json.loads(data.readline())
                 result.append((row,math.sqrt(distance)))
         return result

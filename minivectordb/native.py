@@ -7,9 +7,9 @@ _library=None
 _checked=False
 
 
-def scan(entries, query, mask, k, use_simd=True):
+def available():
     global _library,_checked
-    if os.environ.get('MINIVECTOR_NATIVE')=='0':return None
+    if os.environ.get('MINIVECTOR_NATIVE')=='0':return False
     if not _checked:
         _checked=True
         try:
@@ -25,7 +25,12 @@ def scan(entries, query, mask, k, use_simd=True):
     if _library is None:
         if os.environ.get('MINIVECTOR_REQUIRE_NATIVE')=='1':
             raise RuntimeError('required native kernel could not be loaded')
-        return None
+        return False
+    return True
+
+
+def scan(entries, query, mask, k, use_simd=True):
+    if not available():return None
     import numpy as np
     k=min(k,len(entries))
     distance=np.empty(k,dtype=np.float64);keys=np.empty(k,dtype=np.int64);offsets=np.empty(k,dtype=np.uint64)
