@@ -40,7 +40,8 @@ def session(directory,old):
             code='import sys;from minivectordb import core;exec(compile(open(sys.argv.pop(1)).read(),"baseline-core","exec"),core.__dict__);'+code
             command=[sys.executable,'-u','-c',code,str(Path(args.baseline_core).resolve())]+command[4:]
     else:
-        command=[sys.executable,'-u','-m','minivectordb.server','--data',directory]
+        command=[sys.executable,'-u','-m','minivectordb.server','--data',directory,'--protocol','local']
+    if old and '--protocol' in baseline.read_text():command+=['--protocol','local']
     process=subprocess.Popen(command,cwd=ROOT,stdin=subprocess.PIPE,stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,text=True)
     def execute(statement):

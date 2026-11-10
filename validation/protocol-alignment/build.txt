@@ -1,0 +1,57 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.66kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 171B done
+#3 DONE 0.0s
+
+#4 [native-build 1/5] FROM docker.io/library/python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0
+#4 resolve docker.io/library/python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 7.66kB done
+#5 DONE 0.0s
+
+#6 [stage-1 3/6] COPY requirements.lock /app/requirements.lock
+#6 CACHED
+
+#7 [stage-1 2/6] WORKDIR /app
+#7 CACHED
+
+#8 [native-build 2/5] COPY debian-packages.lock /tmp/debian-packages.lock
+#8 CACHED
+
+#9 [native-build 3/5] RUN rm -f /etc/apt/sources.list.d/debian.sources &&     printf '%s\n'       'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20261109T000000Z bookworm main'       'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/20261109T000000Z bookworm-updates main'       'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/20261109T000000Z bookworm-security main'       > /etc/apt/sources.list &&     apt-get -o Acquire::Retries=3 update &&     xargs apt-get -o Acquire::Retries=3 install -y --no-install-recommends < /tmp/debian-packages.lock &&     rm -rf /var/lib/apt/lists/*
+#9 CACHED
+
+#10 [native-build 4/5] COPY native/topk.c /tmp/topk.c
+#10 CACHED
+
+#11 [stage-1 4/6] RUN python3 -m pip install --disable-pip-version-check --no-cache-dir     --only-binary=:all: --require-hashes --retries 3 -r /app/requirements.lock
+#11 CACHED
+
+#12 [native-build 5/5] RUN gcc -std=c11 -O3 -fPIC -shared -ffp-contract=off -DMV_WITH_PYTHON -I/usr/local/include/python3.12 /tmp/topk.c -o /tmp/libminivector.so -lm
+#12 CACHED
+
+#13 [stage-1 5/6] COPY minivectordb /app/minivectordb
+#13 DONE 0.0s
+
+#14 [stage-1 6/6] COPY --from=native-build /tmp/libminivector.so /app/minivectordb/libminivector.so
+#14 DONE 0.0s
+
+#15 exporting to image
+#15 exporting layers 0.1s done
+#15 exporting manifest sha256:04e20d9226f712790a5709069f55a098a856a1ee3bccc15a12c2036fc3ec27f9 done
+#15 exporting config sha256:40db802dcdcca1c4f84ec3065b2d62eaf32823815ccecfc5fa37d4832337db17 done
+#15 exporting attestation manifest sha256:6f57c4c97b85c2ff0c6173af7a4ecb7d8e113068bcc4503e10e9984bdc1c0c9e 0.0s done
+#15 exporting manifest list sha256:cf4fd3c24f6f2a698616d70e80618f5847f74620a2dedfcea1ca277ccf84a9d0 0.0s done
+#15 naming to docker.io/library/minivectordb:official-jsonl done
+#15 unpacking to docker.io/library/minivectordb:official-jsonl 0.0s done
+#15 DONE 0.2s

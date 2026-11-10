@@ -1,0 +1,168 @@
+{
+  "scope": "upstream public SQL and directives over local process adapter",
+  "version": "minivectordb-public-v4",
+  "error_code_policy": "nonempty code; semantic mapping not frozen",
+  "cases": [
+    {
+      "id": "sql_crud",
+      "statements": 7,
+      "restarts": 0,
+      "mode_switches": 0,
+      "errors_checked": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "sql_comparisons",
+      "statements": 4,
+      "restarts": 0,
+      "mode_switches": 0,
+      "errors_checked": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "sql_ordering",
+      "statements": 4,
+      "restarts": 0,
+      "mode_switches": 0,
+      "errors_checked": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "sql_empty",
+      "statements": 3,
+      "restarts": 0,
+      "mode_switches": 0,
+      "errors_checked": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "sql_primary_key",
+      "statements": 4,
+      "restarts": 0,
+      "mode_switches": 0,
+      "errors_checked": 1,
+      "status": "PASS"
+    },
+    {
+      "id": "sql_unicode",
+      "statements": 3,
+      "restarts": 0,
+      "mode_switches": 0,
+      "errors_checked": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "sql_bigint",
+      "statements": 3,
+      "restarts": 0,
+      "mode_switches": 0,
+      "errors_checked": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "sql_unsupported",
+      "statements": 3,
+      "restarts": 0,
+      "mode_switches": 0,
+      "errors_checked": 1,
+      "status": "PASS"
+    },
+    {
+      "id": "storage_restart",
+      "statements": 3,
+      "restarts": 1,
+      "mode_switches": 0,
+      "errors_checked": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "vector_euclidean",
+      "statements": 3,
+      "restarts": 0,
+      "mode_switches": 0,
+      "errors_checked": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "transaction_commit",
+      "statements": 6,
+      "restarts": 0,
+      "mode_switches": 0,
+      "errors_checked": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "transaction_rollback",
+      "statements": 6,
+      "restarts": 0,
+      "mode_switches": 0,
+      "errors_checked": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "storage_mutations",
+      "statements": 6,
+      "restarts": 1,
+      "mode_switches": 0,
+      "errors_checked": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "storage_multiple_tables",
+      "statements": 6,
+      "restarts": 1,
+      "mode_switches": 0,
+      "errors_checked": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "vector_ties_and_filter",
+      "statements": 5,
+      "restarts": 0,
+      "mode_switches": 0,
+      "errors_checked": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "vector_float32",
+      "statements": 3,
+      "restarts": 0,
+      "mode_switches": 0,
+      "errors_checked": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "vector_index_maintenance",
+      "statements": 9,
+      "restarts": 1,
+      "mode_switches": 1,
+      "errors_checked": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "transaction_failed_insert",
+      "statements": 8,
+      "restarts": 1,
+      "mode_switches": 0,
+      "errors_checked": 1,
+      "status": "PASS"
+    },
+    {
+      "id": "transaction_autocommit_atomic",
+      "statements": 4,
+      "restarts": 1,
+      "mode_switches": 0,
+      "errors_checked": 1,
+      "status": "PASS"
+    },
+    {
+      "id": "transaction_shutdown_rollback",
+      "statements": 5,
+      "restarts": 1,
+      "mode_switches": 0,
+      "errors_checked": 0,
+      "status": "PASS"
+    }
+  ],
+  "status": "PASS"
+}

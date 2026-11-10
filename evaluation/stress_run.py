@@ -27,13 +27,32 @@ class Process:
                 for line in stream:messages.put(line)
             finally:messages.put(None)
         self.thread=threading.Thread(target=reader,daemon=True);self.thread.start()
-        if self.protocol=='json' and self.read()!='LOCAL_SQL_READY\n':raise RuntimeError('unexpected readiness')
+        self.jsonl=False;self.sequence=0
+        if self.protocol=='json':
+            ready=self.read()
+            self.jsonl=ready!='LOCAL_SQL_READY\n'
+            if self.jsonl and json.loads(ready)!={'type':'ready'}:raise RuntimeError('unexpected readiness')
         if self.mode!='exact':self.set_mode(self.mode)
     def read(self):
         line=self.messages.get(timeout=self.timeout)
         if line is None:raise RuntimeError('database exited: '+str(self.process.poll()))
         return line
+    def request(self,op,sql=None):
+        self.sequence+=1
+        request={'id':self.sequence,'op':op}
+        if sql is not None:request.update(sql=sql,search_mode=self.mode)
+        self.process.stdin.write(json.dumps(request,ensure_ascii=False,allow_nan=False)+'\n');self.process.stdin.flush()
+        response=json.loads(self.read())
+        if type(response.get('id')) is not int or response['id']!=self.sequence or type(response.get('ok')) is not bool:
+            raise RuntimeError('invalid protocol response')
+        return response
     def execute(self,sql):
+        if self.jsonl:
+            response=self.request('execute',sql)
+            if not response['ok']:
+                error=response.get('error',{})
+                return {'error':True,'message':error.get('message'),'error_code':error.get('code')}
+            return {key:response[key] for key in ('rows','columns','affected_rows') if key in response}
         self.process.stdin.write(sql.rstrip(';')+';\n');self.process.stdin.flush()
         actual={'rows':[]}
         if self.protocol=='text':
@@ -60,6 +79,8 @@ class Process:
     def stop(self,kill=False):
         process=self.process
         if process.poll() is None and kill:process.kill()
+        elif process.poll() is None and self.jsonl and not process.stdin.closed:
+            if self.request('shutdown').get('ok') is not True:raise RuntimeError('shutdown failed')
         try:process.stdin.close()
         except BrokenPipeError:pass
         try:process.wait(timeout=10)
@@ -69,6 +90,7 @@ class Process:
     def restart(self,kill=False):self.stop(kill);self.start()
     def set_mode(self,mode):
         if mode not in ('exact','ann'):raise ValueError('unknown mode')
+        if self.jsonl:self.mode=mode;return
         result=self.execute('--mode '+mode)
         if result.get('error'):raise AssertionError('mode switch rejected: '+str(result))
         self.mode=mode

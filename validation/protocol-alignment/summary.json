@@ -1,0 +1,33 @@
+{
+  "official_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
+  "retained_commit": "b2fc011a344ebef3bb0289a461ed446d5f8c602d",
+  "image_id": "sha256:cf4fd3c24f6f2a698616d70e80618f5847f74620a2dedfcea1ca277ccf84a9d0",
+  "source_sha256": {
+    "Dockerfile": "e17243407453a6dc3b8857126ffcf4609012627e8690b955996c74ace3e2fcef",
+    "minivectordb/__main__.py": "6dfdac25c43d6389891a3d16d864a5df6206f2f7d9362c348e3ae335fa163fd4",
+    "minivectordb/core.py": "c77bd0ff6e3299aa2e0cd84551f285679471df967b99449d9711f10f38e5e583",
+    "minivectordb/distance.py": "b39e5891c7307966c79105232f2de920cfc081585502988d2897483197d33b9c",
+    "minivectordb/native.py": "072d2dd596eef5f44629cadab2fe8d98521f9707de06a0ca90ec03968931d0e0",
+    "minivectordb/server.py": "7ec0ad1c1ebfcd65eb2b9744429f88e1512761d15bf06e8cc8505116b3abbbfe",
+    "minivectordb/sql.py": "ae103704ecf5e87cbaa82e7f4e47e0ecbbf7d7cf709c04f1afc1b3aaa080bafc",
+    "minivectordb/wal.py": "f118fb5b2b6906a59a907ddcb4ad0907ca1ba082e3ba031b0583f5b40d1989cd",
+    "native/topk.c": "a43ef8c7b8d18fe21b6a2e706de5dbba6b4b309d91d5716d1ea5e572c996f64a"
+  },
+  "handshake_and_shutdown": "PASS",
+  "official_public_cases": 20,
+  "official_public_status": "PASS",
+  "regressions_passed": 100,
+  "container_settings": {
+    "startup_timeout": 120,
+    "request_timeout": 60,
+    "case_timeout": 600,
+    "max_response_bytes": 16777216,
+    "cpus": "2",
+    "memory": "2g",
+    "pids_limit": 128,
+    "abs_tol": 1e-05,
+    "rel_tol": 1e-05,
+    "error_codes": {}
+  },
+  "scope": "unmodified official checker against Docker default entrypoint; public checks, not a formal platform submission"
+}

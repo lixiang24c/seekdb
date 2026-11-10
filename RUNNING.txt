@@ -13,7 +13,7 @@ MiniVectorDB 运行与复现
 gzip JSONL，逐条独立模型核对。Docker入口使用256MiB容纳测试驱动和数据库，
 其耗时与内存不作性能成绩。失败场景可通过scripts/stress.py run --case重放。
 完整性能对照、十万SQL和故障复现结果见 PERFORMANCE_COMPARISON.txt。
-运行示例：bash scripts/reproduce.sh run < examples/basic.sql
+正式协议示例：bash scripts/reproduce.sh run < examples/basic.jsonl
 首次示例使用空数据卷，默认卷名 minivectordb-team-data；可通过
 MINIVECTOR_VOLUME 指定另一卷。程序数据统一写入容器 /data。
 再次执行 run 使用同一数据卷，已提交内容保留。不要重复执行示例中的建表。
@@ -38,18 +38,26 @@ C内核从 native/topk.c 编译，运行镜像不包含编译器。Dockerfile为
   docker build --platform linux/amd64 -t minivectordb:team .
   docker run --rm -i --network none -v minivectordb-team-data:/data minivectordb:team
 
-SQL与交互
-python3 -m minivectordb 和 python3 -m minivectordb.server 均启动SQL入口。
-stdin接收分号结束的SQL，支持多行、Unicode及双单引号转义；前台持续运行。
-支持建表、BIGINT主键、VARCHAR(n)、VECTOR(n)、多行INSERT、SELECT、
-UPDATE、DELETE、比较条件/AND、ORDER BY、LIMIT、L2_DISTANCE及向量索引。
-向量支持题面的带引号JSON数组，如 '[1,0]'，同时保留裸数组语法。
-VARCHAR中的数组形字符串仍作为字符串。向量拒绝维度错误、bool、NULL、
-非有限值和float32溢出；按float32存储。字符串长度和排序使用Unicode码点。
-不支持的SQL返回错误。默认exact；--mode ann当前复用精确检索。
-本地结果格式：LOCAL_SQL_READY；查询列名帧、行帧和完成帧；错误ok=false。
-小结果一次刷新，大结果分块刷新。诊断写stderr；EOF或SIGTERM正常退出，
-回滚未提交事务。SIGKILL后重启复用/data。无需端口或网络监听。
+SQL与正式JSONL交互
+默认入口python3 -m minivectordb、.server及Docker均采用官方STDIO_PROTOCOL.md。
+启动完成恢复后主动输出 {"type":"ready"}，随后逐行接收execute/shutdown JSON。
+execute请求包含id、op、sql、search_mode；SQL字符串内的分号和换行由JSON转义。
+每个请求只返回一行JSON，原样回传id及类型，ok为布尔值。查询返回columns/rows，
+修改返回affected_rows；错误为error.code/message，失败后可继续请求。
+shutdown先回滚未提交事务并落盘，再回复id/ok:true，flush后以0退出，无附加输出。
+所有日志写stderr，数据及大结果暂存均位于/data。容器根文件系统可以只读。
+支持BIGINT、Unicode VARCHAR、float32 VECTOR、增删改查、过滤、排序、TopK、
+向量索引、事务和恢复。exact/ann均采用精确检索，按每个请求的search_mode选择。
+
+官方工具无需pip依赖，宿主Python3.9+和Docker即可使用：
+  python3 protocol_check/run.py --image minivectordb:team --handshake-only \
+    --output artifacts/official-handshake-new
+  python3 protocol_check/run.py --image minivectordb:team \
+    --output artifacts/official-public-new
+每次使用新产物目录。工具按实际交互顺序检查，并使用只读根文件系统、禁网、
+2 CPU、2 GiB、128 PID限制运行实际Docker默认入口。
+历史纯SQL工具使用显式 --protocol local 参数，保留LOCAL_SQL_READY与多帧结果；
+此参数用于开发兼容，正式判题使用默认JSONL，不需要额外启动参数。
 
 存储、索引和事务
 不可变二进制行段、有序主键目录、全库database.wal与检查点manifest构成持久化状态。
@@ -73,31 +81,11 @@ Python合并堆为保留的候选保存向量及惰性精确比较值，内存�
 大量不同向量等距或极近时会增加精确复核开销，常规距离分离明显的查询保持快速路径。
 
 验证与正式接口状态
-官方公开样例同步自9f6df2ba5acf871376e22b64a3d0724e4b575044，42个文件逐字节一致。
-此前aa2f2b7版本的容器验证：20例/95条SQL、7次正常重启、1次模式切换、
-4项预期错误及89项回归通过；该记录不包含后续距离排序修复。
-2026-11-10距离排序修复的宿主机验证：97项回归、20个公开样例/95条SQL、
-原生内核及float32编解码ASan/UBSan均通过（未运行LeakSanitizer）。
-独立Fraction真值覆盖浮点舍入造成的并列与非并列、标量/AVX2、量化筛选、
-分块合并和事务修改。
-同日修复后容器验证：源码构建、97项回归、20个公开样例/95条SQL，以及
-禁网、2 CPU/128MiB下的已确认提交强杀恢复、EOF回滚与重启均通过。
-镜像ID为sha256:e5aec9aae790c30b0cd16f43a299e25f5b9b0de496787e105299208e58f1399c；
-构建记录中的41个源码、依赖及测试文件摘要与当前工作区一致。
-上述结果使用本地适配器，组织方正式驱动和全部正式用例仍待验证。
-后续准入复查：独立参考模型12134条SQL、85次重启全部通过；另有5组边界
-检查覆盖BIGINT极值、Unicode码点排序、失败语句原子性、DDL/索引回滚和
-极端float32向量的Fraction精确真值。默认8MiB WAL检查点的6个中断位置、
-其中5种情况下恢复再次中断后重试，以及两次重新打开均通过。
-同一修复版镜像在禁网、2 CPU、64MiB、无swap条件下通过超内存检查：
-普通表80000行、约81.6MiB，向量表140000行/128维、约85.8MiB；
-建表装载、索引、提交后强杀、未提交插入回滚、重复恢复、外部排序及过滤TopK通过。
-各阶段memory.peak不超过64MiB，OOM事件为0；该配置是本地辅助验证，
-不代表组织方冻结的全部数据规模、时间、磁盘或I/O预算已获验证。
-错误响应增加非空error_code；公开错误码映射尚未冻结，按官方README当前要求核对。
-官方README明确公开包不包含完整运行驱动；LOCAL_SQL_READY和JSON结果帧仍属
-本地传输约定。正式就绪、结果、退出和模式协议须通过平台环境预检确认。
-本轮没有正式29例的通过记录，平台上一次失败的具体阶段尚未获得。
+官方题包和协议工具同步自f4d4e26653af823a7601668802f80e374ad6643c。
+官方工具直接检查Docker默认入口：握手/关闭及20个公开用例全部通过。
+本地100项回归通过，包含保留的b2fc011a精确距离排序修复与独立Fraction对照。
+结果、构建日志和实现摘要位于validation/protocol-alignment/。
+这些检查覆盖已公开协议与样例，正式29例及性能/Agent评分由平台评测生成。
 
 开发与完整本地测评（可选）
 宿主机使用CPython 3.9～3.12时：

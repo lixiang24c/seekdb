@@ -1,39 +1,17 @@
-MiniVectorDB 本地评测接口 v1
+MiniVectorDB 官方JSONL协议与开发驱动
 
-这是项目自带的本地接口，并非组织方正式 mysqltest 协议。
-官方分支9f6df2ba5acf871376e22b64a3d0724e4b575044提供20组公开样例、95条SQL；README明确题包不包含完整运行驱动。
-SQL 执行与本地传输分开，组织方提供协议后只需替换 server/driver 适配层。
+正式协议见根目录STDIO_PROTOCOL.md，来自官方f4d4e266。默认Docker入口主动
+输出{"type":"ready"}，逐行接收execute/shutdown JSON，每个请求恰好返回一行JSON。
+id保持类型和值，ok为布尔；查询columns/rows，修改affected_rows；错误error.code/message。
+shutdown在回滚与持久化之后回复并正常退出。默认请求不是直接SQL文本。
 
-请求
-进程启动后输出 LOCAL_SQL_READY 并 flush。
-stdin 接收以分号结束的 UTF-8 SQL。字符串、反引号标识符、注释内部的分号不结束语句。
-同一进程可连续收发多条语句。收到 EOF 回滚未提交事务后关闭。
-/data 是唯一持久化、索引和外部排序目录；stderr 供诊断使用。
+evaluation/driver.py和stress_run.py使用正式JSONL；为了重放历史镜像，驱动也能
+识别旧LOCAL_SQL_READY格式。数据库只在显式--protocol local时启用旧纯SQL接口。
+公开--mode由驱动变更后续search_mode，不向正式数据库发送伪SQL控制行。
+协议和公开样例的首选入口是protocol_check/run.py，它保持官方源码原样。
 
-响应
-非查询：一行 {"ok":true,"result":...}，INSERT/UPDATE/DELETE 的结果可包含 affected。
-查询：一行 {"columns":[...]}; 每条结果一行 {"row":[...]}; 最后一行 {"ok":true}。
-错误：一行 {"ok":false,"error":"错误描述","error_code":"语义错误码"}。公开映射未冻结，当前检查非空错误码；正式映射由驱动约定。
-query 完成标识之前的所有结果行属于同一个 SQL 请求；驱动为每次等待读取设置超时。
-日志写入stderr。小结果一次刷新，大结果分块刷新，完整回复在处理下一条SQL前刷新。
+程序输出大结果时使用64KiB内存缓冲，超限暂存至数据目录，再输出单行JSON，
+避免结果全量载入内存。序列化失败时只发送错误响应，不输出半条成功报文。
 
-模式
-启动参数 --mode exact（默认）或 --mode ann。
-当前ann使用同一精确路径。独立行 --mode ann / --mode exact 可在不重启或结束事务的情况下切换，并返回mode状态。
-公开 --restart 由驱动关闭和重开进程处理，不作为SQL送入数据库。
-
-本地测试和正式评分的区别
-本地用例、独立真值和工作负载公开，不能推断隐藏用例已通过。
-I/O 统计读取整个本地容器 cgroup 的 io.stat，包含所有设备；不是正式独立数据设备的计量。
-内存读取 cgroup memory.peak，包含页缓存。正式CPU、内存、磁盘、缓存初始化和基线仍由组织方冻结。
-写入和查询分别在新容器及独立数据目录运行。查询装载、索引准备和预热计入资源统计，计时仅覆盖正式查询请求。
-计时结束后才做校验；查询真值由驱动端独立数组计算，不调用数据库实现。
-性能轮次使用不同、固定记录的种子；两组 Recall@10 分开报告，exact 还要求ID及并列顺序完全一致。
-报告不生成虚假的赛事名次、排名分或无基线的 E。
-
-资源压力检查口径补充
-memory.max是内核硬限制控制器，Linux文档允许在某些情况下临时超过其值。
-本地资源测试保留memory.peak/current/max、memory.events和swap限制，拒绝OOM事件及未完成工作负载。
-评测入口默认并强制要求memory.peak<=memory.max；该状态和原始超出字节数均输出，不将峰值裁剪为限制值。底层检查函数仍可用于单独诊断控制器事件。
-基准性能中的M始终使用真实memory.peak，未因该补充改变计算。正式准入以组织方冻结口径为准。
-内核依据：https://docs.kernel.org/admin-guide/cgroup-v2.html#memory-interface-files
+本地性能工具统计容器整体cgroup内存和I/O，原始结果不等同于正式赛事得分。
+正式协议工具config.json记录当前公开资源与超时参数；本地放宽参数不改变正式要求。

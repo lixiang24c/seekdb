@@ -10,9 +10,9 @@ class ProcessRecovery(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             p=subprocess.Popen([sys.executable,'-m','minivectordb','--data',root],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
             try:
-                self.assertEqual(p.stdout.readline().strip(),'LOCAL_SQL_READY')
+                self.assertEqual(json.loads(p.stdout.readline()),{'type':'ready'})
                 def command(sql):
-                    p.stdin.write(sql+';\n');p.stdin.flush()
+                    p.stdin.write(json.dumps({'id':'confirmed','op':'execute','sql':sql,'search_mode':'exact'})+'\n');p.stdin.flush()
                     reply=json.loads(p.stdout.readline())
                     self.assertTrue(reply['ok'],reply)
                 command('CREATE TABLE t(id BIGINT PRIMARY KEY)')
@@ -23,8 +23,8 @@ class ProcessRecovery(unittest.TestCase):
             finally:
                 if p.poll() is None: p.kill();p.wait()
                 p.stdin.close();p.stdout.close()
-            result=subprocess.run([sys.executable,'-m','minivectordb','--data',root],input='SELECT id FROM t;\n',text=True,capture_output=True,check=True)
-            rows=[json.loads(line)['row'] for line in result.stdout.splitlines()[1:] if '"row"' in line]
+            result=subprocess.run([sys.executable,'-m','minivectordb','--data',root],input=json.dumps({'id':1,'op':'execute','sql':'SELECT id FROM t;','search_mode':'exact'})+'\n'+json.dumps({'id':2,'op':'shutdown'})+'\n',text=True,capture_output=True,check=True)
+            rows=json.loads(result.stdout.splitlines()[1])['rows']
             self.assertEqual(rows,[[1]])
 
 if __name__=='__main__':unittest.main()

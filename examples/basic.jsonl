@@ -1,0 +1,11 @@
+{"id": 1, "op": "execute", "sql": "CREATE TABLE documents (id BIGINT PRIMARY KEY, category VARCHAR(12), embedding VECTOR(2));", "search_mode": "exact"}
+{"id": 2, "op": "execute", "sql": "INSERT INTO documents VALUES (1,'文档','[0,0]'),(2,'文档','[1,0]'),(3,'图像','[0,1]');", "search_mode": "exact"}
+{"id": 3, "op": "execute", "sql": "CREATE VECTOR INDEX embedding_index ON documents(embedding);", "search_mode": "exact"}
+{"id": 4, "op": "execute", "sql": "SELECT id,L2_DISTANCE(embedding,'[0,0]') AS distance FROM documents WHERE category='文档' ORDER BY distance LIMIT 10;", "search_mode": "exact"}
+{"id": 5, "op": "execute", "sql": "BEGIN;", "search_mode": "exact"}
+{"id": 6, "op": "execute", "sql": "UPDATE documents SET embedding='[0,0]' WHERE id=3;", "search_mode": "exact"}
+{"id": 7, "op": "execute", "sql": "DELETE FROM documents WHERE id=1;", "search_mode": "exact"}
+{"id": 8, "op": "execute", "sql": "SELECT * FROM documents ORDER BY id;", "search_mode": "exact"}
+{"id": 9, "op": "execute", "sql": "ROLLBACK;", "search_mode": "exact"}
+{"id": 10, "op": "execute", "sql": "SELECT * FROM documents ORDER BY id;", "search_mode": "exact"}
+{"id": 11, "op": "shutdown"}

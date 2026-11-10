@@ -1,7 +1,5 @@
-"""Local SQL transport: semicolon terminated SQL, tabular JSON rows on stdout.
-Official transport can adapt SQL.execute without changing storage semantics.
-"""
-import argparse,json,sys,signal,re
+"""Official JSONL transport, with an explicit legacy local SQL mode."""
+import argparse,json,sys,signal,re,os,tempfile,shutil,math
 from .core import Database,DBError
 from .sql import SQL
 
@@ -57,11 +55,7 @@ def error_code(error):
     if 'unknown' in message:return 'unknown_identifier'
     return 'invalid_statement' if isinstance(error,(DBError,ValueError)) else 'execution_error'
 
-def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--data',default='/data');parser.add_argument('--mode',choices=('exact','ann'),default='exact');args=parser.parse_args()
-    def terminate(signum,frame):raise SystemExit(0)
-    signal.signal(signal.SIGTERM,terminate)
-    db=Database(args.data);sql=SQL(db)
+def local_main(db,sql,args):
     print('LOCAL_SQL_READY',flush=True)
     try:
         for statement in statements(sys.stdin):
@@ -77,4 +71,88 @@ def main():
                 print(json.dumps({'ok':False,'error':str(error),'error_code':error_code(error)},ensure_ascii=False),flush=True)
                 if db.failed:break
     finally:db.close()
+
+
+
+def strict_request(line):
+    def pairs(items):
+        value={}
+        for key,item in items:
+            if key in value:raise ValueError('duplicate request key')
+            value[key]=item
+        return value
+    def invalid(value):raise ValueError('non-finite JSON number')
+    def number(value):
+        result=float(value)
+        if not math.isfinite(result):raise ValueError('non-finite JSON number')
+        return result
+    value=json.loads(line,object_pairs_hook=pairs,parse_constant=invalid,parse_float=number)
+    if not isinstance(value,dict):raise ValueError('request must be an object')
+    return value
+
+
+WIRE=json.JSONEncoder(ensure_ascii=True,allow_nan=False,separators=(',',':'))
+
+
+def send_json(value,output):
+    output.write(WIRE.encode(value)+'\n');output.flush()
+
+
+def send_query(ident,result,output,data_dir):
+    # Stage the complete response before publication: lazy SQL errors cannot
+    # leave half a JSON response on stdout. Large results spill only to /data.
+    with tempfile.SpooledTemporaryFile(max_size=65536,mode='w+',encoding='utf-8',dir=data_dir) as staged:
+        staged.write('{"id":'+WIRE.encode(ident)+',"ok":true,"columns":'+WIRE.encode(result['columns'])+',"rows":[')
+        first=True
+        for row in result['rows']:
+            if not first:staged.write(',')
+            first=False
+            for part in WIRE.iterencode(row):staged.write(part)
+        staged.write(']}\n');staged.seek(0)
+        shutil.copyfileobj(staged,output,length=65536)
+    output.flush()
+
+
+def jsonl_main(db,sql,source,output,default_mode):
+    send_json({'type':'ready'},output)
+    for line in source:
+        ident=None
+        try:
+            request=strict_request(line);ident=request.get('id')
+            if 'id' not in request:raise ValueError('missing request id')
+            if request.get('op')=='shutdown':
+                db.close()
+                send_json({'id':ident,'ok':True},output)
+                return
+            if request.get('op')!='execute':raise ValueError('unsupported operation')
+            if not isinstance(request.get('sql'),str):raise ValueError('sql must be a string')
+            mode=request.get('search_mode',default_mode)
+            if mode not in ('exact','ann'):raise ValueError('invalid search mode')
+            # Both modes currently use exact search, including filtering.
+            result=sql.execute(request['sql'])
+            if isinstance(result,dict) and 'rows' in result:send_query(ident,result,output,db.root)
+            else:
+                reply={'id':ident,'ok':True}
+                if isinstance(result,dict) and 'affected' in result:reply['affected_rows']=result['affected']
+                send_json(reply,output)
+        except Exception as error:
+            send_json({'id':ident,'ok':False,'error':{'code':error_code(error),'message':str(error)}},output)
+            if db.failed:return
+
+
+def main():
+    parser=argparse.ArgumentParser(description='MiniVectorDB official JSONL stdin/stdout server')
+    parser.add_argument('--data',default=os.environ.get('VECTORDB_DATA_DIR','/data'))
+    parser.add_argument('--mode',choices=('exact','ann'),default='exact')
+    parser.add_argument('--protocol',choices=('jsonl','local'),default='jsonl')
+    args=parser.parse_args()
+    def terminate(signum,frame):raise SystemExit(0)
+    signal.signal(signal.SIGTERM,terminate)
+    db=Database(args.data);sql=SQL(db)
+    try:
+        if args.protocol=='local':local_main(db,sql,args)
+        else:jsonl_main(db,sql,sys.stdin,sys.stdout,args.mode)
+    finally:db.close()
+
+
 if __name__=='__main__':main()

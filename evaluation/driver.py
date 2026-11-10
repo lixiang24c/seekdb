@@ -18,6 +18,7 @@ class Client:
         self.data.mkdir(parents=True, exist_ok=True)
         logs = Path(logs)
         logs.mkdir(parents=True, exist_ok=True)
+        self.mode=mode;self.sequence=0;self.jsonl=False
         self.timeout = timeout
         self.name = 'minivector-eval-' + uuid.uuid4().hex if image else None
         self.stderr = (logs / 'stderr.log').open('a')
@@ -42,7 +43,8 @@ class Client:
         self.reader.start()
         try:
             ready = self.read()
-            if ready != 'LOCAL_SQL_READY\n':
+            self.jsonl=ready!='LOCAL_SQL_READY\n'
+            if self.jsonl and json.loads(ready)!={'type':'ready'}:
                 raise AssertionError('invalid readiness: ' + repr(ready))
             if self.name:
                 self.pid = int(subprocess.check_output(['docker', 'inspect', '-f', '{{.State.Pid}}', self.name], text=True))
@@ -61,12 +63,19 @@ class Client:
 
     def execute(self, sql, error=False):
         started = time.perf_counter()
-        self.process.stdin.write(sql.rstrip().rstrip(';') + ';\n')
+        if self.jsonl:
+            self.sequence+=1
+            request={'id':self.sequence,'op':'execute','sql':sql,'search_mode':self.mode}
+            self.process.stdin.write(json.dumps(request,ensure_ascii=False,allow_nan=False)+'\n')
+        else:self.process.stdin.write(sql.rstrip().rstrip(';') + ';\n')
         self.process.stdin.flush()
         rows = []
         columns = None
         while True:
             message = json.loads(self.read())
+            if self.jsonl:
+                if type(message.get('id')) is not int or message['id']!=self.sequence or type(message.get('ok')) is not bool:raise RuntimeError('invalid response id/ok')
+                rows=message.get('rows',[])
             if 'columns' in message:
                 columns = message['columns']
             if 'row' in message:
@@ -106,6 +115,11 @@ class Client:
                 if kill:
                     process.kill()
                 elif process.stdin and not process.stdin.closed:
+                    if self.jsonl:
+                        self.sequence+=1
+                        process.stdin.write(json.dumps({'id':self.sequence,'op':'shutdown'})+'\n');process.stdin.flush()
+                        reply=json.loads(self.read())
+                        if reply.get('id')!=self.sequence or reply.get('ok') is not True:raise RuntimeError('invalid shutdown response')
                     process.stdin.close()
                 try:
                     process.wait(timeout=15)

@@ -14,7 +14,7 @@ COMMIT;
 ALTER TABLE t ADD x BIGINT;
 SELECT id FROM t;
 """
-   command=[sys.executable,'-m','minivectordb','--data',root]
+   command=[sys.executable,'-m','minivectordb','--data',root,'--protocol','local']
    first=subprocess.run(command,input=request,text=True,capture_output=True,check=True,timeout=15)
    lines=first.stdout.splitlines();self.assertEqual(lines.pop(0),'LOCAL_SQL_READY')
    frames=[json.loads(line) for line in lines]

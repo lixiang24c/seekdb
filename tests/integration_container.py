@@ -9,18 +9,12 @@ def run(image):
    p=subprocess.Popen(['docker','run','--rm','--name',name,'--network','none','--cpus','2','--memory','128m','--memory-swap','128m','-i','-v',data+':/data',image],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,bufsize=1)
    processes.append(p)
    ready=p.stdout.readline().strip()
-   assert ready=='LOCAL_SQL_READY',(ready,p.stderr.read() if p.poll() is not None else '')
+   assert json.loads(ready)=={'type':'ready'},(ready,p.stderr.read() if p.poll() is not None else '')
    return p,name
   def execute(p,sql):
-   p.stdin.write(sql+';\n');p.stdin.flush();rows=[]
-   while True:
-    line=p.stdout.readline()
-    assert line,'container exited unexpectedly'
-    value=json.loads(line)
-    if 'row' in value:rows.append(value['row'])
-    if 'ok' in value:
-     assert value['ok'],value
-     return rows
+   p.stdin.write(json.dumps({'id':1,'op':'execute','sql':sql,'search_mode':'exact'})+'\n');p.stdin.flush()
+   value=json.loads(p.stdout.readline());assert value['id']==1 and value['ok'] is True,value
+   return value.get('rows',[])
   try:
    p,name=start()
    execute(p,'CREATE TABLE t(id BIGINT PRIMARY KEY, label VARCHAR(4), v VECTOR(2))')

@@ -166,3 +166,11 @@ validation/optimization-round7/transport-comparison.json。
 88个不同检查通过；64 MiB内完成旧格式14万条语料建索引、检索和标量全表
 扫描，OOM为0。完整口径、取舍及记录见TEAM_PERFORMANCE_LEARNINGS.txt和
 validation/storage-migration/。
+
+
+官方JSONL协议对齐（2026-11-10）
+保留b2fc011a的精确距离排序修复；按官方f4d4e266接入ready、execute、
+shutdown、id类型保持、单行结果和嵌套error.code。大结果在/data有界暂存。
+官方检查器测试实际Docker默认入口：握手/关闭和全部20个公开用例通过。
+100项回归通过。旧纯SQL模式改为显式--protocol local，开发驱动兼容历史镜像。
+记录见PROTOCOL_ALIGNMENT.txt与validation/protocol-alignment/。

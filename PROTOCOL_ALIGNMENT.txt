@@ -1,0 +1,24 @@
+官方JSONL协议对齐（2026-11-10）
+
+依据：官方f4d4e26653af823a7601668802f80e374ad6643c的STDIO_PROTOCOL.md、
+protocol_check/与mysqltest/README.md。上述文件保持官方原样。
+保留远端b2fc011a344ebef3bb0289a461ed446d5f8c602d：它修复多种向量查询
+路径中的精确距离排序，并提供独立Fraction与原生边界测试，不负责通信协议。
+
+默认程序及Docker入口现采用JSONL：
+• 完成恢复后主动输出且只输出{"type":"ready"}。
+• execute接收sql/search_mode，原样回传id和值类型，响应只占一个物理行。
+• 查询返回columns/rows，修改返回affected_rows，错误返回error.code/message。
+• 正常shutdown先回滚与落盘，回复成功后退出0，之后不再输出。
+• 严格拒绝重复键与非有限JSON数值；错误后继续处理下一请求。
+• 大结果用64KiB缓冲和/data暂存，完整编码后再输出，保持有界内存与响应完整性。
+旧纯SQL接口仅通过--protocol local显式启用，历史工具已调整。
+
+验证入口使用官方protocol_check/run.py，测试实际Docker默认启动参数，
+禁网、只读根文件系统、2 CPU、2 GiB、128 PID；官方配置和检查器未修改。
+通过官方握手/关闭与全部20个公开用例（95条SQL，含重启和ann模式）。
+100项回归通过，包括远端距离排序、ID类型、SQL中的分号/换行、异常后继续、
+关闭回滚、崩溃恢复、大结果单行输出、迟发查询异常不输出半条响应。
+
+构建及原始结果：validation/protocol-alignment/。
+正式29例、性能及Agent评分仍由平台对锁定提交执行。

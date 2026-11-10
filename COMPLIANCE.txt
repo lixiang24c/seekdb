@@ -1,3 +1,5 @@
+最新状态（2026-11-10）：已按官方f4d4e266实现JSONL协议；实际Docker默认入口通过官方握手/关闭与20个公开用例，100项回归通过。见PROTOCOL_ALIGNMENT.txt。下文保留历史审核记录。
+
 MiniVectorDB 赛题符合性审核（2026-11-09）
 
 核对依据：用户提供的完整赛题说明；官方2026-competition-round2分支
