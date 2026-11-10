@@ -102,7 +102,7 @@ class Database:
     def rollback(self):
         if self.failed:raise DBError('I/O failure: reopen database before continuing')
         if self.pending is None:
-            raise DBError('no transaction')
+            return
         self.pending = None
         self._collect()
 
@@ -125,7 +125,7 @@ class Database:
 
     def commit(self):
         if self.failed:raise DBError('I/O failure: reopen database before continuing')
-        if self.pending is None:raise DBError('no transaction')
+        if self.pending is None:return
         try:
             if self.wal is None:self._publish(self.pending)
             else:
@@ -676,8 +676,6 @@ class Database:
             spec = table['columns'].get(column)
             if not spec or spec[0] != 'VECTOR' or 'index' in table:
                 raise DBError('invalid or existing vector index')
-            if any(t.get('index', {}).get('name') == name for t in self.catalog.values()):
-                raise DBError('duplicate index name')
             self.pending[table_name] = self._indexed(dict(table, index={'name':name, 'column':column}))
         return self._statement(action)
 
