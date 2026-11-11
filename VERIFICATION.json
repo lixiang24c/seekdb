@@ -1,20 +1,21 @@
 {
   "official_protocol_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
-  "baseline_commit": "7a81de12005ae78f2413f32601e59487a5658bee",
+  "baseline_commit": "fb4f468ad5134003fe3043405742cc036442265b",
   "source_sha256": {
     "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
     "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-    "minidb/engine.py": "a5ca4b3c529f49c5f30b88ee921be62e4d5b354466ef794480af67d1a1516270",
+    "minidb/engine.py": "32fe2618b49669d98e0598847d0a0876a486ef7e1dbce8e3fc39e9bb3f62c949",
     "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
     "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
-    "minidb/native.py": "a7211c7a40ba581cad3596be74d63985da1e1d8cec7d49f825a5d410f68ed7d0",
+    "minidb/indexio.py": "d071540d69b9dcde3d3333e96f1a25965be2a3d6ef9fab33513868fa9aeb7223",
+    "minidb/native.py": "4615dd6ed5ff3c2e232754abf0054e118be19e9bc58f50525129b5d32d305cd0",
     "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
     "minidb/sql.py": "87a41384e63776025b973b92b43ed4a8e135def7dce180f56c56a3ac8ee830a1",
     "minidb/storage.py": "dd7d744775b2fbe85ed7cf5e4b901b0e15317d929e26ca738cc51f3fac313dc4",
     "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
     "native/screen.c": "0fdb28a9619aa00c7a33a6cd3b49fec6206fbba3b2bcbc46a1fe33f9b54dca89"
   },
-  "image_id": "sha256:3d5b25e14ef37f0b32f8778cf6aa91e70296f915184ccf38393b0cc91ee1cf1c",
+  "image_id": "sha256:0e7b480bcf16eb34acc80a146a3ffff0ad7c1c66a39416b91bb4a9db57e93726",
   "public": {
     "scope": "public-protocol-check",
     "passed": true,
@@ -23,121 +24,121 @@
         "id": "sql_crud",
         "status": "PASS",
         "message": "",
-        "duration_ms": 746
+        "duration_ms": 876
       },
       {
         "id": "sql_comparisons",
         "status": "PASS",
         "message": "",
-        "duration_ms": 627
+        "duration_ms": 671
       },
       {
         "id": "sql_ordering",
         "status": "PASS",
         "message": "",
-        "duration_ms": 582
+        "duration_ms": 583
       },
       {
         "id": "sql_empty",
         "status": "PASS",
         "message": "",
-        "duration_ms": 580
+        "duration_ms": 609
       },
       {
         "id": "sql_primary_key",
         "status": "PASS",
         "message": "",
-        "duration_ms": 603
+        "duration_ms": 595
       },
       {
         "id": "sql_unicode",
         "status": "PASS",
         "message": "",
-        "duration_ms": 592
+        "duration_ms": 614
       },
       {
         "id": "sql_bigint",
         "status": "PASS",
         "message": "",
-        "duration_ms": 578
+        "duration_ms": 682
       },
       {
         "id": "sql_unsupported",
         "status": "PASS",
         "message": "",
-        "duration_ms": 572
+        "duration_ms": 633
       },
       {
         "id": "storage_restart",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1152
+        "duration_ms": 1183
       },
       {
         "id": "vector_euclidean",
         "status": "PASS",
         "message": "",
-        "duration_ms": 579
+        "duration_ms": 586
       },
       {
         "id": "transaction_commit",
         "status": "PASS",
         "message": "",
-        "duration_ms": 583
+        "duration_ms": 600
       },
       {
         "id": "transaction_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 594
+        "duration_ms": 587
       },
       {
         "id": "storage_mutations",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1094
+        "duration_ms": 1112
       },
       {
         "id": "storage_multiple_tables",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1106
+        "duration_ms": 1126
       },
       {
         "id": "vector_ties_and_filter",
         "status": "PASS",
         "message": "",
-        "duration_ms": 589
+        "duration_ms": 570
       },
       {
         "id": "vector_float32",
         "status": "PASS",
         "message": "",
-        "duration_ms": 577
+        "duration_ms": 544
       },
       {
         "id": "vector_index_maintenance",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1109
+        "duration_ms": 1133
       },
       {
         "id": "transaction_failed_insert",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1120
+        "duration_ms": 1190
       },
       {
         "id": "transaction_autocommit_atomic",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1079
+        "duration_ms": 1102
       },
       {
         "id": "transaction_shutdown_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1071
+        "duration_ms": 1111
       }
     ],
     "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
@@ -468,7 +469,7 @@
     "correctness": "All 80 candidate responses equal baseline; 8 baseline queries independently checked",
     "baseline_commit": "fc2567d9cea6b361bdf566216cc2f5c7da507412"
   },
-  "scope": "Current image:public20,20 independent projection/distance/decode/fallback queries under64MiB,opt-in graph43.Full3-round10000x128/1000-query workload6000responses plus query-focused3-round240-query1440responses,independent truth checks and full-workload restarts.CPU/workload noise retained.No C or storage changes;native ABI5 and earlier sanitizer/bitwise/missing-library tests remain prior-stage evidence.RUN-offline build,graph disabled.",
+  "scope": "Current image:public20;104 buffer/mapping bitwise checks under64MiB;23 SQL view/projection/fallback checks;SQL24 and opt-in graph43;64MiB74MB database full update/sort/rollback/crash-restart;64MiB70000x256 fixture with72MB vector index,7 SQL read/transaction/restart queries.Three final alternating independent-volume10000x128/1000query cohorts,6000responses checked and independent truths/restarts.Local cgroup snapshots,not formal E.Per-query mapping experiment discarded.C kernel/ABI5 unchanged;earlier native sanitizer and broad math tests remain inherited evidence.RUN-offline build,graph disabled.",
   "previous_stages": [
     {
       "commit": "77808f7c2053f394c354f9cbc249fe9f86f48835",
@@ -2050,6 +2051,23 @@
         "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
         "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
         "minidb/engine.py": "193757b1257782ed574030bba8d922ee89f4a8b920852b28cbd023afcfaaa8c9",
+        "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
+        "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+        "minidb/native.py": "a7211c7a40ba581cad3596be74d63985da1e1d8cec7d49f825a5d410f68ed7d0",
+        "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+        "minidb/sql.py": "87a41384e63776025b973b92b43ed4a8e135def7dce180f56c56a3ac8ee830a1",
+        "minidb/storage.py": "dd7d744775b2fbe85ed7cf5e4b901b0e15317d929e26ca738cc51f3fac313dc4",
+        "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
+        "native/screen.c": "0fdb28a9619aa00c7a33a6cd3b49fec6206fbba3b2bcbc46a1fe33f9b54dca89"
+      }
+    },
+    {
+      "commit": "fb4f468ad5134003fe3043405742cc036442265b",
+      "scope": "Current image:public20,20 independent projection/distance/decode/fallback queries under64MiB,opt-in graph43.Full3-round10000x128/1000-query workload6000responses plus query-focused3-round240-query1440responses,independent truth checks and full-workload restarts.CPU/workload noise retained.No C or storage changes;native ABI5 and earlier sanitizer/bitwise/missing-library tests remain prior-stage evidence.RUN-offline build,graph disabled.",
+      "source_sha256": {
+        "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
+        "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+        "minidb/engine.py": "a5ca4b3c529f49c5f30b88ee921be62e4d5b354466ef794480af67d1a1516270",
         "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
         "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
         "minidb/native.py": "a7211c7a40ba581cad3596be74d63985da1e1d8cec7d49f825a5d410f68ed7d0",
@@ -5907,5 +5925,610 @@
       "extreme primary keys",
       "restart"
     ]
+  },
+  "mmap_benchmark": {
+    "baseline_commit": "fb4f468ad5134003fe3043405742cc036442265b",
+    "final_cached_mapping": {
+      "rows": 10000,
+      "dimensions": 128,
+      "batch_size": 100,
+      "queries": 1000,
+      "filtered_queries": 500,
+      "k": 10,
+      "rounds": 3,
+      "seed": 20261207,
+      "samples": {
+        "baseline": [
+          {
+            "write_seconds": 2.598820459039416,
+            "write_resources": {
+              "memory_peak_bytes": 26918912,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 200704,
+                  "wbytes": 40857600,
+                  "rios": 16,
+                  "wios": 316,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 41058304
+            },
+            "index_prepare_seconds": 0.05892610503360629,
+            "query_seconds": 3.783602725015953,
+            "query_resources": {
+              "memory_peak_bytes": 32387072,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 290816,
+                  "wbytes": 46067712,
+                  "rios": 18,
+                  "wios": 324,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 46358528
+            }
+          },
+          {
+            "write_seconds": 2.5514175670105033,
+            "write_resources": {
+              "memory_peak_bytes": 26779648,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 4096,
+                  "wbytes": 40857600,
+                  "rios": 1,
+                  "wios": 315,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 40861696
+            },
+            "index_prepare_seconds": 0.0656311420025304,
+            "query_seconds": 3.652688731031958,
+            "query_resources": {
+              "memory_peak_bytes": 32141312,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 4096,
+                  "wbytes": 46067712,
+                  "rios": 1,
+                  "wios": 324,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 46071808
+            }
+          },
+          {
+            "write_seconds": 2.5640752390027046,
+            "write_resources": {
+              "memory_peak_bytes": 26718208,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 0,
+                  "wbytes": 40857600,
+                  "rios": 0,
+                  "wios": 314,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 40857600
+            },
+            "index_prepare_seconds": 0.05699565203394741,
+            "query_seconds": 3.5539589949767105,
+            "query_resources": {
+              "memory_peak_bytes": 33423360,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 0,
+                  "wbytes": 46067712,
+                  "rios": 0,
+                  "wios": 321,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 46067712
+            }
+          }
+        ],
+        "candidate": [
+          {
+            "write_seconds": 2.5777921639964916,
+            "write_resources": {
+              "memory_peak_bytes": 26959872,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 0,
+                  "wbytes": 40857600,
+                  "rios": 0,
+                  "wios": 315,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 40857600
+            },
+            "index_prepare_seconds": 0.07991250598570332,
+            "query_seconds": 2.970899960026145,
+            "query_resources": {
+              "memory_peak_bytes": 32370688,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 0,
+                  "wbytes": 46067712,
+                  "rios": 0,
+                  "wios": 322,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 46067712
+            }
+          },
+          {
+            "write_seconds": 2.5903075729729608,
+            "write_resources": {
+              "memory_peak_bytes": 26988544,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 0,
+                  "wbytes": 40857600,
+                  "rios": 0,
+                  "wios": 314,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 40857600
+            },
+            "index_prepare_seconds": 0.0582975129946135,
+            "query_seconds": 2.9672089269733988,
+            "query_resources": {
+              "memory_peak_bytes": 32124928,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 0,
+                  "wbytes": 46067712,
+                  "rios": 0,
+                  "wios": 322,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 46067712
+            }
+          },
+          {
+            "write_seconds": 2.5829188529751264,
+            "write_resources": {
+              "memory_peak_bytes": 26902528,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 0,
+                  "wbytes": 40857600,
+                  "rios": 0,
+                  "wios": 314,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 40857600
+            },
+            "index_prepare_seconds": 0.0576901399763301,
+            "query_seconds": 2.9687734249746427,
+            "query_resources": {
+              "memory_peak_bytes": 32108544,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 0,
+                  "wbytes": 46067712,
+                  "rios": 0,
+                  "wios": 322,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 46067712
+            }
+          }
+        ]
+      },
+      "scope": "Independent volumes and alternating image order. Query preparation outside query T but inside query B/M. Local per-device cgroup IO, filesystem sync before snapshots. No platform cache-reset procedure or fixed baseline; no formal E. Small in-container cat/sync diagnostic processes included in resource snapshots.",
+      "medians": {
+        "baseline": {
+          "write_seconds": 2.5640752390027046,
+          "query_seconds": 3.652688731031958,
+          "write_memory_peak_bytes": 26779648,
+          "query_memory_peak_bytes": 32387072,
+          "write_device_bytes": 40861696,
+          "query_device_bytes": 46071808
+        },
+        "candidate": {
+          "write_seconds": 2.5829188529751264,
+          "query_seconds": 2.9687734249746427,
+          "write_memory_peak_bytes": 26959872,
+          "query_memory_peak_bytes": 32124928,
+          "write_device_bytes": 40857600,
+          "query_device_bytes": 46067712
+        }
+      },
+      "correctness": "6000 timed responses compared; first8 per run match independent exact oracle; committed rows checked after each restart.",
+      "status": "PASS"
+    },
+    "discarded_per_query_mapping": {
+      "rows": 10000,
+      "dimensions": 128,
+      "batch_size": 100,
+      "queries": 1000,
+      "filtered_queries": 500,
+      "k": 10,
+      "rounds": 3,
+      "seed": 20261207,
+      "samples": {
+        "baseline": [
+          {
+            "write_seconds": 2.5837864549830556,
+            "write_resources": {
+              "memory_peak_bytes": 27127808,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 200704,
+                  "wbytes": 40857600,
+                  "rios": 16,
+                  "wios": 315,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 41058304
+            },
+            "index_prepare_seconds": 0.05987843201728538,
+            "query_seconds": 3.613000792975072,
+            "query_resources": {
+              "memory_peak_bytes": 32645120,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 290816,
+                  "wbytes": 46067712,
+                  "rios": 18,
+                  "wios": 324,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 46358528
+            }
+          },
+          {
+            "write_seconds": 2.5697347100358456,
+            "write_resources": {
+              "memory_peak_bytes": 26722304,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 0,
+                  "wbytes": 40857600,
+                  "rios": 0,
+                  "wios": 316,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 40857600
+            },
+            "index_prepare_seconds": 0.05806131399003789,
+            "query_seconds": 3.688730822992511,
+            "query_resources": {
+              "memory_peak_bytes": 32116736,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 0,
+                  "wbytes": 46067712,
+                  "rios": 0,
+                  "wios": 324,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 46067712
+            }
+          },
+          {
+            "write_seconds": 2.5832822670345195,
+            "write_resources": {
+              "memory_peak_bytes": 26746880,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 4096,
+                  "wbytes": 40857600,
+                  "rios": 1,
+                  "wios": 315,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 40861696
+            },
+            "index_prepare_seconds": 0.06205748702632263,
+            "query_seconds": 3.586917165957857,
+            "query_resources": {
+              "memory_peak_bytes": 32129024,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 4096,
+                  "wbytes": 46067712,
+                  "rios": 1,
+                  "wios": 322,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 46071808
+            }
+          }
+        ],
+        "candidate": [
+          {
+            "write_seconds": 2.606135780981276,
+            "write_resources": {
+              "memory_peak_bytes": 26947584,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 0,
+                  "wbytes": 40857600,
+                  "rios": 0,
+                  "wios": 314,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 40857600
+            },
+            "index_prepare_seconds": 0.059203009004704654,
+            "query_seconds": 3.775712848000694,
+            "query_resources": {
+              "memory_peak_bytes": 32436224,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 0,
+                  "wbytes": 46067712,
+                  "rios": 0,
+                  "wios": 323,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 46067712
+            }
+          },
+          {
+            "write_seconds": 2.5926517979823984,
+            "write_resources": {
+              "memory_peak_bytes": 26832896,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 0,
+                  "wbytes": 40857600,
+                  "rios": 0,
+                  "wios": 314,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 40857600
+            },
+            "index_prepare_seconds": 0.06298024696297944,
+            "query_seconds": 3.7725735820131376,
+            "query_resources": {
+              "memory_peak_bytes": 32456704,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 0,
+                  "wbytes": 46067712,
+                  "rios": 0,
+                  "wios": 323,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 46067712
+            }
+          },
+          {
+            "write_seconds": 2.548124343971722,
+            "write_resources": {
+              "memory_peak_bytes": 26894336,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 0,
+                  "wbytes": 40857600,
+                  "rios": 0,
+                  "wios": 315,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 40857600
+            },
+            "index_prepare_seconds": 0.07310658099595457,
+            "query_seconds": 3.7124403920024633,
+            "query_resources": {
+              "memory_peak_bytes": 32047104,
+              "io_by_device": {
+                "8:48": {
+                  "rbytes": 0,
+                  "wbytes": 46067712,
+                  "rios": 0,
+                  "wios": 323,
+                  "dbytes": 0,
+                  "dios": 0
+                }
+              },
+              "all_reported_device_bytes": 46067712
+            }
+          }
+        ]
+      },
+      "scope": "Independent volumes and alternating image order. Query preparation outside query T but inside query B/M. Local per-device cgroup IO, filesystem sync before snapshots. No platform cache-reset procedure or fixed baseline; no formal E. Small in-container cat/sync diagnostic processes included in resource snapshots.",
+      "medians": {
+        "baseline": {
+          "write_seconds": 2.5832822670345195,
+          "query_seconds": 3.613000792975072,
+          "write_memory_peak_bytes": 26746880,
+          "query_memory_peak_bytes": 32129024,
+          "write_device_bytes": 40861696,
+          "query_device_bytes": 46071808
+        },
+        "candidate": {
+          "write_seconds": 2.5926517979823984,
+          "query_seconds": 3.7725735820131376,
+          "write_memory_peak_bytes": 26894336,
+          "query_memory_peak_bytes": 32436224,
+          "write_device_bytes": 40857600,
+          "query_device_bytes": 46067712
+        }
+      },
+      "correctness": "6000 timed responses compared; first8 per run match independent exact oracle; committed rows checked after each restart.",
+      "status": "PASS"
+    },
+    "decision": "Per-query mapping regressed and was replaced by8MiB/16-file LRU reuse with direct borrowed block pointers;large files retain buffered path.",
+    "query_time_reduction": 0.1872361310853048
+  },
+  "mmap_buffers": {
+    "status": "PASS",
+    "reference_distance_checks": 104,
+    "dimensions": [
+      16,
+      128,
+      129,
+      4096
+    ],
+    "coverage": [
+      "mapped/buffered equality",
+      "bitwise exact sums",
+      "tail blocks",
+      "early close",
+      "consumer error cleanup",
+      "cached mapping reuse",
+      "file content unchanged",
+      "readonly buffer copy fallback",
+      "writable buffer borrowing",
+      "mapping denied fallback",
+      "environment opt-out",
+      "budget overflow buffered fallback",
+      "LRU eviction",
+      "empty index"
+    ]
+  },
+  "mmap_views": {
+    "status": "PASS",
+    "mapping_events": {
+      "queries_with_cached_maps": 20,
+      "write_invalidations": 9
+    },
+    "oracle_queries": 23,
+    "rows": 320,
+    "dimensions": 128,
+    "coverage": [
+      "raw scan before index",
+      "no duplicate Python distance computation",
+      "vector decoding omitted when unused",
+      "same/different query vectors",
+      "explicit vector projection",
+      "alias/expression ordering",
+      "filter cache reuse",
+      "native off",
+      "DESC/range/multi-key plans",
+      "LIMIT0",
+      "large-row heap fallback to sort",
+      "transaction mutation/delete",
+      "rollback",
+      "extreme primary keys",
+      "restart"
+    ]
+  },
+  "mmap_resource": {
+    "memory": "64m",
+    "limit_source": "local stress condition; official public config is 2g",
+    "stages": [
+      {
+        "stage": "load_beyond_memory",
+        "elapsed": 3.023,
+        "details": {
+          "rows": 9000,
+          "data_bytes": 74093133
+        }
+      },
+      {
+        "stage": "index_and_exact_ann_distance_projection",
+        "elapsed": 3.219,
+        "details": "PASS"
+      },
+      {
+        "stage": "full_table_update",
+        "elapsed": 3.555,
+        "details": "PASS"
+      },
+      {
+        "stage": "external_sort",
+        "elapsed": 4.75,
+        "details": "PASS"
+      },
+      {
+        "stage": "rollback_crash_restart",
+        "elapsed": 5.894,
+        "details": {
+          "status": "PASS",
+          "restart_memory_peak_bytes": 53022720
+        }
+      },
+      {
+        "stage": "complete",
+        "elapsed": 6.006,
+        "details": null
+      }
+    ],
+    "status": "PASS"
+  },
+  "large_vector_scan": {
+    "status": "PASS",
+    "rows": 70000,
+    "dimensions": 256,
+    "index_bytes": 72240008,
+    "oracle_queries": 7,
+    "elapsed_seconds": 4.319960524968337,
+    "scope": "Real storage API fixture;SQL queries/update/rollback/restart in64MiB;large index stays on buffered path",
+    "coverage": [
+      "index larger than memory",
+      "bounded exact TopK",
+      "selective filter cache",
+      "large-index buffered fallback",
+      "small overlay mapping",
+      "rollback invalidation",
+      "restart"
+    ]
+  },
+  "mmap_sql": {
+    "status": "PASS",
+    "oracle_queries": 24,
+    "transaction_visibility": "PASS",
+    "dimensions": 128,
+    "rows": 200,
+    "K": [
+      1,
+      10,
+      127,
+      128,
+      512,
+      1024
+    ],
+    "extreme_bigint_keys": true
   }
 }

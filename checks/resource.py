@@ -14,8 +14,9 @@ from _transport import Session
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--image', default='minivectordb:rewrite-complete')
+    ap.add_argument('--output', default='protocol-results/resource')
     args = ap.parse_args()
-    out = ROOT / 'protocol-results/resource'
+    out = ROOT / args.output
     out.mkdir(parents=True, exist_ok=True)
     config = json.loads((ROOT / 'protocol_check/config.json').read_text())
     config['memory'] = '64m'

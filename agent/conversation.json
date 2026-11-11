@@ -311,6 +311,16 @@
       "id": "a-projection-distance",
       "role": "assistant",
       "content": "继续优化查询端：把TopK已算出的精确分数在当前SELECT投影阶段复用，并省去未输出向量的解码。不同查询向量保持独立，触发排序回退清除局部复用；不新增跨语句缓存。"
+    },
+    {
+      "id": "u-continue-mapped-io",
+      "role": "user",
+      "content": "继续优化"
+    },
+    {
+      "id": "a-bounded-index-mapping",
+      "role": "assistant",
+      "content": "继续优化索引读取：每次查询新建映射反而慢约4.4%，改为最多8MiB/16文件的不可变索引映射LRU，块地址直接交给原生内核，数据修改/事务结束释放。大文件、映射失败或无原生库走原缓冲路径。"
     }
   ],
   "experiments": [
@@ -505,6 +515,12 @@
       "role": "tool",
       "output": "{\"public20_passed\": true, \"boundaries\": {\"status\": \"PASS\", \"oracle_queries\": 20, \"rows\": 320, \"dimensions\": 128, \"coverage\": [\"raw scan before index\", \"no duplicate Python distance computation\", \"vector decoding omitted when unused\", \"same/different query vectors\", \"explicit vector projection\", \"alias/expression ordering\", \"filter cache reuse\", \"native off\", \"DESC/range/multi-key plans\", \"LIMIT0\", \"large-row heap fallback to sort\", \"transaction mutation/delete\", \"rollback\", \"extreme primary keys\", \"restart\"]}, \"graph\": {\"status\": \"PASS\", \"oracle_queries\": 43, \"ann_mean_recall\": 1.0, \"graph_hits_before_mutation\": 12, \"rows\": 2048, \"dimensions\": 32, \"coverage\": [\"negative IDs\", \"graph actually used\", \"exact unchanged\", \"filtered exact\", \"transaction update visibility\", \"rollback\", \"committed delete invalidation\", \"rebuild with excluded rows\", \"restart rebuild\"]}, \"full_workload_medians\": {\"baseline\": {\"write_seconds\": 2.68457220797427, \"query_seconds\": 4.0050067230477, \"write_memory_peak_bytes\": 26914816, \"query_memory_peak_bytes\": 32686080, \"write_device_bytes\": 40857600, \"query_device_bytes\": 46067712}, \"candidate\": {\"write_seconds\": 2.7330926419817843, \"query_seconds\": 3.917819974012673, \"write_memory_peak_bytes\": 26927104, \"query_memory_peak_bytes\": 32219136, \"write_device_bytes\": 40857600, \"query_device_bytes\": 46067712}}, \"full_workload_query_pairs\": {\"baseline\": [3.8084713770076632, 4.025801043026149, 4.0050067230477], \"candidate\": [4.340500900987536, 3.863884854945354, 3.917819974012673]}, \"query_focused_medians\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.0046966770314611495, \"cold_filtered_seconds\": 0.057864001020789146, \"total_seconds\": 1.0608753919950686, \"unfiltered_seconds\": 0.4900894271559082, \"filtered_seconds\": 0.5698813559138216, \"median_ms\": 3.951710998080671, \"max_ms\": 60.62635098351166}, \"candidate\": {\"cold_unfiltered_seconds\": 0.004716940980870277, \"cold_filtered_seconds\": 0.05694338399916887, \"total_seconds\": 1.0009814829099923, \"unfiltered_seconds\": 0.4613277902826667, \"filtered_seconds\": 0.5452528332243674, \"median_ms\": 3.734710509888828, \"max_ms\": 60.19559898413718}}, \"query_focused_correctness\": \"All 1440 measured responses checked; first 8 independently checked\"}",
       "interpretation": "完整负载中位约快2.18%，首对样本回退；专项三对均改善，中位约快5.65%。不丢弃不利数据，结合调用/解码计数证明省去了重复工作，再保留此改动。结果及解释由Agent产生；用户贡献为明确要求Prompt讨论不停止优化推进。"
+    },
+    {
+      "id": "mapped-index-stage",
+      "role": "tool",
+      "output": "{\"public20_passed\": true, \"mapping_buffers\": {\"status\": \"PASS\", \"reference_distance_checks\": 104, \"dimensions\": [16, 128, 129, 4096], \"coverage\": [\"mapped/buffered equality\", \"bitwise exact sums\", \"tail blocks\", \"early close\", \"consumer error cleanup\", \"cached mapping reuse\", \"file content unchanged\", \"readonly buffer copy fallback\", \"writable buffer borrowing\", \"mapping denied fallback\", \"environment opt-out\", \"budget overflow buffered fallback\", \"LRU eviction\", \"empty index\"]}, \"mapping_views\": {\"status\": \"PASS\", \"mapping_events\": {\"queries_with_cached_maps\": 20, \"write_invalidations\": 9}, \"oracle_queries\": 23, \"rows\": 320, \"dimensions\": 128, \"coverage\": [\"raw scan before index\", \"no duplicate Python distance computation\", \"vector decoding omitted when unused\", \"same/different query vectors\", \"explicit vector projection\", \"alias/expression ordering\", \"filter cache reuse\", \"native off\", \"DESC/range/multi-key plans\", \"LIMIT0\", \"large-row heap fallback to sort\", \"transaction mutation/delete\", \"rollback\", \"extreme primary keys\", \"restart\"]}, \"large_vector_index\": {\"status\": \"PASS\", \"rows\": 70000, \"dimensions\": 256, \"index_bytes\": 72240008, \"oracle_queries\": 7, \"elapsed_seconds\": 4.319960524968337, \"scope\": \"Real storage API fixture;SQL queries/update/rollback/restart in64MiB;large index stays on buffered path\", \"coverage\": [\"index larger than memory\", \"bounded exact TopK\", \"selective filter cache\", \"large-index buffered fallback\", \"small overlay mapping\", \"rollback invalidation\", \"restart\"]}, \"large_database_resource\": {\"memory\": \"64m\", \"limit_source\": \"local stress condition; official public config is 2g\", \"stages\": [{\"stage\": \"load_beyond_memory\", \"elapsed\": 3.023, \"details\": {\"rows\": 9000, \"data_bytes\": 74093133}}, {\"stage\": \"index_and_exact_ann_distance_projection\", \"elapsed\": 3.219, \"details\": \"PASS\"}, {\"stage\": \"full_table_update\", \"elapsed\": 3.555, \"details\": \"PASS\"}, {\"stage\": \"external_sort\", \"elapsed\": 4.75, \"details\": \"PASS\"}, {\"stage\": \"rollback_crash_restart\", \"elapsed\": 5.894, \"details\": {\"status\": \"PASS\", \"restart_memory_peak_bytes\": 53022720}}, {\"stage\": \"complete\", \"elapsed\": 6.006, \"details\": null}], \"status\": \"PASS\"}, \"graph\": {\"status\": \"PASS\", \"oracle_queries\": 43, \"ann_mean_recall\": 1.0, \"graph_hits_before_mutation\": 12, \"rows\": 2048, \"dimensions\": 32, \"coverage\": [\"negative IDs\", \"graph actually used\", \"exact unchanged\", \"filtered exact\", \"transaction update visibility\", \"rollback\", \"committed delete invalidation\", \"rebuild with excluded rows\", \"restart rebuild\"]}, \"final_workload_medians\": {\"baseline\": {\"write_seconds\": 2.5640752390027046, \"query_seconds\": 3.652688731031958, \"write_memory_peak_bytes\": 26779648, \"query_memory_peak_bytes\": 32387072, \"write_device_bytes\": 40861696, \"query_device_bytes\": 46071808}, \"candidate\": {\"write_seconds\": 2.5829188529751264, \"query_seconds\": 2.9687734249746427, \"write_memory_peak_bytes\": 26959872, \"query_memory_peak_bytes\": 32124928, \"write_device_bytes\": 40857600, \"query_device_bytes\": 46067712}}, \"discarded_mapping_medians\": {\"baseline\": {\"write_seconds\": 2.5832822670345195, \"query_seconds\": 3.613000792975072, \"write_memory_peak_bytes\": 26746880, \"query_memory_peak_bytes\": 32129024, \"write_device_bytes\": 40861696, \"query_device_bytes\": 46071808}, \"candidate\": {\"write_seconds\": 2.5926517979823984, \"query_seconds\": 3.7725735820131376, \"write_memory_peak_bytes\": 26894336, \"query_memory_peak_bytes\": 32436224, \"write_device_bytes\": 40857600, \"query_device_bytes\": 46067712}}, \"query_time_reduction\": 0.1872361310853048}",
+      "interpretation": "初始每查询重建映射回退，保留该结果后调整为有界复用。最终1000查询中位3.652689→2.968773秒，减少18.72%，写入/I/O/内存基本持平。64MiB下72MB向量索引明确走缓冲路径，未依靠全表载入。该实现、执行和解释来自Agent；用户要求讨论Prompt同时持续优化。"
     }
   ],
   "implementation": {
@@ -513,10 +529,11 @@
     "source_sha256": {
       "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
       "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-      "minidb/engine.py": "a5ca4b3c529f49c5f30b88ee921be62e4d5b354466ef794480af67d1a1516270",
+      "minidb/engine.py": "32fe2618b49669d98e0598847d0a0876a486ef7e1dbce8e3fc39e9bb3f62c949",
       "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
       "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
-      "minidb/native.py": "a7211c7a40ba581cad3596be74d63985da1e1d8cec7d49f825a5d410f68ed7d0",
+      "minidb/indexio.py": "d071540d69b9dcde3d3333e96f1a25965be2a3d6ef9fab33513868fa9aeb7223",
+      "minidb/native.py": "4615dd6ed5ff3c2e232754abf0054e118be19e9bc58f50525129b5d32d305cd0",
       "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
       "minidb/sql.py": "87a41384e63776025b973b92b43ed4a8e135def7dce180f56c56a3ac8ee830a1",
       "minidb/storage.py": "dd7d744775b2fbe85ed7cf5e4b901b0e15317d929e26ca738cc51f3fac313dc4",
@@ -524,7 +541,7 @@
       "native/screen.c": "0fdb28a9619aa00c7a33a6cd3b49fec6206fbba3b2bcbc46a1fe33f9b54dca89"
     },
     "storage": "Immutable segments, bounded point overlays, preplanned <=16-old-run INSERT fusion with original wide-cascade fallback; atomic fsynced manifest retained.",
-    "query": "Exact C-products/Python-fsum TopK, per-query projection distance reuse, batched row lookup and bounded scalar caches; optional graph remains off.",
+    "query": "Exact native screening/products and Python fsum, query-local distance projection,8MiB/16-file immutable mapping LRU,batched row lookup and bounded predicate caches;large indexes stay buffered,graph off.",
     "vector_input": "Original numeric grammar validated per bounded vector body, standard-library maps convert elements; large inputs retain scalar validation; finite/type/dimension semantics preserved.",
     "sql_lexer": "Quote-delimited chunk extraction via str.find, with existing doubled-quote/backtick and malformed-input semantics."
   },
@@ -533,7 +550,8 @@
     "图按索引数据在CREATE INDEX或重启时建立；数据变更会失效并走精确路径，事务内建索引不触发图构建。",
     "召回验证为小样本，单轮查询耗时与构建成本分开记录；图实验未测完整物理I/O；之后默认精确版本已补齐本地cgroup资源快照，仍无最新平台正式成绩。",
     "学生理解仅依据真实用户原文；Agent解释和工具执行不冒充学生贡献。",
-    "列值分组是256KiB估算预算的内存缓存，第二种同列条件才构建；不是持久化普通列索引，首两种条件、超预算及多列过滤仍需扫描。"
+    "列值分组是256KiB估算预算的内存缓存，第二种同列条件才构建；不是持久化普通列索引，首两种条件、超预算及多列过滤仍需扫描。",
+    "索引映射只覆盖预算内的小型不可变文件；8MiB映射范围加元数据，实际容器内存仍含页缓存/页表。大文件走原缓冲路径，本地资源不代表正式平台冷缓存结果。"
   ],
   "implementation_history": [
     {
@@ -596,6 +614,10 @@
     {
       "commit": "7a81de12005ae78f2413f32601e59487a5658bee",
       "note": "Prior engineering and literature material preserved; native ABI5 retained."
+    },
+    {
+      "commit": "fb4f468ad5134003fe3043405742cc036442265b",
+      "note": "Projection reuse retained;index reader now has bounded immutable mappings."
     }
   ],
   "material_notes": {

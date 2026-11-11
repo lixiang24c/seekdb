@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from .native import Screen
 from .graph import GraphCache
 from .filters import ValueGroups
+from .indexio import IndexReader
 from .sql import DBError, Parser, convert, fail, vector
 from .storage import Codec, INDEX_MAGIC, Storage, read_rows, write_rows
 
@@ -76,6 +77,7 @@ class Database:
         self.filter_masks = OrderedDict()
         self.filter_masks_bytes = 0
         self.value_groups = ValueGroups()
+        self.index_reader = IndexReader()
         self.graphs = GraphCache()
         if self.graphs.enabled:
             for name, table in sorted(self.store.tables.items()):
@@ -84,6 +86,7 @@ class Database:
     def install(self, name, table):
         self.store.install(name, table)
         self.graphs.validate(self.store)
+        self.index_reader.clear()
 
     def column(self, table, name):
         for i, c in enumerate(table['cols']):
@@ -147,9 +150,10 @@ class Database:
             if self.store.in_txn:
                 self.store.commit()
                 self.graphs.validate(self.store)
+                self.index_reader.clear()
             return {}
         if op == 'rollback':
-            self.store.rollback(); self.graphs.validate(self.store); return {}
+            self.store.rollback(); self.graphs.validate(self.store); self.index_reader.clear(); return {}
         name = st['table'].casefold()
         if op == 'create':
             if name in self.store.tables:
@@ -333,14 +337,13 @@ class Database:
         reuse = entry[0] if entry is not None else None
         pending = {} if mask_key is not None and entry is None and screen.query is not None else None
         pending_cost = len(repr(mask_key)) * 4 + 256
+        block_bytes = fmt.size * max(1, 65536 // fmt.size)
         for path, excluded in self.store.index_segments(table):
-            with open(path, 'rb') as f:
-                if f.read(8) != INDEX_MAGIC: raise OSError('invalid index header')
-                block_bytes = fmt.size * max(1, 65536 // fmt.size)
+            with self.index_reader.blocks(path, block_bytes, INDEX_MAGIC, mapped=screen.query is not None) as blocks:
                 cached = reuse.get(path.name) if reuse is not None else None
                 chunks = [] if pending is not None else None
                 position = 0
-                while data := f.read(block_bytes):
+                for data, pointer in blocks:
                     if len(data) % fmt.size: raise OSError('incomplete index record')
                     mask = None
                     if (screen.query is not None or cached is not None) and (filtering or excluded):
@@ -356,10 +359,11 @@ class Database:
                                 if pending_cost > MASK_BYTES: pending, chunks = None, None
                                 else: chunks.append(mask)
                         position += count
-                    positions = screen.select(data, -heap[0][0] if len(heap) == k else math.inf, mask, k=None if filtering else k)
+                    positions = screen.select(data, -heap[0][0] if len(heap) == k else math.inf, mask, k=None if filtering else k, pointer=pointer)
                     if positions is not None:
                         candidates = ((key_format.unpack_from(data, pos * fmt.size)[0], pos, None) for pos in positions)
                     else:
+                        if isinstance(data, memoryview): data = bytes(data)
                         values_iter = ((fmt.unpack_from(data, pos * fmt.size) for pos in range(len(mask)) if mask[pos]) if mask is not None else
                                        fmt.iter_unpack(data) if allowed is None else
                                        (fmt.unpack_from(data, pos) for pos in range(0, len(data), fmt.size)
@@ -367,7 +371,7 @@ class Database:
                         candidates = ((values[0], None, values[1:]) for values in values_iter)
                     for ident, pos, vec in candidates:
                         if ident in excluded: continue
-                        distance = screen.squared(data, pos) if pos is not None else None
+                        distance = screen.squared(data, pos, pointer=pointer) if pos is not None else None
                         if distance is None:
                             if vec is None: vec = fmt.unpack_from(data, pos * fmt.size)[1:]
                             if math.dist(query, vec) > radius: continue
@@ -577,4 +581,6 @@ class Database:
 
     def close(self):
         try: self.store.close()
-        finally: self.graphs.close()
+        finally:
+            try: self.graphs.close()
+            finally: self.index_reader.clear()

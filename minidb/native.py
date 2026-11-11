@@ -46,26 +46,37 @@ class Screen:
         self.output = None
         self.terms = self.terms_pointer = None
 
-    def squared(self, data, position):
+    @staticmethod
+    def pointer(data):
+        if isinstance(data, bytes): return data, None
+        try:
+            owner = ctypes.c_char.from_buffer(data)
+        except (TypeError, ValueError, BufferError):
+            return bytes(data), None
+        return ctypes.c_char_p(ctypes.addressof(owner)), owner
+
+    def squared(self, data, position, pointer=None):
         if self.query is None: return None
         if self.terms is None:
             self.terms = array('d', [0.]) * self.dimension
             self.terms_pointer = (ctypes.c_double * self.dimension).from_buffer(self.terms)
-        if not _library.mv_squared_terms(data, len(data), self.dimension, self.query, position, self.terms_pointer):
+        if pointer is None: pointer, owner = self.pointer(data)
+        if not _library.mv_squared_terms(pointer, len(data), self.dimension, self.query, position, self.terms_pointer):
             return None
         return math.fsum(self.terms)
 
-    def select(self, data, bound, mask=None, k=None):
+    def select(self, data, bound, mask=None, k=None, pointer=None):
         if self.query is None: return None
         count = len(data) // (8 + self.dimension * 4)
         if mask is not None and len(mask) != count: raise ValueError('invalid native mask')
         if count > self.capacity:
             self.output = (ctypes.c_uint32 * count)()
             self.capacity = count
+        if pointer is None: pointer, owner = self.pointer(data)
         if k is None:
-            result = _library.mv_screen(data, len(data), self.dimension, self.query, bound, mask, self.output)
+            result = _library.mv_screen(pointer, len(data), self.dimension, self.query, bound, mask, self.output)
         else:
-            result = _library.mv_screen_topk(data, len(data), self.dimension, self.query, bound, mask, k, self.output)
+            result = _library.mv_screen_topk(pointer, len(data), self.dimension, self.query, bound, mask, k, self.output)
         if result == ctypes.c_size_t(-1).value: return None
         if result > count: raise RuntimeError('invalid native result count')
         return self.output[:result]
