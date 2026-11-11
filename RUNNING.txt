@@ -22,7 +22,7 @@ SQL与检索
 支持比较=、<、<=、>、>=，AND、ORDER BY多键与ASC/DESC、LIMIT，以及L2_DISTANCE和过滤后精确TopK。
 VARCHAR按Unicode码点计数和排序；BIGINT保留有符号64位精度；向量入库及查询参数均转为有限float32。
 并列排序按主键升序；不支持的语句在执行前拒绝。UPDATE affected_rows按匹配行数返回。
-CREATE VECTOR INDEX建立自实现磁盘平面索引，保存主键与float32向量；exact和ann均可得到精确结果。
+CREATE VECTOR INDEX建立自实现磁盘平面索引，保存主键与float32向量；默认exact和ann均得到精确结果；可选图模式见本文末尾。
 无过滤的距离TopK可以使用平面索引；有过滤时先过滤再检索。索引和记录由同一提交发布，回滚及重启状态一致。
 错误返回ok:false及非空error.code；语法/类型/主键错误后继续接收请求。持久化I/O失败记录stderr并退出，重启重新读取提交状态。
 
@@ -65,7 +65,7 @@ python3 checks/model.py
 
 当前取舍
 INSERT采用分段写入及分层归并；UPDATE/DELETE重写受影响的分段，磁盘需容纳提交前后版本及归并临时段。
-索引采用精确线性扫描，不作近似剪枝。索引TopK通过记录偏移只读取获选行。建索引只生成向量侧文件，保留原数据段；新版本可读取旧版主键索引，旧版程序不能读取新偏移索引。
+默认索引采用精确线性扫描，不作近似剪枝。索引TopK通过记录偏移只读取获选行。建索引只生成向量侧文件，保留原数据段；新版本可读取旧版主键索引，旧版程序不能读取新偏移索引。
 本地64MiB压力条件与官方公开2GiB配置分开记录。正式成绩由平台对指定提交评测产生。
 
 通用优化补充
@@ -86,7 +86,7 @@ INSERT采用分段写入及分层归并；UPDATE/DELETE重写受影响的分段�
 
 向量计算内核
 16至4096维索引块可使用自编译C筛选，保留候选仍按原精确距离/主键规则排名。默认自动加载；MINIDB_NATIVE=0可关闭对照。
-运行镜像只增加约15KiB的libscreen.so；GCC仅在构建阶段存在。依赖、冷构建与数值验证见NATIVE_MIGRATION.txt。
+当前运行镜像的libscreen.so约87KiB；GCC仅在构建阶段存在。依赖、冷构建与数值验证见NATIVE_MIGRATION.txt。
 
 RUN断网构建复现
 docker build --platform linux/amd64 --network=none --no-cache -t minivectordb:rewrite-complete .
@@ -94,12 +94,16 @@ docker build --platform linux/amd64 --network=none --no-cache -t minivectordb:re
 
 块内原生TopK
 无普通列过滤的向量TopK可在C内收紧块级候选范围，保留误差带/距离并列，最终仍用Python精确排序；过滤查询沿用原筛选。
-ABI为2，构建继续RUN断网，细节见TOPK_MIGRATION.txt，实验与最终对比见TOPK_BENCHMARK.json。
+本阶段ABI为2（当前为4），构建继续RUN断网，细节见TOPK_MIGRATION.txt，实验与最终对比见TOPK_BENCHMARK.json。
 
 SIMD调度
-原生ABI为3；支持AVX2且块足够密集时自动向量化，否则使用标量。MINIDB_SIMD=0可强制标量进行对照，正常启动不需要参数。
+SIMD阶段ABI为3（当前为4）；支持AVX2且块足够密集时自动向量化，否则使用标量。MINIDB_SIMD=0可强制标量进行对照，正常启动不需要参数。
 没有新增依赖；构建仍RUN断网。细节见SIMD_MIGRATION.txt。
 
 过滤缓存
 候选ID采用紧凑int64数组，预算512KiB；另用128KiB缓存索引顺序字节掩码，按数据/索引版本隔离。超预算回到原路径。
 没有新的依赖或持久化文件；详见FILTER_MASK_MIGRATION.txt。
+
+可选图索引
+新增自实现分层邻近图，默认关闭。MINIDB_ANN_GRAPH=1且search_mode=ann时，符合范围的无过滤TopK可使用图；exact及带过滤查询保持精确。
+查询宽度默认512；变更使图失效，返回精确路径。构图和重启成本、召回验证及启用方式见GRAPH_MIGRATION.txt。

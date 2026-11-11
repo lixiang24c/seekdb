@@ -15,7 +15,7 @@ def available():
         try:
             lib = ctypes.CDLL(str(Path(__file__).with_name('libscreen.so')))
             lib.mv_screen_abi.restype = ctypes.c_uint
-            if lib.mv_screen_abi() != 3: return False
+            if lib.mv_screen_abi() != 4: return False
             lib.mv_screen.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_double), ctypes.c_double, ctypes.c_char_p,
                 ctypes.POINTER(ctypes.c_uint32)]

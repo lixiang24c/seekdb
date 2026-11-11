@@ -1,19 +1,19 @@
 {
   "official_protocol_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
-  "baseline_commit": "04a1982fc8c5b04d45ebbd26de7a95d5f45e95b3",
+  "baseline_commit": "ad592573d90d0ffb9efe5f323bfef43e7335ba7f",
   "source_sha256": {
+    "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
     "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-    "minidb/engine.py": "9d6f20cd9745015adf411fc220903da2cebbcd7d45d794d769f21746d2644031",
-    "minidb/native.py": "5206f9071ec1b908af88db39aaae319629e939faa0dbc2c5dda56f4a7df0aaf0",
+    "minidb/engine.py": "491f18e2857d9dc9a4eb56ad6f848a9d460e9238c98dcf864ebca4ebd071d0bd",
+    "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+    "minidb/native.py": "97b66b0e47977884bc0a3b414cd5deb2d8a28db3a13a550adca211acb06f9a40",
     "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
     "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
     "minidb/storage.py": "751f01ef9904c1939a44b62d6796d2f163148e7bbd606feca99b7bfb9124c37f",
-    "native/screen.c": "e7f0b3f0e789c0caa89cfa300ca644c5ce5edb7113f25b8b49512f257c5bbfe9",
-    "Dockerfile": "61a838d09aa42cdf993d7628ca17fbf27ca0993ae9eeb8507dad8db9e8f5b2a6",
-    ".dockerignore": "d04e7a34f971bcf973caa86450cc1f243cb6bb9cf31bc25c37c4327a3e7388bf",
-    "requirements.lock": "5e1d72d066dd643601e7ed6ca3b8de91953960514013f896eef27f8655ff2ffe"
+    "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
+    "native/screen.c": "0bb4998bc99a0a597c72861859a055916a6019ced614633707b3eccbc7b87796"
   },
-  "image_id": "sha256:9d48f595a1c59e753019f0e0a23a93f15424e5a754a66c9a8772ebe726da41a3",
+  "image_id": "sha256:71d7c06578bfcd047dca3eba902c912b3665e0006c03046cc6c8b14b4cc8ffe7",
   "public": {
     "scope": "public-protocol-check",
     "passed": true,
@@ -22,85 +22,85 @@
         "id": "sql_crud",
         "status": "PASS",
         "message": "",
-        "duration_ms": 746
+        "duration_ms": 730
       },
       {
         "id": "sql_comparisons",
         "status": "PASS",
         "message": "",
-        "duration_ms": 612
+        "duration_ms": 614
       },
       {
         "id": "sql_ordering",
         "status": "PASS",
         "message": "",
-        "duration_ms": 616
+        "duration_ms": 579
       },
       {
         "id": "sql_empty",
         "status": "PASS",
         "message": "",
-        "duration_ms": 597
+        "duration_ms": 554
       },
       {
         "id": "sql_primary_key",
         "status": "PASS",
         "message": "",
-        "duration_ms": 754
+        "duration_ms": 572
       },
       {
         "id": "sql_unicode",
         "status": "PASS",
         "message": "",
-        "duration_ms": 667
+        "duration_ms": 556
       },
       {
         "id": "sql_bigint",
         "status": "PASS",
         "message": "",
-        "duration_ms": 621
+        "duration_ms": 589
       },
       {
         "id": "sql_unsupported",
         "status": "PASS",
         "message": "",
-        "duration_ms": 568
+        "duration_ms": 563
       },
       {
         "id": "storage_restart",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1124
+        "duration_ms": 1039
       },
       {
         "id": "vector_euclidean",
         "status": "PASS",
         "message": "",
-        "duration_ms": 562
+        "duration_ms": 553
       },
       {
         "id": "transaction_commit",
         "status": "PASS",
         "message": "",
-        "duration_ms": 542
+        "duration_ms": 626
       },
       {
         "id": "transaction_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 649
+        "duration_ms": 578
       },
       {
         "id": "storage_mutations",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1080
+        "duration_ms": 1149
       },
       {
         "id": "storage_multiple_tables",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1325
+        "duration_ms": 1047
       },
       {
         "id": "vector_ties_and_filter",
@@ -112,31 +112,31 @@
         "id": "vector_float32",
         "status": "PASS",
         "message": "",
-        "duration_ms": 544
+        "duration_ms": 542
       },
       {
         "id": "vector_index_maintenance",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1193
+        "duration_ms": 1082
       },
       {
         "id": "transaction_failed_insert",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1095
+        "duration_ms": 1050
       },
       {
         "id": "transaction_autocommit_atomic",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1043
+        "duration_ms": 1065
       },
       {
         "id": "transaction_shutdown_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1104
+        "duration_ms": 1065
       }
     ],
     "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
@@ -467,7 +467,7 @@
     "correctness": "All 80 candidate responses equal baseline; 8 baseline queries independently checked",
     "baseline_commit": "fc2567d9cea6b361bdf566216cc2f5c7da507412"
   },
-  "scope": "Final image: public20, one final 128D model (250 operations /750 independent queries), SQL24, 32 mask-oracle queries under64MiB including native-off fallback, and two final alternating three-round performance cohorts (1440 measured responses). Native C code unchanged from04a1982f; its dual-mode/sanitizer checks remain inherited. Earlier intermediate cache models are not counted as final-image evidence.",
+  "scope": "Current image: public20; default-mode 250-operation/750-query 128D model; enabled graph 43 oracle queries under64MiB; native screen648/topk828 boundary checks; graph ASan/UBSan; RUN-offline no-cache build. Benchmarks compare optional graph against ad592573 across three uniform seeds, clustering and OOD. Other benchmark/recovery/cache sections describe prior stages, not fresh runs of current image. Graph disabled by default.",
   "previous_stages": [
     {
       "commit": "77808f7c2053f394c354f9cbc249fe9f86f48835",
@@ -1895,6 +1895,29 @@
         "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
       },
       "scope": "Final SIMD image: public20, SQL24, AVX2/scalar boundary probes and final three-round performance. Host sanitizer passed. Initial SIMD model scope recorded separately; large storage/resource inherited."
+    },
+    {
+      "commit": "ad592573d90d0ffb9efe5f323bfef43e7335ba7f",
+      "source_sha256": {
+        "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+        "minidb/engine.py": "9d6f20cd9745015adf411fc220903da2cebbcd7d45d794d769f21746d2644031",
+        "minidb/native.py": "5206f9071ec1b908af88db39aaae319629e939faa0dbc2c5dda56f4a7df0aaf0",
+        "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+        "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
+        "minidb/storage.py": "751f01ef9904c1939a44b62d6796d2f163148e7bbd606feca99b7bfb9124c37f",
+        "native/screen.c": "e7f0b3f0e789c0caa89cfa300ca644c5ce5edb7113f25b8b49512f257c5bbfe9",
+        "Dockerfile": "61a838d09aa42cdf993d7628ca17fbf27ca0993ae9eeb8507dad8db9e8f5b2a6",
+        ".dockerignore": "d04e7a34f971bcf973caa86450cc1f243cb6bb9cf31bc25c37c4327a3e7388bf",
+        "requirements.lock": "5e1d72d066dd643601e7ed6ca3b8de91953960514013f896eef27f8655ff2ffe"
+      },
+      "scope": "Final image: public20, one final 128D model (250 operations /750 independent queries), SQL24, 32 mask-oracle queries under64MiB including native-off fallback, and two final alternating three-round performance cohorts (1440 measured responses). Native C code unchanged from04a1982f; its dual-mode/sanitizer checks remain inherited. Earlier intermediate cache models are not counted as final-image evidence.",
+      "model": {
+        "status": "PASS",
+        "seed": 20261129,
+        "dimensions": 128,
+        "operations": 250,
+        "queries": 750
+      }
     }
   ],
   "general_benchmark": {
@@ -2114,7 +2137,7 @@
   },
   "model": {
     "status": "PASS",
-    "seed": 20261129,
+    "seed": 20261201,
     "dimensions": 128,
     "operations": 250,
     "queries": 750
@@ -2334,12 +2357,12 @@
     "legacy_upgrade": true
   },
   "native_build": {
-    "previous_build_commit": "04a1982fc8c5b04d45ebbd26de7a95d5f45e95b3",
+    "previous_build_commit": "ad592573d90d0ffb9efe5f323bfef43e7335ba7f",
     "builder_image": "gcc:12-bookworm@sha256:44482187aa3865ad1e2477dc8c56bae4fd8e071e7d99c5f44956effc7f7cc846",
     "builder_platform": "linux/amd64",
     "compiler": "GCC 12.5.0",
     "runtime_base": "python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0",
-    "command": "docker build --platform linux/amd64 --network=none -t minivectordb:bitmap-candidate .",
+    "command": "docker build --platform linux/amd64 --network=none --no-cache -t minivectordb:graph-candidate .",
     "build_status": "PASS",
     "RUN_network": "none",
     "RUN_package_downloads": false,
@@ -2353,8 +2376,8 @@
       "-fno-fast-math",
       "-lm"
     ],
-    "library_bytes": 80504,
-    "library_sha256": "83126a48873518a772e0d94fa7d952ae91b31b0582b4891d7858beeb5569e434",
+    "library_bytes": 89384,
+    "library_sha256": "1195f41b5ecd7827b2ea5f0b0a349e5c10d0cc0eacc06ec8567723f4e0c01d54",
     "runtime_libraries": [
       "libc.so.6",
       "libm.so.6"
@@ -2362,31 +2385,160 @@
     "runtime_native_load": "PASS",
     "runtime_compiler_present": false,
     "source_sha256": {
+      "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
       "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-      "minidb/engine.py": "9d6f20cd9745015adf411fc220903da2cebbcd7d45d794d769f21746d2644031",
-      "minidb/native.py": "5206f9071ec1b908af88db39aaae319629e939faa0dbc2c5dda56f4a7df0aaf0",
+      "minidb/engine.py": "491f18e2857d9dc9a4eb56ad6f848a9d460e9238c98dcf864ebca4ebd071d0bd",
+      "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+      "minidb/native.py": "97b66b0e47977884bc0a3b414cd5deb2d8a28db3a13a550adca211acb06f9a40",
       "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
       "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
       "minidb/storage.py": "751f01ef9904c1939a44b62d6796d2f163148e7bbd606feca99b7bfb9124c37f",
-      "native/screen.c": "e7f0b3f0e789c0caa89cfa300ca644c5ce5edb7113f25b8b49512f257c5bbfe9",
-      "Dockerfile": "61a838d09aa42cdf993d7628ca17fbf27ca0993ae9eeb8507dad8db9e8f5b2a6",
-      ".dockerignore": "d04e7a34f971bcf973caa86450cc1f243cb6bb9cf31bc25c37c4327a3e7388bf",
-      "requirements.lock": "5e1d72d066dd643601e7ed6ca3b8de91953960514013f896eef27f8655ff2ffe"
+      "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
+      "native/screen.c": "0bb4998bc99a0a597c72861859a055916a6019ced614633707b3eccbc7b87796"
     },
     "screen_probe_memory_limit": "64MiB",
     "public": {
+      "scope": "public-protocol-check",
       "passed": true,
-      "cases": 20
+      "cases": [
+        {
+          "id": "sql_crud",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 730
+        },
+        {
+          "id": "sql_comparisons",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 614
+        },
+        {
+          "id": "sql_ordering",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 579
+        },
+        {
+          "id": "sql_empty",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 554
+        },
+        {
+          "id": "sql_primary_key",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 572
+        },
+        {
+          "id": "sql_unicode",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 556
+        },
+        {
+          "id": "sql_bigint",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 589
+        },
+        {
+          "id": "sql_unsupported",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 563
+        },
+        {
+          "id": "storage_restart",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 1039
+        },
+        {
+          "id": "vector_euclidean",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 553
+        },
+        {
+          "id": "transaction_commit",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 626
+        },
+        {
+          "id": "transaction_rollback",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 578
+        },
+        {
+          "id": "storage_mutations",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 1149
+        },
+        {
+          "id": "storage_multiple_tables",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 1047
+        },
+        {
+          "id": "vector_ties_and_filter",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 608
+        },
+        {
+          "id": "vector_float32",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 542
+        },
+        {
+          "id": "vector_index_maintenance",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 1082
+        },
+        {
+          "id": "transaction_failed_insert",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 1050
+        },
+        {
+          "id": "transaction_autocommit_atomic",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 1065
+        },
+        {
+          "id": "transaction_shutdown_rollback",
+          "status": "PASS",
+          "message": "",
+          "duration_ms": 1065
+        }
+      ],
+      "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
     },
     "native_stage_also_rebuilt_without_cache": true,
-    "abi": 3,
+    "abi": 4,
     "sanitizer": {
       "status": "PASS",
-      "compiler": "host GCC13.3.0",
-      "flags": [
-        "-fsanitize=address,undefined"
-      ],
-      "script": "checks/native_sanitizer.c"
+      "command": "gcc -std=c11 -O1 -g -fsanitize=address,undefined -ffp-contract=off checks/graph_sanitizer.c -lm -o /tmp/minidb-graph-sanitizer && /tmp/minidb-graph-sanitizer",
+      "coverage": [
+        "allocation limits",
+        "line graphs 1024x16/32",
+        "nearest ID",
+        "invalid query K/EF",
+        "malformed append",
+        "append overflow",
+        "degenerate vectors exact fallback",
+        "free NULL"
+      ]
     },
     "screen_probe_modes": {
       "auto": {
@@ -2418,35 +2570,7 @@
           "dimension fallback"
         ]
       },
-      "scalar": {
-        "status": "PASS",
-        "backend": "scalar",
-        "screen_checks": 648,
-        "topk_checks": 828,
-        "distributions": [
-          "uniform",
-          "mixed float32 exponents"
-        ],
-        "dimensions": [
-          16,
-          17,
-          31,
-          32,
-          127,
-          128,
-          129,
-          512,
-          4096
-        ],
-        "coverage": [
-          "near threshold",
-          "zero/ties",
-          "finite extrema/subnormals",
-          "mask/empty mask",
-          "malformed record length",
-          "dimension fallback"
-        ]
-      }
+      "previous_dual_mode_checks_commit": "04a1982fc8c5b04d45ebbd26de7a95d5f45e95b3"
     },
     "global_target": {
       "march": "x86-64",
@@ -2454,7 +2578,13 @@
       "avx2": false,
       "fma": false
     },
-    "runtime_dispatch": "AVX2 CPU support and >=32 dimensions, >=16 active records and >=50% active density"
+    "runtime_dispatch": "AVX2 CPU support and >=32 dimensions, >=16 active records and >=50% active density",
+    "experimental_graph": {
+      "default_enabled": false,
+      "maximum_graph_bytes": 16777216,
+      "resident_tables": 1,
+      "ef": 512
+    }
   },
   "native_benchmark": {
     "rows": 10000,
@@ -3396,5 +3526,216 @@
       1024
     ],
     "extreme_bigint_keys": true
+  },
+  "graph_boundaries": {
+    "status": "PASS",
+    "oracle_queries": 43,
+    "ann_mean_recall": 1.0,
+    "graph_hits_before_mutation": 12,
+    "rows": 2048,
+    "dimensions": 32,
+    "coverage": [
+      "negative IDs",
+      "graph actually used",
+      "exact unchanged",
+      "filtered exact",
+      "transaction update visibility",
+      "rollback",
+      "committed delete invalidation",
+      "rebuild with excluded rows",
+      "restart rebuild"
+    ]
+  },
+  "graph_benchmark": {
+    "baseline_commit": "ad592573d90d0ffb9efe5f323bfef43e7335ba7f",
+    "default_enabled": false,
+    "selected_experimental_ef": 512,
+    "reports": {
+      "uniform_ef256": {
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 40,
+        "distribution": "uniform",
+        "seed": 20261130,
+        "runs": {
+          "exact": {
+            "prepare_seconds": 0.05287055601365864,
+            "total_query_seconds": 0.24475995788816363,
+            "unfiltered_seconds": 0.10075754387071356,
+            "filtered_seconds": 0.14400241401745006,
+            "unfiltered_recall": 1.0,
+            "filtered_recall": 1.0,
+            "min_recall": 1.0
+          },
+          "graph": {
+            "prepare_seconds": 3.4469266859814525,
+            "total_query_seconds": 0.21852039394434541,
+            "unfiltered_seconds": 0.06707471999106929,
+            "filtered_seconds": 0.15144567395327613,
+            "unfiltered_recall": 0.965,
+            "filtered_recall": 1.0,
+            "min_recall": 0.8
+          }
+        },
+        "scope": "One initial experimental comparison, not formal score; independent fixtures; graph preparation timed separately",
+        "status": "PASS"
+      },
+      "uniform_seed1_ef512": {
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 40,
+        "distribution": "uniform",
+        "seed": 20261130,
+        "runs": {
+          "exact": {
+            "prepare_seconds": 0.05597397999372333,
+            "total_query_seconds": 0.24379298003623262,
+            "unfiltered_seconds": 0.09695147798629478,
+            "filtered_seconds": 0.14684150204993784,
+            "unfiltered_recall": 1.0,
+            "filtered_recall": 1.0,
+            "min_recall": 1.0
+          },
+          "graph": {
+            "prepare_seconds": 3.4477601449470967,
+            "total_query_seconds": 0.2149809791590087,
+            "unfiltered_seconds": 0.06978555710520595,
+            "filtered_seconds": 0.14519542205380276,
+            "unfiltered_recall": 0.99,
+            "filtered_recall": 1.0,
+            "min_recall": 0.9
+          }
+        },
+        "scope": "One initial experimental comparison, not formal score; independent fixtures; graph preparation timed separately",
+        "graph_ef": "512",
+        "status": "PASS"
+      },
+      "uniform_seed2_ef512": {
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 40,
+        "distribution": "uniform",
+        "seed": 20261201,
+        "runs": {
+          "exact": {
+            "prepare_seconds": 0.054762560001108795,
+            "total_query_seconds": 0.24718630890129134,
+            "unfiltered_seconds": 0.1003585389116779,
+            "filtered_seconds": 0.14682776998961344,
+            "unfiltered_recall": 1.0,
+            "filtered_recall": 1.0,
+            "min_recall": 1.0,
+            "container_memory_peak_bytes": 26808320
+          },
+          "graph": {
+            "prepare_seconds": 3.340939155954402,
+            "total_query_seconds": 0.21212149423081428,
+            "unfiltered_seconds": 0.0671600250643678,
+            "filtered_seconds": 0.14496146916644648,
+            "unfiltered_recall": 0.98,
+            "filtered_recall": 1.0,
+            "min_recall": 0.8,
+            "container_memory_peak_bytes": 32931840
+          }
+        },
+        "scope": "One initial experimental comparison, not formal score; independent fixtures; graph preparation timed separately",
+        "graph_ef": "512",
+        "status": "PASS"
+      },
+      "uniform_seed3_ef512": {
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 40,
+        "distribution": "uniform",
+        "seed": 20261202,
+        "runs": {
+          "exact": {
+            "prepare_seconds": 0.05082115501863882,
+            "total_query_seconds": 0.24333033669972792,
+            "unfiltered_seconds": 0.09677339479094371,
+            "filtered_seconds": 0.1465569419087842,
+            "unfiltered_recall": 1.0,
+            "filtered_recall": 1.0,
+            "min_recall": 1.0,
+            "container_memory_peak_bytes": 26333184
+          },
+          "graph": {
+            "prepare_seconds": 3.4889156660065055,
+            "total_query_seconds": 0.21900806290796027,
+            "unfiltered_seconds": 0.07064857293153182,
+            "filtered_seconds": 0.14835948997642845,
+            "unfiltered_recall": 0.98,
+            "filtered_recall": 1.0,
+            "min_recall": 0.9,
+            "container_memory_peak_bytes": 32886784
+          }
+        },
+        "scope": "One initial experimental comparison, not formal score; independent fixtures; graph preparation timed separately",
+        "graph_ef": "512",
+        "status": "PASS"
+      },
+      "clustered_ef512": {
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 40,
+        "distribution": "clustered",
+        "seed": 20261130,
+        "runs": {
+          "exact": {
+            "prepare_seconds": 0.05101706401910633,
+            "total_query_seconds": 0.2764720339910127,
+            "unfiltered_seconds": 0.11758110509254038,
+            "filtered_seconds": 0.15889092889847234,
+            "unfiltered_recall": 1.0,
+            "filtered_recall": 1.0,
+            "min_recall": 1.0
+          },
+          "graph": {
+            "prepare_seconds": 1.9624571080203168,
+            "total_query_seconds": 0.2129984859493561,
+            "unfiltered_seconds": 0.05407478485722095,
+            "filtered_seconds": 0.15892370109213516,
+            "unfiltered_recall": 1.0,
+            "filtered_recall": 1.0,
+            "min_recall": 1.0
+          }
+        },
+        "scope": "One initial experimental comparison, not formal score; independent fixtures; graph preparation timed separately",
+        "graph_ef": "512",
+        "status": "PASS"
+      },
+      "ood_ef512": {
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 40,
+        "distribution": "ood",
+        "seed": 20261130,
+        "runs": {
+          "exact": {
+            "prepare_seconds": 0.05298876599408686,
+            "total_query_seconds": 0.30882732587633654,
+            "unfiltered_seconds": 0.12156691600102931,
+            "filtered_seconds": 0.18726040987530723,
+            "unfiltered_recall": 1.0,
+            "filtered_recall": 1.0,
+            "min_recall": 1.0
+          },
+          "graph": {
+            "prepare_seconds": 3.5751800519647077,
+            "total_query_seconds": 0.22961514798225835,
+            "unfiltered_seconds": 0.08969102194532752,
+            "filtered_seconds": 0.13992412603693083,
+            "unfiltered_recall": 1.0,
+            "filtered_recall": 1.0,
+            "min_recall": 1.0
+          }
+        },
+        "scope": "One initial experimental comparison, not formal score; independent fixtures; graph preparation timed separately",
+        "graph_ef": "512",
+        "status": "PASS"
+      }
+    },
+    "interpretation": "Each distribution/seed is one 40-query comparison, half filtered. Not paired multi-round timing; filtered and OOD timing differences can be noise. No physical I/O measurement or formal composite score. Three uniform seeds pass group recall, but limited query count cannot establish hidden-data recall. Keep opt-in.",
+    "uniform_512_mean_recall": 0.9833333333333334
   }
 }

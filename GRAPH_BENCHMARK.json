@@ -1,0 +1,192 @@
+{
+  "baseline_commit": "ad592573d90d0ffb9efe5f323bfef43e7335ba7f",
+  "default_enabled": false,
+  "selected_experimental_ef": 512,
+  "reports": {
+    "uniform_ef256": {
+      "rows": 10000,
+      "dimensions": 128,
+      "queries": 40,
+      "distribution": "uniform",
+      "seed": 20261130,
+      "runs": {
+        "exact": {
+          "prepare_seconds": 0.05287055601365864,
+          "total_query_seconds": 0.24475995788816363,
+          "unfiltered_seconds": 0.10075754387071356,
+          "filtered_seconds": 0.14400241401745006,
+          "unfiltered_recall": 1.0,
+          "filtered_recall": 1.0,
+          "min_recall": 1.0
+        },
+        "graph": {
+          "prepare_seconds": 3.4469266859814525,
+          "total_query_seconds": 0.21852039394434541,
+          "unfiltered_seconds": 0.06707471999106929,
+          "filtered_seconds": 0.15144567395327613,
+          "unfiltered_recall": 0.965,
+          "filtered_recall": 1.0,
+          "min_recall": 0.8
+        }
+      },
+      "scope": "One initial experimental comparison, not formal score; independent fixtures; graph preparation timed separately",
+      "status": "PASS"
+    },
+    "uniform_seed1_ef512": {
+      "rows": 10000,
+      "dimensions": 128,
+      "queries": 40,
+      "distribution": "uniform",
+      "seed": 20261130,
+      "runs": {
+        "exact": {
+          "prepare_seconds": 0.05597397999372333,
+          "total_query_seconds": 0.24379298003623262,
+          "unfiltered_seconds": 0.09695147798629478,
+          "filtered_seconds": 0.14684150204993784,
+          "unfiltered_recall": 1.0,
+          "filtered_recall": 1.0,
+          "min_recall": 1.0
+        },
+        "graph": {
+          "prepare_seconds": 3.4477601449470967,
+          "total_query_seconds": 0.2149809791590087,
+          "unfiltered_seconds": 0.06978555710520595,
+          "filtered_seconds": 0.14519542205380276,
+          "unfiltered_recall": 0.99,
+          "filtered_recall": 1.0,
+          "min_recall": 0.9
+        }
+      },
+      "scope": "One initial experimental comparison, not formal score; independent fixtures; graph preparation timed separately",
+      "graph_ef": "512",
+      "status": "PASS"
+    },
+    "uniform_seed2_ef512": {
+      "rows": 10000,
+      "dimensions": 128,
+      "queries": 40,
+      "distribution": "uniform",
+      "seed": 20261201,
+      "runs": {
+        "exact": {
+          "prepare_seconds": 0.054762560001108795,
+          "total_query_seconds": 0.24718630890129134,
+          "unfiltered_seconds": 0.1003585389116779,
+          "filtered_seconds": 0.14682776998961344,
+          "unfiltered_recall": 1.0,
+          "filtered_recall": 1.0,
+          "min_recall": 1.0,
+          "container_memory_peak_bytes": 26808320
+        },
+        "graph": {
+          "prepare_seconds": 3.340939155954402,
+          "total_query_seconds": 0.21212149423081428,
+          "unfiltered_seconds": 0.0671600250643678,
+          "filtered_seconds": 0.14496146916644648,
+          "unfiltered_recall": 0.98,
+          "filtered_recall": 1.0,
+          "min_recall": 0.8,
+          "container_memory_peak_bytes": 32931840
+        }
+      },
+      "scope": "One initial experimental comparison, not formal score; independent fixtures; graph preparation timed separately",
+      "graph_ef": "512",
+      "status": "PASS"
+    },
+    "uniform_seed3_ef512": {
+      "rows": 10000,
+      "dimensions": 128,
+      "queries": 40,
+      "distribution": "uniform",
+      "seed": 20261202,
+      "runs": {
+        "exact": {
+          "prepare_seconds": 0.05082115501863882,
+          "total_query_seconds": 0.24333033669972792,
+          "unfiltered_seconds": 0.09677339479094371,
+          "filtered_seconds": 0.1465569419087842,
+          "unfiltered_recall": 1.0,
+          "filtered_recall": 1.0,
+          "min_recall": 1.0,
+          "container_memory_peak_bytes": 26333184
+        },
+        "graph": {
+          "prepare_seconds": 3.4889156660065055,
+          "total_query_seconds": 0.21900806290796027,
+          "unfiltered_seconds": 0.07064857293153182,
+          "filtered_seconds": 0.14835948997642845,
+          "unfiltered_recall": 0.98,
+          "filtered_recall": 1.0,
+          "min_recall": 0.9,
+          "container_memory_peak_bytes": 32886784
+        }
+      },
+      "scope": "One initial experimental comparison, not formal score; independent fixtures; graph preparation timed separately",
+      "graph_ef": "512",
+      "status": "PASS"
+    },
+    "clustered_ef512": {
+      "rows": 10000,
+      "dimensions": 128,
+      "queries": 40,
+      "distribution": "clustered",
+      "seed": 20261130,
+      "runs": {
+        "exact": {
+          "prepare_seconds": 0.05101706401910633,
+          "total_query_seconds": 0.2764720339910127,
+          "unfiltered_seconds": 0.11758110509254038,
+          "filtered_seconds": 0.15889092889847234,
+          "unfiltered_recall": 1.0,
+          "filtered_recall": 1.0,
+          "min_recall": 1.0
+        },
+        "graph": {
+          "prepare_seconds": 1.9624571080203168,
+          "total_query_seconds": 0.2129984859493561,
+          "unfiltered_seconds": 0.05407478485722095,
+          "filtered_seconds": 0.15892370109213516,
+          "unfiltered_recall": 1.0,
+          "filtered_recall": 1.0,
+          "min_recall": 1.0
+        }
+      },
+      "scope": "One initial experimental comparison, not formal score; independent fixtures; graph preparation timed separately",
+      "graph_ef": "512",
+      "status": "PASS"
+    },
+    "ood_ef512": {
+      "rows": 10000,
+      "dimensions": 128,
+      "queries": 40,
+      "distribution": "ood",
+      "seed": 20261130,
+      "runs": {
+        "exact": {
+          "prepare_seconds": 0.05298876599408686,
+          "total_query_seconds": 0.30882732587633654,
+          "unfiltered_seconds": 0.12156691600102931,
+          "filtered_seconds": 0.18726040987530723,
+          "unfiltered_recall": 1.0,
+          "filtered_recall": 1.0,
+          "min_recall": 1.0
+        },
+        "graph": {
+          "prepare_seconds": 3.5751800519647077,
+          "total_query_seconds": 0.22961514798225835,
+          "unfiltered_seconds": 0.08969102194532752,
+          "filtered_seconds": 0.13992412603693083,
+          "unfiltered_recall": 1.0,
+          "filtered_recall": 1.0,
+          "min_recall": 1.0
+        }
+      },
+      "scope": "One initial experimental comparison, not formal score; independent fixtures; graph preparation timed separately",
+      "graph_ef": "512",
+      "status": "PASS"
+    }
+  },
+  "interpretation": "Each distribution/seed is one 40-query comparison, half filtered. Not paired multi-round timing; filtered and OOD timing differences can be noise. No physical I/O measurement or formal composite score. Three uniform seeds pass group recall, but limited query count cannot establish hidden-data recall. Keep opt-in.",
+  "uniform_512_mean_recall": 0.9833333333333334
+}

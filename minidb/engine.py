@@ -11,6 +11,7 @@ import struct
 from dataclasses import dataclass
 
 from .native import Screen
+from .graph import GraphCache
 from .sql import DBError, Parser, convert, fail, vector
 from .storage import Codec, INDEX_MAGIC, Storage, read_rows, write_rows
 
@@ -73,6 +74,14 @@ class Database:
         self.filter_cache_bytes = 0
         self.filter_masks = OrderedDict()
         self.filter_masks_bytes = 0
+        self.graphs = GraphCache()
+        if self.graphs.enabled:
+            for name, table in sorted(self.store.tables.items()):
+                if self.graphs.prepare(name, table, self.store): break
+
+    def install(self, name, table):
+        self.store.install(name, table)
+        self.graphs.validate(self.store)
 
     def column(self, table, name):
         for i, c in enumerate(table['cols']):
@@ -135,9 +144,10 @@ class Database:
         if op == 'commit':
             if self.store.in_txn:
                 self.store.commit()
+                self.graphs.validate(self.store)
             return {}
         if op == 'rollback':
-            self.store.rollback(); return {}
+            self.store.rollback(); self.graphs.validate(self.store); return {}
         name = st['table'].casefold()
         if op == 'create':
             if name in self.store.tables:
@@ -156,7 +166,7 @@ class Database:
                 fail('column size out of range', 'invalid_value')
             table = {'cols': cols, 'pk': pks[0], 'indexes': [], 'count': 0}
             table['segments'] = []
-            self.store.install(name, table)
+            self.install(name, table)
             return {}
         table = self.store.tables.get(name)
         if table is None:
@@ -170,10 +180,11 @@ class Database:
             new = copy.deepcopy(table)
             new['indexes'].append(st['name'])
             new = self.store.add_index(new)
-            self.store.install(name, new)
+            self.install(name, new)
+            if not self.store.in_txn: self.graphs.prepare(name, new, self.store)
             return {}
         if op == 'select':
-            return self.select(table, st)
+            return self.select(table, st, mode)
         if op == 'insert':
             order = list(range(len(table['cols']))) if st['cols'] is None else [self.column(table, c) for c in st['cols']]
             if len(set(order)) != len(table['cols']) or len(order) != len(table['cols']):
@@ -190,7 +201,7 @@ class Database:
             if any(a[pk] == b[pk] for a, b in zip(incoming, incoming[1:])):
                 fail('duplicate primary key', 'duplicate_key')
             new = self.store.insert(table, incoming)
-            self.store.install(name, new)
+            self.install(name, new)
             return {'affected_rows': len(incoming)}
         filter_columns = set()
         match = self.conditions(table, st['where'], filter_columns)
@@ -209,7 +220,7 @@ class Database:
                 new = copy.deepcopy(table)
                 new.update(segments=[], count=0)
                 new.pop('file', None); new.pop('index_file', None)
-                self.store.install(name, new)
+                self.install(name, new)
             return {'affected_rows': count}
         ident = self.primary_equal(table, st['where'])
         if ident is not None:
@@ -221,10 +232,10 @@ class Database:
                 return {'affected_rows': 1}
             for i, value in sets: row[i] = value
             new = self.store.replace_point(table, part, ident, None if op == 'delete' else row)
-            self.store.install(name, new)
+            self.install(name, new)
             return {'affected_rows': 1}
         new, count = self.store.mutate(table, match, filter_columns, sets, op == 'delete')
-        if count and new != table: self.store.install(name, new)
+        if count and new != table: self.install(name, new)
         return {'affected_rows': count}
 
     def external_sort(self, table, source, key, columns):
@@ -369,10 +380,21 @@ class Database:
             self.remember_masks(mask_key, pending)
         return {item[2]: -item[0] for item in heap}
 
-    def vector_topk(self, table, expr, k, columns, match, filter_columns, conditions):
+    def vector_topk(self, table, expr, k, columns, match, filter_columns, conditions, mode='exact'):
         """Filter scalars first, retain binary candidates, decode only the winners."""
         codec = Codec(table['cols'])
         vc, query = expr[1], expr[2]
+        if mode == 'ann' and not filter_columns:
+            ids = self.graphs.search(table, query, k, self.store)
+            if ids is not None:
+                ranked = []
+                for ident in ids:
+                    _, raw = self.store.lookup(table, ident)
+                    if raw is None: break
+                    row = codec.decode_fields(raw, columns)
+                    ranked.append((squared(query, row[vc]), ident, row))
+                if len(ranked) == k:
+                    return [row for _, _, row in sorted(ranked, key=lambda item: item[:2])]
         selected, cost = [], 0
         cache_key = self.filter_key(table, conditions) if filter_columns and table.get('indexes') else None
         entry = self.filter_cache.get(cache_key) if cache_key is not None else None
@@ -427,7 +449,7 @@ class Database:
         selected.sort(key=lambda item: (item[0], item[1]))
         return [codec.decode_fields(raw, columns) for _, _, raw in selected]
 
-    def select(self, table, st):
+    def select(self, table, st, mode='exact'):
         filter_columns = set()
         match = self.conditions(table, st['where'], filter_columns)
         outs, names = [], []
@@ -477,7 +499,7 @@ class Database:
             else:
                 if limit is not None and limit <= 1024:
                     if ident is None and bounds is None and len(keys) == 1 and keys[0][0][0] == 'distance' and not keys[0][1]:
-                        rows = self.vector_topk(table, keys[0][0], limit, needed, match, filter_columns, st['where'])
+                        rows = self.vector_topk(table, keys[0][0], limit, needed, match, filter_columns, st['where'], mode)
                     else:
                         selected = source()
                         try:
@@ -508,4 +530,5 @@ class Database:
             if hasattr(rows, 'close'): rows.close()
 
     def close(self):
-        self.store.close()
+        try: self.store.close()
+        finally: self.graphs.close()

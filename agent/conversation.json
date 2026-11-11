@@ -157,6 +157,16 @@
       "id": "filter-mask-assistant",
       "role": "assistant",
       "content": "继续优化过滤执行路径：候选ID改为紧凑int64数组，另以128KiB预算缓存索引记录顺序的一字节掩码。掩码版本键包含数据文件、失效主键、条件和索引文件名；候选数组在掩码淘汰后作为后备。首次扫描不增加额外遍历，超预算回退，原生关闭时仍可使用缓存掩码。没有新增依赖或持久化格式。"
+    },
+    {
+      "id": "u-graph-continue",
+      "role": "user",
+      "content": "继续吧那就"
+    },
+    {
+      "id": "a-graph-decision",
+      "role": "assistant",
+      "content": "自实现有界图索引作为独立提交的可选实验。EF256均匀数据召回0.965，提高到512后三个种子0.99/0.98/0.98；单轮无过滤查询有收益，但构建需约3.3–3.5秒，峰值内存增加约6MiB。默认继续精确扫描；普通列过滤、变更后的旧图、退化及距离集中场景走精确路径。"
     }
   ],
   "experiments": [
@@ -297,26 +307,37 @@
       "source": "tool",
       "output": "{\"public\": \"20/20 PASS\", \"model\": {\"status\": \"PASS\", \"seed\": 20261129, \"dimensions\": 128, \"operations\": 250, \"queries\": 750}, \"sql\": {\"status\": \"PASS\", \"oracle_queries\": 24, \"transaction_visibility\": \"PASS\", \"dimensions\": 128, \"rows\": 200, \"K\": [1, 10, 127, 128, 512, 1024], \"extreme_bigint_keys\": true}, \"mask_boundary\": {\"status\": \"PASS\", \"oracle_queries\": 32, \"rows\": 3000, \"dimensions\": 128, \"bitmap_budget\": 131072, \"reduced_budget_fallback\": 2048, \"checks\": [\"group reuse with different query vectors\", \"compact int64 IDs survive bitmap eviction\", \"native-off cached-mask fallback\", \"multiple predicates without ID cache\", \"transaction mutation visibility\", \"failed statement\", \"rollback\", \"delete-only mask invalidation\", \"second index\", \"builder overflow fallback\", \"LRU eviction without predicate rescan\", \"delete all rollback\", \"restart\"]}, \"single_category\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.004975195974111557, \"cold_filtered_seconds\": 0.05330087599577382, \"total_seconds\": 0.7298146290704608, \"unfiltered_seconds\": 0.27063901716610417, \"filtered_seconds\": 0.45917561190435663, \"median_ms\": 6.568684009835124, \"max_ms\": 10.801258962601423}, \"candidate\": {\"cold_unfiltered_seconds\": 0.00503267499152571, \"cold_filtered_seconds\": 0.05595557997003198, \"total_seconds\": 0.5454813406104222, \"unfiltered_seconds\": 0.27099394868128, \"filtered_seconds\": 0.27293270267546177, \"median_ms\": 4.272476508049294, \"max_ms\": 8.40126205002889}}, \"ten_categories\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.005097599001601338, \"cold_filtered_seconds\": 0.05487356102094054, \"total_seconds\": 3.5028257428784855, \"unfiltered_seconds\": 0.2929833749658428, \"filtered_seconds\": 3.2076661019818857, \"median_ms\": 7.6211400446482, \"max_ms\": 58.68381296750158}, \"candidate\": {\"cold_unfiltered_seconds\": 0.005094452004414052, \"cold_filtered_seconds\": 0.05356713099172339, \"total_seconds\": 0.9991347709437832, \"unfiltered_seconds\": 0.2669101220089942, \"filtered_seconds\": 0.732224648934789, \"median_ms\": 4.395560012198985, \"max_ms\": 55.238049011677504}}, \"responses_checked\": 1440}",
       "interpretation": "单一category的120条查询整组三轮中位0.730秒→0.545秒；十类轮换3.503秒→0.999秒。单类别不足以暴露缓存容量退化，因此另外验证轮换负载。掩码每行一字节，不是查询答案；未实现持久化普通列索引或ANN。"
+    },
+    {
+      "id": "graph-quality-and-freshness",
+      "role": "tool",
+      "output": "{\"graph_boundaries\": {\"status\": \"PASS\", \"oracle_queries\": 43, \"ann_mean_recall\": 1.0, \"graph_hits_before_mutation\": 12, \"rows\": 2048, \"dimensions\": 32, \"coverage\": [\"negative IDs\", \"graph actually used\", \"exact unchanged\", \"filtered exact\", \"transaction update visibility\", \"rollback\", \"committed delete invalidation\", \"rebuild with excluded rows\", \"restart rebuild\"]}, \"uniform_seed2\": {\"rows\": 10000, \"dimensions\": 128, \"queries\": 40, \"distribution\": \"uniform\", \"seed\": 20261201, \"runs\": {\"exact\": {\"prepare_seconds\": 0.054762560001108795, \"total_query_seconds\": 0.24718630890129134, \"unfiltered_seconds\": 0.1003585389116779, \"filtered_seconds\": 0.14682776998961344, \"unfiltered_recall\": 1.0, \"filtered_recall\": 1.0, \"min_recall\": 1.0, \"container_memory_peak_bytes\": 26808320}, \"graph\": {\"prepare_seconds\": 3.340939155954402, \"total_query_seconds\": 0.21212149423081428, \"unfiltered_seconds\": 0.0671600250643678, \"filtered_seconds\": 0.14496146916644648, \"unfiltered_recall\": 0.98, \"filtered_recall\": 1.0, \"min_recall\": 0.8, \"container_memory_peak_bytes\": 32931840}}, \"scope\": \"One initial experimental comparison, not formal score; independent fixtures; graph preparation timed separately\", \"graph_ef\": \"512\", \"status\": \"PASS\"}, \"uniform_seed3\": {\"rows\": 10000, \"dimensions\": 128, \"queries\": 40, \"distribution\": \"uniform\", \"seed\": 20261202, \"runs\": {\"exact\": {\"prepare_seconds\": 0.05082115501863882, \"total_query_seconds\": 0.24333033669972792, \"unfiltered_seconds\": 0.09677339479094371, \"filtered_seconds\": 0.1465569419087842, \"unfiltered_recall\": 1.0, \"filtered_recall\": 1.0, \"min_recall\": 1.0, \"container_memory_peak_bytes\": 26333184}, \"graph\": {\"prepare_seconds\": 3.4889156660065055, \"total_query_seconds\": 0.21900806290796027, \"unfiltered_seconds\": 0.07064857293153182, \"filtered_seconds\": 0.14835948997642845, \"unfiltered_recall\": 0.98, \"filtered_recall\": 1.0, \"min_recall\": 0.9, \"container_memory_peak_bytes\": 32886784}}, \"scope\": \"One initial experimental comparison, not formal score; independent fixtures; graph preparation timed separately\", \"graph_ef\": \"512\", \"status\": \"PASS\"}, \"public20_passed\": true, \"model\": {\"status\": \"PASS\", \"seed\": 20261201, \"dimensions\": 128, \"operations\": 250, \"queries\": 750}, \"sanitizer\": \"PASS\", \"native_boundaries\": {\"status\": \"PASS\", \"backend\": \"avx2\", \"screen_checks\": 648, \"topk_checks\": 828, \"distributions\": [\"uniform\", \"mixed float32 exponents\"], \"dimensions\": [16, 17, 31, 32, 127, 128, 129, 512, 4096], \"coverage\": [\"near threshold\", \"zero/ties\", \"finite extrema/subnormals\", \"mask/empty mask\", \"malformed record length\", \"dimension fallback\"]}}",
+      "interpretation": "该结果由Agent执行，用户未提供对这些结果的技术解释；不把Agent判断计为学生理解。未测物理I/O，不推算赛事E。ANN仅在MINIDB_ANN_GRAPH=1且search_mode=ann时启用。"
     }
   ],
   "implementation": {
-    "language": "Python 3.12.8 standard library",
+    "language": "Python 3.12.8 standard library plus self-written C shared library, ABI4",
     "official_protocol_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
     "source_sha256": {
+      "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
       "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-      "minidb/engine.py": "1f2721d0d8a084bc03c37e44637564ff1e499313fb68c5d0101004753dbbb435",
-      "minidb/server.py": "731d19710fc385de5433f74344e6f8ab9aa44b3899a9083f030d5ce977795e27",
+      "minidb/engine.py": "491f18e2857d9dc9a4eb56ad6f848a9d460e9238c98dcf864ebca4ebd071d0bd",
+      "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+      "minidb/native.py": "97b66b0e47977884bc0a3b414cd5deb2d8a28db3a13a550adca211acb06f9a40",
+      "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
       "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
-      "minidb/storage.py": "d3ec07273ac3f4d10b165f62b5fbfa16cb6fc7bd16e7fdce3a1666c2328f4f2a",
-      "Dockerfile": "49f332ee4d77c71516b0e71b9dea9cee5fcdb18e7c085c716c13e6772c4c15d2"
+      "minidb/storage.py": "751f01ef9904c1939a44b62d6796d2f163148e7bbd606feca99b7bfb9124c37f",
+      "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
+      "native/screen.c": "0bb4998bc99a0a597c72861859a055916a6019ced614633707b3eccbc7b87796"
     },
-    "storage": "Immutable sorted segments, disk primary-key binary search and geometric merges; atomic manifest publication retained.",
-    "query": "Decode predicate fields first, keep binary TopK candidates, decode winning projections only, stream primary-key ascending limits."
+    "storage": "Bounded point overlays, immutable segments and atomic manifest retained.",
+    "query": "Default exact native scan and bounded predicate caches; experimental HNSW-style graph opt-in with exact fallback."
   },
   "limitations": [
-    "INSERT使用分段写入与分层归并；UPDATE/DELETE仍顺序生成整表新版本。",
-    "向量索引是自实现磁盘平面索引，ann返回精确结果。",
-    "本地验证记录与正式隐藏用例结果分开；此材料不包含平台正式评测结果。"
+    "图索引默认关闭，仅对1024–20000行、16–256维、单表、无普通列过滤且K<=64的ann TopK生效；总分配预算16MiB。",
+    "图按索引数据在CREATE INDEX或重启时建立；数据变更会失效并走精确路径，事务内建索引不触发图构建。",
+    "召回验证为小样本，单轮查询耗时与构建成本分开记录；无物理I/O采集和正式评测分数。",
+    "学生理解仅依据真实用户原文；Agent解释和工具执行不冒充学生贡献。"
   ],
   "implementation_history": [
     {
@@ -343,6 +364,10 @@
         "Dockerfile": "49f332ee4d77c71516b0e71b9dea9cee5fcdb18e7c085c716c13e6772c4c15d2"
       },
       "storage": "Immutable sorted segments, disk primary-key binary search and geometric merges; atomic manifest publication retained."
+    },
+    {
+      "commit": "ad592573d90d0ffb9efe5f323bfef43e7335ba7f",
+      "note": "Earlier implementation hashes and stage evidence remain historical."
     }
   ]
 }

@@ -1,10 +1,10 @@
 {
-  "previous_build_commit": "04a1982fc8c5b04d45ebbd26de7a95d5f45e95b3",
+  "previous_build_commit": "ad592573d90d0ffb9efe5f323bfef43e7335ba7f",
   "builder_image": "gcc:12-bookworm@sha256:44482187aa3865ad1e2477dc8c56bae4fd8e071e7d99c5f44956effc7f7cc846",
   "builder_platform": "linux/amd64",
   "compiler": "GCC 12.5.0",
   "runtime_base": "python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0",
-  "command": "docker build --platform linux/amd64 --network=none -t minivectordb:bitmap-candidate .",
+  "command": "docker build --platform linux/amd64 --network=none --no-cache -t minivectordb:graph-candidate .",
   "build_status": "PASS",
   "RUN_network": "none",
   "RUN_package_downloads": false,
@@ -18,8 +18,8 @@
     "-fno-fast-math",
     "-lm"
   ],
-  "library_bytes": 80504,
-  "library_sha256": "83126a48873518a772e0d94fa7d952ae91b31b0582b4891d7858beeb5569e434",
+  "library_bytes": 89384,
+  "library_sha256": "1195f41b5ecd7827b2ea5f0b0a349e5c10d0cc0eacc06ec8567723f4e0c01d54",
   "runtime_libraries": [
     "libc.so.6",
     "libm.so.6"
@@ -27,31 +27,160 @@
   "runtime_native_load": "PASS",
   "runtime_compiler_present": false,
   "source_sha256": {
+    "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
     "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-    "minidb/engine.py": "9d6f20cd9745015adf411fc220903da2cebbcd7d45d794d769f21746d2644031",
-    "minidb/native.py": "5206f9071ec1b908af88db39aaae319629e939faa0dbc2c5dda56f4a7df0aaf0",
+    "minidb/engine.py": "491f18e2857d9dc9a4eb56ad6f848a9d460e9238c98dcf864ebca4ebd071d0bd",
+    "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+    "minidb/native.py": "97b66b0e47977884bc0a3b414cd5deb2d8a28db3a13a550adca211acb06f9a40",
     "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
     "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
     "minidb/storage.py": "751f01ef9904c1939a44b62d6796d2f163148e7bbd606feca99b7bfb9124c37f",
-    "native/screen.c": "e7f0b3f0e789c0caa89cfa300ca644c5ce5edb7113f25b8b49512f257c5bbfe9",
-    "Dockerfile": "61a838d09aa42cdf993d7628ca17fbf27ca0993ae9eeb8507dad8db9e8f5b2a6",
-    ".dockerignore": "d04e7a34f971bcf973caa86450cc1f243cb6bb9cf31bc25c37c4327a3e7388bf",
-    "requirements.lock": "5e1d72d066dd643601e7ed6ca3b8de91953960514013f896eef27f8655ff2ffe"
+    "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
+    "native/screen.c": "0bb4998bc99a0a597c72861859a055916a6019ced614633707b3eccbc7b87796"
   },
   "screen_probe_memory_limit": "64MiB",
   "public": {
+    "scope": "public-protocol-check",
     "passed": true,
-    "cases": 20
+    "cases": [
+      {
+        "id": "sql_crud",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 730
+      },
+      {
+        "id": "sql_comparisons",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 614
+      },
+      {
+        "id": "sql_ordering",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 579
+      },
+      {
+        "id": "sql_empty",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 554
+      },
+      {
+        "id": "sql_primary_key",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 572
+      },
+      {
+        "id": "sql_unicode",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 556
+      },
+      {
+        "id": "sql_bigint",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 589
+      },
+      {
+        "id": "sql_unsupported",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 563
+      },
+      {
+        "id": "storage_restart",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1039
+      },
+      {
+        "id": "vector_euclidean",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 553
+      },
+      {
+        "id": "transaction_commit",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 626
+      },
+      {
+        "id": "transaction_rollback",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 578
+      },
+      {
+        "id": "storage_mutations",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1149
+      },
+      {
+        "id": "storage_multiple_tables",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1047
+      },
+      {
+        "id": "vector_ties_and_filter",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 608
+      },
+      {
+        "id": "vector_float32",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 542
+      },
+      {
+        "id": "vector_index_maintenance",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1082
+      },
+      {
+        "id": "transaction_failed_insert",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1050
+      },
+      {
+        "id": "transaction_autocommit_atomic",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1065
+      },
+      {
+        "id": "transaction_shutdown_rollback",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1065
+      }
+    ],
+    "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
   },
   "native_stage_also_rebuilt_without_cache": true,
-  "abi": 3,
+  "abi": 4,
   "sanitizer": {
     "status": "PASS",
-    "compiler": "host GCC13.3.0",
-    "flags": [
-      "-fsanitize=address,undefined"
-    ],
-    "script": "checks/native_sanitizer.c"
+    "command": "gcc -std=c11 -O1 -g -fsanitize=address,undefined -ffp-contract=off checks/graph_sanitizer.c -lm -o /tmp/minidb-graph-sanitizer && /tmp/minidb-graph-sanitizer",
+    "coverage": [
+      "allocation limits",
+      "line graphs 1024x16/32",
+      "nearest ID",
+      "invalid query K/EF",
+      "malformed append",
+      "append overflow",
+      "degenerate vectors exact fallback",
+      "free NULL"
+    ]
   },
   "screen_probe_modes": {
     "auto": {
@@ -83,35 +212,7 @@
         "dimension fallback"
       ]
     },
-    "scalar": {
-      "status": "PASS",
-      "backend": "scalar",
-      "screen_checks": 648,
-      "topk_checks": 828,
-      "distributions": [
-        "uniform",
-        "mixed float32 exponents"
-      ],
-      "dimensions": [
-        16,
-        17,
-        31,
-        32,
-        127,
-        128,
-        129,
-        512,
-        4096
-      ],
-      "coverage": [
-        "near threshold",
-        "zero/ties",
-        "finite extrema/subnormals",
-        "mask/empty mask",
-        "malformed record length",
-        "dimension fallback"
-      ]
-    }
+    "previous_dual_mode_checks_commit": "04a1982fc8c5b04d45ebbd26de7a95d5f45e95b3"
   },
   "global_target": {
     "march": "x86-64",
@@ -119,5 +220,11 @@
     "avx2": false,
     "fma": false
   },
-  "runtime_dispatch": "AVX2 CPU support and >=32 dimensions, >=16 active records and >=50% active density"
+  "runtime_dispatch": "AVX2 CPU support and >=32 dimensions, >=16 active records and >=50% active density",
+  "experimental_graph": {
+    "default_enabled": false,
+    "maximum_graph_bytes": 16777216,
+    "resident_tables": 1,
+    "ef": 512
+  }
 }

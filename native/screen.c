@@ -6,7 +6,7 @@
 #include <math.h>
 #include <immintrin.h>
 
-unsigned mv_screen_abi(void) { return 3; }
+unsigned mv_screen_abi(void) { return 4; }
 
 static int simd_enabled = 1;
 void mv_screen_set_simd(int enabled) { simd_enabled = enabled != 0; }
@@ -154,3 +154,5 @@ size_t mv_screen_topk(const unsigned char *data, size_t bytes, size_t dim,
         if (isfinite(distances[i]) && distances[i] <= cutoff) selected[found++] = (uint32_t)i;
     return found;
 }
+
+#include "graph.c"
