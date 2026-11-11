@@ -15,13 +15,18 @@ def available():
         try:
             lib = ctypes.CDLL(str(Path(__file__).with_name('libscreen.so')))
             lib.mv_screen_abi.restype = ctypes.c_uint
-            if lib.mv_screen_abi() != 2: return False
+            if lib.mv_screen_abi() != 3: return False
             lib.mv_screen.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_double), ctypes.c_double, ctypes.c_char_p,
                 ctypes.POINTER(ctypes.c_uint32)]
             lib.mv_screen.restype = ctypes.c_size_t
             lib.mv_screen_topk.argtypes = lib.mv_screen.argtypes[:-1] + [ctypes.c_size_t, ctypes.POINTER(ctypes.c_uint32)]
             lib.mv_screen_topk.restype = ctypes.c_size_t
+            lib.mv_screen_set_simd.argtypes = [ctypes.c_int]
+            lib.mv_screen_set_simd.restype = None
+            lib.mv_screen_simd.argtypes = []
+            lib.mv_screen_simd.restype = ctypes.c_uint
+            lib.mv_screen_set_simd(int(os.environ.get('MINIDB_SIMD') != '0'))
             _library = lib
         except (OSError, AttributeError):
             _library = None

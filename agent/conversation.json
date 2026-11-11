@@ -142,6 +142,16 @@
       "id": "topk-assistant",
       "role": "assistant",
       "content": "阶段摘要：C新增块内k元素最大堆并保留误差带和完整距离并列，最终仍按原Python精确距离/主键排序。实验发现过滤后候选稀疏时局部堆会回退，最终仅无普通列过滤的路径启用局部TopK，其他过滤路径直接使用原筛选；候选不超过4K也使用原筛选。ABI升级2，继续固定GCC镜像断网构建，无新增依赖。"
+    },
+    {
+      "id": "simd-user",
+      "role": "user",
+      "content": "继续·"
+    },
+    {
+      "id": "simd-assistant",
+      "role": "assistant",
+      "content": "迁移SIMD距离计算，运行时检测AVX2；标量保留且可强制验证。减少横向归约频率，短向量算完再判断、长向量每64维检查；稀疏或很小的块使用标量。保留误差带和Python精确排名，构建继续RUN断网，无新增依赖。"
     }
   ],
   "experiments": [
@@ -270,6 +280,12 @@
       "source": "tool",
       "output": "{\"screen_probe\": {\"status\": \"PASS\", \"screen_checks\": 648, \"topk_checks\": 828, \"distributions\": [\"uniform\", \"mixed float32 exponents\"], \"dimensions\": [16, 17, 31, 32, 127, 128, 129, 512, 4096], \"coverage\": [\"near threshold\", \"zero/ties\", \"finite extrema/subnormals\", \"mask/empty mask\", \"malformed record length\", \"dimension fallback\"]}, \"public\": \"20/20 PASS\", \"sql_oracles\": {\"status\": \"PASS\", \"oracle_queries\": 24, \"transaction_visibility\": \"PASS\", \"dimensions\": 128, \"rows\": 200, \"K\": [1, 10, 127, 128, 512, 1024], \"extreme_bigint_keys\": true}, \"model\": {\"status\": \"PASS\", \"seed\": 20261122, \"dimensions\": 128, \"operations\": 250, \"queries\": 750, \"scope\": \"Before final filtered dispatch was routed back to original scalar screen; final dispatch checked by public20, 24 high-K/tied SQL oracle queries, transaction visibility and 720 benchmark responses.\"}, \"sanitizer\": {\"status\": \"PASS\", \"compiler\": \"host GCC13.3.0\", \"flags\": [\"-fsanitize=address,undefined\"], \"script\": \"checks/native_sanitizer.c\"}, \"final_three_rounds\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.006614991987589747, \"cold_filtered_seconds\": 0.05325274897040799, \"total_seconds\": 0.8255326831131242, \"unfiltered_seconds\": 0.3634794389945455, \"filtered_seconds\": 0.46497718524187803, \"median_ms\": 6.956969009479508, \"max_ms\": 10.44514001114294}, \"candidate\": {\"cold_unfiltered_seconds\": 0.005919852992519736, \"cold_filtered_seconds\": 0.05320065497653559, \"total_seconds\": 0.7709876883309335, \"unfiltered_seconds\": 0.3160926270065829, \"filtered_seconds\": 0.453518713475205, \"median_ms\": 7.058557006530464, \"max_ms\": 9.52433398924768}}, \"initial_experiment\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.006580814020708203, \"cold_filtered_seconds\": 0.05340322299161926, \"total_seconds\": 0.8061211051535793, \"unfiltered_seconds\": 0.35236012894893065, \"filtered_seconds\": 0.4537609762046486, \"median_ms\": 6.833832507254556, \"max_ms\": 10.226202954072505}, \"candidate\": {\"cold_unfiltered_seconds\": 0.005785321991425008, \"cold_filtered_seconds\": 0.05420169001445174, \"total_seconds\": 0.794457636133302, \"unfiltered_seconds\": 0.3270513750612736, \"filtered_seconds\": 0.4683456120546907, \"median_ms\": 7.163301488617435, \"max_ms\": 9.70659899758175}}}",
       "interpretation": "首版带过滤组回退约3.2%，最终路由保留原过滤筛选；新局部TopK主要改善无过滤组。最终120条128维查询三轮总体中位0.826秒→0.771秒，无过滤0.363秒→0.316秒。检查按保守候选包含真TopK和完整并列来断言；没有要求C必须仅返回K个候选，因为Python仍负责最终排名。"
+    },
+    {
+      "id": "simd-results",
+      "source": "tool",
+      "output": "{\"auto\": {\"status\": \"PASS\", \"backend\": \"avx2\", \"screen_checks\": 648, \"topk_checks\": 828, \"distributions\": [\"uniform\", \"mixed float32 exponents\"], \"dimensions\": [16, 17, 31, 32, 127, 128, 129, 512, 4096], \"coverage\": [\"near threshold\", \"zero/ties\", \"finite extrema/subnormals\", \"mask/empty mask\", \"malformed record length\", \"dimension fallback\"]}, \"scalar\": {\"status\": \"PASS\", \"backend\": \"scalar\", \"screen_checks\": 648, \"topk_checks\": 828, \"distributions\": [\"uniform\", \"mixed float32 exponents\"], \"dimensions\": [16, 17, 31, 32, 127, 128, 129, 512, 4096], \"coverage\": [\"near threshold\", \"zero/ties\", \"finite extrema/subnormals\", \"mask/empty mask\", \"malformed record length\", \"dimension fallback\"]}, \"public\": \"20/20 PASS\", \"sql24\": {\"status\": \"PASS\", \"oracle_queries\": 24, \"transaction_visibility\": \"PASS\", \"dimensions\": 128, \"rows\": 200, \"K\": [1, 10, 127, 128, 512, 1024], \"extreme_bigint_keys\": true}, \"model\": {\"status\": \"PASS\", \"seed\": 20261123, \"dimensions\": 128, \"operations\": 250, \"queries\": 750, \"scope\": \"Earlier SIMD reduction implementation; final dispatch validated by dual-mode boundary probes, public20 and SQL24.\"}, \"performance\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.00530873698880896, \"cold_filtered_seconds\": 0.05400920700049028, \"total_seconds\": 0.7492038772907108, \"unfiltered_seconds\": 0.3016609166515991, \"filtered_seconds\": 0.4478133940137923, \"median_ms\": 6.6535164951346815, \"max_ms\": 9.984416945371777}, \"candidate\": {\"cold_unfiltered_seconds\": 0.004839359025936574, \"cold_filtered_seconds\": 0.05287592898821458, \"total_seconds\": 0.7190225390368141, \"unfiltered_seconds\": 0.2667653239914216, \"filtered_seconds\": 0.4522572150453925, \"median_ms\": 6.611449003685266, \"max_ms\": 10.383396001998335}}}",
+      "interpretation": "自动AVX2和强制标量各1476项检查通过。三轮中位无过滤0.302秒→0.267秒，总体0.749秒→0.719秒，过滤基本持平；收益较小，重点继续转向过滤掩码构建。没有实测真实无AVX2机器，已用强制标量路径验证结果。"
     }
   ],
   "implementation": {

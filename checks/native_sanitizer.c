@@ -30,5 +30,9 @@ int main(void) {
     assert(mv_screen_topk(dense,sizeof(dense),128,query,INFINITY,0,1,output)==1 && output[0]==0);
     memset(dense,0,sizeof(dense));
     assert(mv_screen_topk(dense,sizeof(dense),128,query,INFINITY,0,1,output)==10);
+    mv_screen_set_simd(0);
+    assert(mv_screen_topk(dense,sizeof(dense),128,query,INFINITY,0,1,output)==10);
+    mv_screen_set_simd(1);
+    assert(mv_screen_topk(dense,sizeof(dense),128,query,INFINITY,0,1,output)==10);
     return 0;
 }

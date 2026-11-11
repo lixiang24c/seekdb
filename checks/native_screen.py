@@ -8,6 +8,8 @@ PROBE=r'''
 import json,math,random,struct
 from minidb.native import Screen,available
 assert available()
+from minidb import native as implementation
+backend='avx2' if implementation._library.mv_screen_simd() else 'scalar'
 rng=random.Random(20261117)
 pool=[0.,-0.,2.**-149,-2.**-149,2.**-126,1.,-1.,2.**30,struct.unpack('<f',bytes.fromhex('ffff7f7f'))[0]]
 checks=0
@@ -69,14 +71,15 @@ assert Screen([0.]*4097).query is None
 import os
 os.environ['MINIDB_NATIVE']='0'
 assert not available() and Screen([0.]*128).query is None
-print(json.dumps({'status':'PASS','screen_checks':checks,'topk_checks':topk_checks,'distributions':['uniform','mixed float32 exponents'],'dimensions':[16,17,31,32,127,128,129,512,4096],'coverage':['near threshold','zero/ties','finite extrema/subnormals','mask/empty mask','malformed record length','dimension fallback']}))
+print(json.dumps({'status':'PASS','backend':backend,'screen_checks':checks,'topk_checks':topk_checks,'distributions':['uniform','mixed float32 exponents'],'dimensions':[16,17,31,32,127,128,129,512,4096],'coverage':['near threshold','zero/ties','finite extrema/subnormals','mask/empty mask','malformed record length','dimension fallback']}))
 '''
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('--image',default='minivectordb:native-candidate')
     parser.add_argument('--output',default='protocol-results/native-screen')
+    parser.add_argument('--simd',choices=['auto','scalar'],default='auto')
     args=parser.parse_args()
-    result=subprocess.run(['docker','run','--rm','--interactive','--network=none','--memory=64m','--memory-swap=64m','--read-only','--entrypoint','python3',args.image,'-B','-'],input=PROBE,text=True,capture_output=True,timeout=60)
+    result=subprocess.run(['docker','run','--rm','--interactive','--network=none','--memory=64m','--memory-swap=64m','--read-only','--env','MINIDB_SIMD='+('0' if args.simd=='scalar' else '1'),'--entrypoint','python3',args.image,'-B','-'],input=PROBE,text=True,capture_output=True,timeout=60)
     assert result.returncode==0,(result.stdout,result.stderr)
     out=Path(__file__).resolve().parents[1]/args.output
     out.mkdir(parents=True,exist_ok=True);(out/'result.json').write_text(result.stdout)

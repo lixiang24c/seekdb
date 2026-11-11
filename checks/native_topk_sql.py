@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """Actual-image ranking with 128D ties, extreme BIGINT keys and large K."""
-import json,math,sys
+import argparse,json,math,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'protocol_check'))
 from _transport import Session
-out=ROOT/'protocol-results/topk-sql';out.mkdir(parents=True,exist_ok=True)
-s=Session(json.loads((ROOT/'protocol_check/config.json').read_text()),out/'stderr',image='minivectordb:topk-candidate')
+parser=argparse.ArgumentParser()
+parser.add_argument('--image',default='minivectordb:topk-candidate')
+parser.add_argument('--output',default='protocol-results/topk-sql')
+args=parser.parse_args()
+out=ROOT/args.output;out.mkdir(parents=True,exist_ok=True)
+s=Session(json.loads((ROOT/'protocol_check/config.json').read_text()),out/'stderr',image=args.image)
 ids=[-(1<<63),-1,0,(1<<63)-1]+list(range(1,197))
 state={ident:(i%3,[float(i%17)]*128) for i,ident in enumerate(ids)}
 checks=0

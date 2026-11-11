@@ -95,3 +95,7 @@ docker build --platform linux/amd64 --network=none --no-cache -t minivectordb:re
 块内原生TopK
 无普通列过滤的向量TopK可在C内收紧块级候选范围，保留误差带/距离并列，最终仍用Python精确排序；过滤查询沿用原筛选。
 ABI为2，构建继续RUN断网，细节见TOPK_MIGRATION.txt，实验与最终对比见TOPK_BENCHMARK.json。
+
+SIMD调度
+原生ABI为3；支持AVX2且块足够密集时自动向量化，否则使用标量。MINIDB_SIMD=0可强制标量进行对照，正常启动不需要参数。
+没有新增依赖；构建仍RUN断网。细节见SIMD_MIGRATION.txt。
