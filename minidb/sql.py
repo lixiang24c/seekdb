@@ -22,6 +22,7 @@ class Token:
 
 
 NUMBER = re.compile(r'[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?')
+VECTOR_BODY = re.compile(NUMBER.pattern + r'(?:\s*,\s*' + NUMBER.pattern + r')*')
 IDENT = re.compile(r'[A-Za-z_][A-Za-z_0-9]*')
 
 
@@ -77,12 +78,17 @@ def vector(value, dim):
             fail('invalid vector literal', 'invalid_vector')
         middle = text[1:-1].strip()
         pieces = middle.split(',') if middle else []
-        values = []
-        for part in pieces:
-            part = part.strip()
-            if not NUMBER.fullmatch(part):
+        if middle and len(pieces) <= 4096 and len(middle) <= 65536:
+            if not VECTOR_BODY.fullmatch(middle):
                 fail('invalid vector element', 'invalid_vector')
-            values.append(float(part))
+            values = list(map(float, map(str.strip, pieces)))
+        else:
+            values = []
+            for part in pieces:
+                part = part.strip()
+                if not NUMBER.fullmatch(part):
+                    fail('invalid vector element', 'invalid_vector')
+                values.append(float(part))
     elif isinstance(value, list):
         values = value
     else:

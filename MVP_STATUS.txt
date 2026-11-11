@@ -111,3 +111,7 @@ INSERT沿用原层级规则，最多16个旧段直接生成最终段，超过则
 SQL字符串扫描
 按引号边界整段提取，重复引号、Unicode与错误规则保持原行为。6484个差分片段及公开20例通过。
 完整三轮负载：写入中位4.557秒→2.784秒，1000查询4.664秒→4.548秒；I/O和内存基本持平。详见PARSER_MIGRATION.txt与PARSER_WORKLOAD_BENCHMARK.json。
+
+向量数字文本
+限定大小的文本按原数字语法整段校验，map批量转换；大输入保留原路径。官方公开20例、1530项文本差分及102项float32检查通过。
+完整三轮写入中位2.881秒→2.571秒，查询/I/O/内存基本持平。见VECTOR_TEXT_MIGRATION.txt、VECTOR_TEXT_BENCHMARK.json。

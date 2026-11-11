@@ -1,0 +1,237 @@
+{
+  "rows": 10000,
+  "dimensions": 128,
+  "batch_size": 100,
+  "queries": 1000,
+  "filtered_queries": 500,
+  "k": 10,
+  "rounds": 3,
+  "seed": 20261207,
+  "samples": {
+    "baseline": [
+      {
+        "write_seconds": 2.8336665270035155,
+        "write_resources": {
+          "memory_peak_bytes": 26820608,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 40857600,
+              "rios": 0,
+              "wios": 314,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "all_reported_device_bytes": 40857600
+        },
+        "index_prepare_seconds": 0.06153590796748176,
+        "query_seconds": 4.585915585979819,
+        "query_resources": {
+          "memory_peak_bytes": 32129024,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 46067712,
+              "rios": 0,
+              "wios": 321,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "all_reported_device_bytes": 46067712
+        }
+      },
+      {
+        "write_seconds": 2.880893003952224,
+        "write_resources": {
+          "memory_peak_bytes": 26734592,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 40857600,
+              "rios": 0,
+              "wios": 315,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "all_reported_device_bytes": 40857600
+        },
+        "index_prepare_seconds": 0.06298849696759135,
+        "query_seconds": 4.615074741013814,
+        "query_resources": {
+          "memory_peak_bytes": 32378880,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 46067712,
+              "rios": 0,
+              "wios": 324,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "all_reported_device_bytes": 46067712
+        }
+      },
+      {
+        "write_seconds": 2.902563607029151,
+        "write_resources": {
+          "memory_peak_bytes": 26886144,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 40857600,
+              "rios": 0,
+              "wios": 316,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "all_reported_device_bytes": 40857600
+        },
+        "index_prepare_seconds": 0.06245041894726455,
+        "query_seconds": 4.640345943975262,
+        "query_resources": {
+          "memory_peak_bytes": 32395264,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 46067712,
+              "rios": 0,
+              "wios": 325,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "all_reported_device_bytes": 46067712
+        }
+      }
+    ],
+    "candidate": [
+      {
+        "write_seconds": 2.5620799570460804,
+        "write_resources": {
+          "memory_peak_bytes": 26832896,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 40857600,
+              "rios": 0,
+              "wios": 315,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "all_reported_device_bytes": 40857600
+        },
+        "index_prepare_seconds": 0.05849767196923494,
+        "query_seconds": 4.591082656988874,
+        "query_resources": {
+          "memory_peak_bytes": 32145408,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 46067712,
+              "rios": 0,
+              "wios": 323,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "all_reported_device_bytes": 46067712
+        }
+      },
+      {
+        "write_seconds": 2.693229741998948,
+        "write_resources": {
+          "memory_peak_bytes": 26763264,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 40857600,
+              "rios": 0,
+              "wios": 314,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "all_reported_device_bytes": 40857600
+        },
+        "index_prepare_seconds": 0.0651718889712356,
+        "query_seconds": 4.636149545025546,
+        "query_resources": {
+          "memory_peak_bytes": 32112640,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 46067712,
+              "rios": 0,
+              "wios": 321,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "all_reported_device_bytes": 46067712
+        }
+      },
+      {
+        "write_seconds": 2.5707295250031166,
+        "write_resources": {
+          "memory_peak_bytes": 27037696,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 40857600,
+              "rios": 0,
+              "wios": 314,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "all_reported_device_bytes": 40857600
+        },
+        "index_prepare_seconds": 0.060390829981770366,
+        "query_seconds": 4.5326858119806275,
+        "query_resources": {
+          "memory_peak_bytes": 32096256,
+          "io_by_device": {
+            "8:48": {
+              "rbytes": 0,
+              "wbytes": 46067712,
+              "rios": 0,
+              "wios": 322,
+              "dbytes": 0,
+              "dios": 0
+            }
+          },
+          "all_reported_device_bytes": 46067712
+        }
+      }
+    ]
+  },
+  "scope": "Independent volumes and alternating image order. Query preparation outside query T but inside query B/M. Local per-device cgroup IO, filesystem sync before snapshots. No platform cache-reset procedure or fixed baseline; no formal E. Small in-container cat/sync diagnostic processes included in resource snapshots.",
+  "medians": {
+    "baseline": {
+      "write_seconds": 2.880893003952224,
+      "query_seconds": 4.615074741013814,
+      "write_memory_peak_bytes": 26820608,
+      "query_memory_peak_bytes": 32378880,
+      "write_device_bytes": 40857600,
+      "query_device_bytes": 46067712
+    },
+    "candidate": {
+      "write_seconds": 2.5707295250031166,
+      "query_seconds": 4.591082656988874,
+      "write_memory_peak_bytes": 26832896,
+      "query_memory_peak_bytes": 32112640,
+      "write_device_bytes": 40857600,
+      "query_device_bytes": 46067712
+    }
+  },
+  "correctness": "6000 timed responses compared; first8 per run match independent exact oracle; committed rows checked after each restart.",
+  "status": "PASS",
+  "baseline_commit": "3c34679e232a1209dc8d8424d5de88b85f624529",
+  "write_time_reduction": 0.10766226948505264
+}
