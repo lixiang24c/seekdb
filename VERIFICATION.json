@@ -1,9 +1,9 @@
 {
   "official_protocol_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
-  "baseline_commit": "857e5de3bcb87cafb302c969d5e6dd7062d62f77",
+  "baseline_commit": "04a1982fc8c5b04d45ebbd26de7a95d5f45e95b3",
   "source_sha256": {
     "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-    "minidb/engine.py": "456fe4d6d61f00603c2ca4b49f523317d9405ee1a2a63c43618669fbe41a7815",
+    "minidb/engine.py": "9d6f20cd9745015adf411fc220903da2cebbcd7d45d794d769f21746d2644031",
     "minidb/native.py": "5206f9071ec1b908af88db39aaae319629e939faa0dbc2c5dda56f4a7df0aaf0",
     "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
     "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
@@ -13,7 +13,7 @@
     ".dockerignore": "d04e7a34f971bcf973caa86450cc1f243cb6bb9cf31bc25c37c4327a3e7388bf",
     "requirements.lock": "5e1d72d066dd643601e7ed6ca3b8de91953960514013f896eef27f8655ff2ffe"
   },
-  "image_id": "sha256:6ae35d194d2d649ea5e0b01f40e0386b3f02fceb54170d1623b7a2c9dc58abda",
+  "image_id": "sha256:9d48f595a1c59e753019f0e0a23a93f15424e5a754a66c9a8772ebe726da41a3",
   "public": {
     "scope": "public-protocol-check",
     "passed": true,
@@ -22,121 +22,121 @@
         "id": "sql_crud",
         "status": "PASS",
         "message": "",
-        "duration_ms": 584
+        "duration_ms": 746
       },
       {
         "id": "sql_comparisons",
         "status": "PASS",
         "message": "",
-        "duration_ms": 674
+        "duration_ms": 612
       },
       {
         "id": "sql_ordering",
         "status": "PASS",
         "message": "",
-        "duration_ms": 572
+        "duration_ms": 616
       },
       {
         "id": "sql_empty",
         "status": "PASS",
         "message": "",
-        "duration_ms": 556
+        "duration_ms": 597
       },
       {
         "id": "sql_primary_key",
         "status": "PASS",
         "message": "",
-        "duration_ms": 586
+        "duration_ms": 754
       },
       {
         "id": "sql_unicode",
         "status": "PASS",
         "message": "",
-        "duration_ms": 607
+        "duration_ms": 667
       },
       {
         "id": "sql_bigint",
         "status": "PASS",
         "message": "",
-        "duration_ms": 607
+        "duration_ms": 621
       },
       {
         "id": "sql_unsupported",
         "status": "PASS",
         "message": "",
-        "duration_ms": 554
+        "duration_ms": 568
       },
       {
         "id": "storage_restart",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1106
+        "duration_ms": 1124
       },
       {
         "id": "vector_euclidean",
         "status": "PASS",
         "message": "",
-        "duration_ms": 610
+        "duration_ms": 562
       },
       {
         "id": "transaction_commit",
         "status": "PASS",
         "message": "",
-        "duration_ms": 594
+        "duration_ms": 542
       },
       {
         "id": "transaction_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 544
+        "duration_ms": 649
       },
       {
         "id": "storage_mutations",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1005
+        "duration_ms": 1080
       },
       {
         "id": "storage_multiple_tables",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1020
+        "duration_ms": 1325
       },
       {
         "id": "vector_ties_and_filter",
         "status": "PASS",
         "message": "",
-        "duration_ms": 592
+        "duration_ms": 608
       },
       {
         "id": "vector_float32",
         "status": "PASS",
         "message": "",
-        "duration_ms": 589
+        "duration_ms": 544
       },
       {
         "id": "vector_index_maintenance",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1059
+        "duration_ms": 1193
       },
       {
         "id": "transaction_failed_insert",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1094
+        "duration_ms": 1095
       },
       {
         "id": "transaction_autocommit_atomic",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1061
+        "duration_ms": 1043
       },
       {
         "id": "transaction_shutdown_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1050
+        "duration_ms": 1104
       }
     ],
     "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
@@ -467,7 +467,7 @@
     "correctness": "All 80 candidate responses equal baseline; 8 baseline queries independently checked",
     "baseline_commit": "fc2567d9cea6b361bdf566216cc2f5c7da507412"
   },
-  "scope": "Final SIMD image: public20, SQL24, AVX2/scalar boundary probes and final three-round performance. Host sanitizer passed. Initial SIMD model scope recorded separately; large storage/resource inherited.",
+  "scope": "Final image: public20, one final 128D model (250 operations /750 independent queries), SQL24, 32 mask-oracle queries under64MiB including native-off fallback, and two final alternating three-round performance cohorts (1440 measured responses). Native C code unchanged from04a1982f; its dual-mode/sanitizer checks remain inherited. Earlier intermediate cache models are not counted as final-image evidence.",
   "previous_stages": [
     {
       "commit": "77808f7c2053f394c354f9cbc249fe9f86f48835",
@@ -1750,6 +1750,151 @@
         "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
       },
       "scope": "Current image: public20, 648 screen plus828 local-TopK checks under64MiB, 24 actual-image ranking oracles with extreme keys and K<=1024, transaction visibility, three alternating performance rounds. Host ASan/UBSan passed. Storage unchanged; large storage/resource reports remain inherited with their earlier commit scopes."
+    },
+    {
+      "commit": "04a1982fc8c5b04d45ebbd26de7a95d5f45e95b3",
+      "baseline_commit": "857e5de3bcb87cafb302c969d5e6dd7062d62f77",
+      "source_sha256": {
+        "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+        "minidb/engine.py": "456fe4d6d61f00603c2ca4b49f523317d9405ee1a2a63c43618669fbe41a7815",
+        "minidb/native.py": "5206f9071ec1b908af88db39aaae319629e939faa0dbc2c5dda56f4a7df0aaf0",
+        "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+        "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
+        "minidb/storage.py": "751f01ef9904c1939a44b62d6796d2f163148e7bbd606feca99b7bfb9124c37f",
+        "native/screen.c": "e7f0b3f0e789c0caa89cfa300ca644c5ce5edb7113f25b8b49512f257c5bbfe9",
+        "Dockerfile": "61a838d09aa42cdf993d7628ca17fbf27ca0993ae9eeb8507dad8db9e8f5b2a6",
+        ".dockerignore": "d04e7a34f971bcf973caa86450cc1f243cb6bb9cf31bc25c37c4327a3e7388bf",
+        "requirements.lock": "5e1d72d066dd643601e7ed6ca3b8de91953960514013f896eef27f8655ff2ffe"
+      },
+      "image_id": "sha256:6ae35d194d2d649ea5e0b01f40e0386b3f02fceb54170d1623b7a2c9dc58abda",
+      "public": {
+        "scope": "public-protocol-check",
+        "passed": true,
+        "cases": [
+          {
+            "id": "sql_crud",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 584
+          },
+          {
+            "id": "sql_comparisons",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 674
+          },
+          {
+            "id": "sql_ordering",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 572
+          },
+          {
+            "id": "sql_empty",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 556
+          },
+          {
+            "id": "sql_primary_key",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 586
+          },
+          {
+            "id": "sql_unicode",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 607
+          },
+          {
+            "id": "sql_bigint",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 607
+          },
+          {
+            "id": "sql_unsupported",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 554
+          },
+          {
+            "id": "storage_restart",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1106
+          },
+          {
+            "id": "vector_euclidean",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 610
+          },
+          {
+            "id": "transaction_commit",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 594
+          },
+          {
+            "id": "transaction_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 544
+          },
+          {
+            "id": "storage_mutations",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1005
+          },
+          {
+            "id": "storage_multiple_tables",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1020
+          },
+          {
+            "id": "vector_ties_and_filter",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 592
+          },
+          {
+            "id": "vector_float32",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 589
+          },
+          {
+            "id": "vector_index_maintenance",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1059
+          },
+          {
+            "id": "transaction_failed_insert",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1094
+          },
+          {
+            "id": "transaction_autocommit_atomic",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1061
+          },
+          {
+            "id": "transaction_shutdown_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1050
+          }
+        ],
+        "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
+      },
+      "scope": "Final SIMD image: public20, SQL24, AVX2/scalar boundary probes and final three-round performance. Host sanitizer passed. Initial SIMD model scope recorded separately; large storage/resource inherited."
     }
   ],
   "general_benchmark": {
@@ -1969,11 +2114,10 @@
   },
   "model": {
     "status": "PASS",
-    "seed": 20261123,
+    "seed": 20261129,
     "dimensions": 128,
     "operations": 250,
-    "queries": 750,
-    "scope": "Earlier SIMD reduction implementation; final dispatch validated by dual-mode boundary probes, public20 and SQL24."
+    "queries": 750
   },
   "recovery": {
     "status": "PASS",
@@ -2190,12 +2334,12 @@
     "legacy_upgrade": true
   },
   "native_build": {
-    "previous_build_commit": "857e5de3bcb87cafb302c969d5e6dd7062d62f77",
+    "previous_build_commit": "04a1982fc8c5b04d45ebbd26de7a95d5f45e95b3",
     "builder_image": "gcc:12-bookworm@sha256:44482187aa3865ad1e2477dc8c56bae4fd8e071e7d99c5f44956effc7f7cc846",
     "builder_platform": "linux/amd64",
     "compiler": "GCC 12.5.0",
     "runtime_base": "python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0",
-    "command": "docker build --platform linux/amd64 --network=none -t minivectordb:simd-candidate .",
+    "command": "docker build --platform linux/amd64 --network=none -t minivectordb:bitmap-candidate .",
     "build_status": "PASS",
     "RUN_network": "none",
     "RUN_package_downloads": false,
@@ -2219,7 +2363,7 @@
     "runtime_compiler_present": false,
     "source_sha256": {
       "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-      "minidb/engine.py": "456fe4d6d61f00603c2ca4b49f523317d9405ee1a2a63c43618669fbe41a7815",
+      "minidb/engine.py": "9d6f20cd9745015adf411fc220903da2cebbcd7d45d794d769f21746d2644031",
       "minidb/native.py": "5206f9071ec1b908af88db39aaae319629e939faa0dbc2c5dda56f4a7df0aaf0",
       "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
       "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
@@ -3004,6 +3148,240 @@
     }
   },
   "simd_sql": {
+    "status": "PASS",
+    "oracle_queries": 24,
+    "transaction_visibility": "PASS",
+    "dimensions": 128,
+    "rows": 200,
+    "K": [
+      1,
+      10,
+      127,
+      128,
+      512,
+      1024
+    ],
+    "extreme_bigint_keys": true
+  },
+  "filter_mask_benchmark": {
+    "single_category": {
+      "rows": 10000,
+      "dimensions": 128,
+      "queries": 120,
+      "filtered_queries": 60,
+      "filter_categories": 1,
+      "projected_distance": true,
+      "content_bytes_per_row": 512,
+      "cpus": "2",
+      "memory": "2g",
+      "seed": 20261127,
+      "scope": "Alternating image order across rounds; local comparison, not formal score",
+      "rounds": 3,
+      "samples": {
+        "baseline": [
+          {
+            "cold_unfiltered_seconds": 0.009477472980506718,
+            "cold_filtered_seconds": 0.05621335102478042,
+            "total_seconds": 0.7298146290704608,
+            "unfiltered_seconds": 0.27063901716610417,
+            "filtered_seconds": 0.45917561190435663,
+            "median_ms": 6.86156252049841,
+            "max_ms": 10.801258962601423
+          },
+          {
+            "cold_unfiltered_seconds": 0.004931005008984357,
+            "cold_filtered_seconds": 0.05330087599577382,
+            "total_seconds": 0.7019784091389738,
+            "unfiltered_seconds": 0.25968579400796443,
+            "filtered_seconds": 0.44229261513100937,
+            "median_ms": 6.416768999770284,
+            "max_ms": 8.29589698696509
+          },
+          {
+            "cold_unfiltered_seconds": 0.004975195974111557,
+            "cold_filtered_seconds": 0.05261908395914361,
+            "total_seconds": 0.7354551842436194,
+            "unfiltered_seconds": 0.2709682961576618,
+            "filtered_seconds": 0.4644868880859576,
+            "median_ms": 6.568684009835124,
+            "max_ms": 12.427767040207982
+          }
+        ],
+        "candidate": [
+          {
+            "cold_unfiltered_seconds": 0.004973992006853223,
+            "cold_filtered_seconds": 0.052989318035542965,
+            "total_seconds": 0.5310400383896194,
+            "unfiltered_seconds": 0.2642277882550843,
+            "filtered_seconds": 0.26681225013453513,
+            "median_ms": 4.246020485879853,
+            "max_ms": 8.009437995497137
+          },
+          {
+            "cold_unfiltered_seconds": 0.00503267499152571,
+            "cold_filtered_seconds": 0.05595557997003198,
+            "total_seconds": 0.5454813406104222,
+            "unfiltered_seconds": 0.2725486379349604,
+            "filtered_seconds": 0.27293270267546177,
+            "median_ms": 4.272476508049294,
+            "max_ms": 9.790048003196716
+          },
+          {
+            "cold_unfiltered_seconds": 0.005091383005492389,
+            "cold_filtered_seconds": 0.059632205055095255,
+            "total_seconds": 0.5455192098161206,
+            "unfiltered_seconds": 0.27099394868128,
+            "filtered_seconds": 0.27452526113484055,
+            "median_ms": 4.384670493891463,
+            "max_ms": 8.40126205002889
+          }
+        ]
+      },
+      "runs": {
+        "baseline": {
+          "cold_unfiltered_seconds": 0.004975195974111557,
+          "cold_filtered_seconds": 0.05330087599577382,
+          "total_seconds": 0.7298146290704608,
+          "unfiltered_seconds": 0.27063901716610417,
+          "filtered_seconds": 0.45917561190435663,
+          "median_ms": 6.568684009835124,
+          "max_ms": 10.801258962601423
+        },
+        "candidate": {
+          "cold_unfiltered_seconds": 0.00503267499152571,
+          "cold_filtered_seconds": 0.05595557997003198,
+          "total_seconds": 0.5454813406104222,
+          "unfiltered_seconds": 0.27099394868128,
+          "filtered_seconds": 0.27293270267546177,
+          "median_ms": 4.272476508049294,
+          "max_ms": 8.40126205002889
+        }
+      },
+      "speedup": 1.3379277616604814,
+      "correctness": "All 720 measured responses checked; first 8 independently checked"
+    },
+    "ten_categories": {
+      "rows": 10000,
+      "dimensions": 128,
+      "queries": 120,
+      "filtered_queries": 60,
+      "filter_categories": 10,
+      "projected_distance": true,
+      "content_bytes_per_row": 512,
+      "cpus": "2",
+      "memory": "2g",
+      "seed": 20261127,
+      "scope": "Alternating image order across rounds; local comparison, not formal score",
+      "rounds": 3,
+      "samples": {
+        "baseline": [
+          {
+            "cold_unfiltered_seconds": 0.009581482969224453,
+            "cold_filtered_seconds": 0.06471190403681248,
+            "total_seconds": 3.452833708957769,
+            "unfiltered_seconds": 0.28262357029598206,
+            "filtered_seconds": 3.170210138661787,
+            "median_ms": 6.698666984448209,
+            "max_ms": 56.5010069985874
+          },
+          {
+            "cold_unfiltered_seconds": 0.005097599001601338,
+            "cold_filtered_seconds": 0.05420875799609348,
+            "total_seconds": 3.5028257428784855,
+            "unfiltered_seconds": 0.29515964089659974,
+            "filtered_seconds": 3.2076661019818857,
+            "median_ms": 7.9001549747772515,
+            "max_ms": 59.55706397071481
+          },
+          {
+            "cold_unfiltered_seconds": 0.004861467983573675,
+            "cold_filtered_seconds": 0.05487356102094054,
+            "total_seconds": 3.538901795167476,
+            "unfiltered_seconds": 0.2929833749658428,
+            "filtered_seconds": 3.245918420201633,
+            "median_ms": 7.6211400446482,
+            "max_ms": 58.68381296750158
+          }
+        ],
+        "candidate": [
+          {
+            "cold_unfiltered_seconds": 0.005064805969595909,
+            "cold_filtered_seconds": 0.0530660729855299,
+            "total_seconds": 0.9991347709437832,
+            "unfiltered_seconds": 0.2669101220089942,
+            "filtered_seconds": 0.732224648934789,
+            "median_ms": 4.395560012198985,
+            "max_ms": 54.46522799320519
+          },
+          {
+            "cold_unfiltered_seconds": 0.005094452004414052,
+            "cold_filtered_seconds": 0.05356713099172339,
+            "total_seconds": 0.9961912272265181,
+            "unfiltered_seconds": 0.2641345743322745,
+            "filtered_seconds": 0.7320566528942436,
+            "median_ms": 4.3474384874571115,
+            "max_ms": 55.238049011677504
+          },
+          {
+            "cold_unfiltered_seconds": 0.0060324089718051255,
+            "cold_filtered_seconds": 0.054636767017655075,
+            "total_seconds": 1.0184717159718275,
+            "unfiltered_seconds": 0.27020568202715367,
+            "filtered_seconds": 0.7482660339446738,
+            "median_ms": 4.438150499481708,
+            "max_ms": 57.23892099922523
+          }
+        ]
+      },
+      "runs": {
+        "baseline": {
+          "cold_unfiltered_seconds": 0.005097599001601338,
+          "cold_filtered_seconds": 0.05487356102094054,
+          "total_seconds": 3.5028257428784855,
+          "unfiltered_seconds": 0.2929833749658428,
+          "filtered_seconds": 3.2076661019818857,
+          "median_ms": 7.6211400446482,
+          "max_ms": 58.68381296750158
+        },
+        "candidate": {
+          "cold_unfiltered_seconds": 0.005094452004414052,
+          "cold_filtered_seconds": 0.05356713099172339,
+          "total_seconds": 0.9991347709437832,
+          "unfiltered_seconds": 0.2669101220089942,
+          "filtered_seconds": 0.732224648934789,
+          "median_ms": 4.395560012198985,
+          "max_ms": 55.238049011677504
+        }
+      },
+      "speedup": 3.5058591140509647,
+      "correctness": "All 720 measured responses checked; first 8 independently checked"
+    },
+    "baseline_commit": "04a1982fc8c5b04d45ebbd26de7a95d5f45e95b3"
+  },
+  "filter_mask_boundaries": {
+    "status": "PASS",
+    "oracle_queries": 32,
+    "rows": 3000,
+    "dimensions": 128,
+    "bitmap_budget": 131072,
+    "reduced_budget_fallback": 2048,
+    "checks": [
+      "group reuse with different query vectors",
+      "compact int64 IDs survive bitmap eviction",
+      "native-off cached-mask fallback",
+      "multiple predicates without ID cache",
+      "transaction mutation visibility",
+      "failed statement",
+      "rollback",
+      "delete-only mask invalidation",
+      "second index",
+      "builder overflow fallback",
+      "LRU eviction without predicate rescan",
+      "delete all rollback",
+      "restart"
+    ]
+  },
+  "sql": {
     "status": "PASS",
     "oracle_queries": 24,
     "transaction_visibility": "PASS",

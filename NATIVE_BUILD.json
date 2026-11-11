@@ -1,10 +1,10 @@
 {
-  "previous_build_commit": "857e5de3bcb87cafb302c969d5e6dd7062d62f77",
+  "previous_build_commit": "04a1982fc8c5b04d45ebbd26de7a95d5f45e95b3",
   "builder_image": "gcc:12-bookworm@sha256:44482187aa3865ad1e2477dc8c56bae4fd8e071e7d99c5f44956effc7f7cc846",
   "builder_platform": "linux/amd64",
   "compiler": "GCC 12.5.0",
   "runtime_base": "python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0",
-  "command": "docker build --platform linux/amd64 --network=none -t minivectordb:simd-candidate .",
+  "command": "docker build --platform linux/amd64 --network=none -t minivectordb:bitmap-candidate .",
   "build_status": "PASS",
   "RUN_network": "none",
   "RUN_package_downloads": false,
@@ -28,7 +28,7 @@
   "runtime_compiler_present": false,
   "source_sha256": {
     "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-    "minidb/engine.py": "456fe4d6d61f00603c2ca4b49f523317d9405ee1a2a63c43618669fbe41a7815",
+    "minidb/engine.py": "9d6f20cd9745015adf411fc220903da2cebbcd7d45d794d769f21746d2644031",
     "minidb/native.py": "5206f9071ec1b908af88db39aaae319629e939faa0dbc2c5dda56f4a7df0aaf0",
     "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
     "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",

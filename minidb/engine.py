@@ -1,6 +1,7 @@
 """SQL execution with bounded scans, flat vector indexes and external sorting."""
 import copy
 from collections import OrderedDict
+from array import array
 import heapq
 import itertools
 import json
@@ -17,6 +18,7 @@ OPS = {'=': operator.eq, '<': operator.lt, '<=': operator.le, '>': operator.gt, 
 SORT_BYTES = 1 << 20
 HEAP_BYTES = 2 << 20
 MERGE_FANIN = 16
+MASK_BYTES = 128 << 10
 
 
 class Desc:
@@ -69,6 +71,8 @@ class Database:
         self.store = Storage(directory)
         self.filter_cache = OrderedDict()
         self.filter_cache_bytes = 0
+        self.filter_masks = OrderedDict()
+        self.filter_masks_bytes = 0
 
     def column(self, table, name):
         for i, c in enumerate(table['cols']):
@@ -280,32 +284,68 @@ class Database:
         return key if len(repr(key)) * 4 + 256 <= 8192 else None
 
     def remember_filter(self, key, ids):
-        cost = len(repr(key)) * 4 + 256 + (len(ids) * 128 if ids is not None else 128)
+        if ids is not None: ids = array('q', sorted(ids))
+        cost = len(repr(key)) * 4 + 256 + (len(ids) * 8 + 128 if ids is not None else 128)
+        previous = self.filter_cache.pop(key, None)
+        if previous is not None: self.filter_cache_bytes -= previous[1]
         while self.filter_cache and self.filter_cache_bytes + cost > (512 << 10):
             _, (_, old_cost) = self.filter_cache.popitem(last=False)
             self.filter_cache_bytes -= old_cost
         self.filter_cache[key] = (ids, cost)
         self.filter_cache_bytes += cost
 
-    def flat_topk(self, table, expr, k, allowed=None):
+    def remember_masks(self, key, masks):
+        budget = MASK_BYTES
+        base = len(repr(key)) * 4 + 256
+        cost = base + (sum(len(value) + len(name) * 4 + 128 for name, value in masks.items()) if masks is not None else 128)
+        if cost > budget: masks, cost = None, base + 128
+        if cost > budget: return
+        old = self.filter_masks.pop(key, None)
+        if old is not None: self.filter_masks_bytes -= old[1]
+        while self.filter_masks and self.filter_masks_bytes + cost > budget:
+            _, (_, previous) = self.filter_masks.popitem(last=False)
+            self.filter_masks_bytes -= previous
+        self.filter_masks[key] = (masks, cost)
+        self.filter_masks_bytes += cost
+
+    def flat_topk(self, table, expr, k, allowed=None, mask_key=None, filtering=False):
         vc, query = expr[1], expr[2]
         fmt = struct.Struct('<q' + str(len(query)) + 'f')
         heap, radius = [], math.inf
         if allowed is not None and not allowed: return {}
         key_format = struct.Struct('<q')
         screen = Screen(query)
+        entry = self.filter_masks.get(mask_key) if mask_key is not None else None
+        if entry is not None: self.filter_masks.move_to_end(mask_key)
+        reuse = entry[0] if entry is not None else None
+        pending = {} if mask_key is not None and entry is None and screen.query is not None else None
+        pending_cost = len(repr(mask_key)) * 4 + 256
         for path, excluded in self.store.index_segments(table):
             with open(path, 'rb') as f:
                 if f.read(8) != INDEX_MAGIC: raise OSError('invalid index header')
                 block_bytes = fmt.size * max(1, 65536 // fmt.size)
+                cached = reuse.get(path.name) if reuse is not None else None
+                chunks = [] if pending is not None else None
+                position = 0
                 while data := f.read(block_bytes):
                     if len(data) % fmt.size: raise OSError('incomplete index record')
                     mask = None
-                    if screen.query is not None and (allowed is not None or excluded):
-                        mask = bytes(int((allowed is None or ident in allowed) and ident not in excluded)
-                                     for ident in (key_format.unpack_from(data, pos)[0] for pos in range(0, len(data), fmt.size)))
-                    positions = screen.select(data, -heap[0][0] if len(heap) == k else math.inf, mask, k=k if allowed is None else None)
+                    if (screen.query is not None or cached is not None) and (filtering or excluded):
+                        count = len(data) // fmt.size
+                        if cached is not None:
+                            mask = cached[position:position + count]
+                            if len(mask) != count: raise OSError('invalid cached predicate mask')
+                        else:
+                            mask = bytes(int((allowed is None or ident in allowed) and ident not in excluded)
+                                         for ident in (key_format.unpack_from(data, pos)[0] for pos in range(0, len(data), fmt.size)))
+                            if chunks is not None:
+                                pending_cost += len(mask) + 64
+                                if pending_cost > MASK_BYTES: pending, chunks = None, None
+                                else: chunks.append(mask)
+                        position += count
+                    positions = screen.select(data, -heap[0][0] if len(heap) == k else math.inf, mask, k=None if filtering else k)
                     values_iter = ((fmt.unpack_from(data, pos * fmt.size) for pos in positions) if positions is not None else
+                                   (fmt.unpack_from(data, pos * fmt.size) for pos in range(len(mask)) if mask[pos]) if mask is not None else
                                    fmt.iter_unpack(data) if allowed is None else
                                    (fmt.unpack_from(data, pos) for pos in range(0, len(data), fmt.size)
                                     if key_format.unpack_from(data, pos)[0] in allowed))
@@ -322,6 +362,11 @@ class Database:
                             heapq.heapreplace(heap, item)
                         if len(heap) == k:
                             radius = math.sqrt(-heap[0][0]) * (1.0 + 1e-12) + 1e-300
+                if pending is not None:
+                    pending[path.name] = b''.join(chunks)
+                    pending_cost += len(path.name) * 4 + 128
+        if mask_key is not None and entry is None and screen.query is not None:
+            self.remember_masks(mask_key, pending)
         return {item[2]: -item[0] for item in heap}
 
     def vector_topk(self, table, expr, k, columns, match, filter_columns, conditions):
@@ -335,7 +380,13 @@ class Database:
         allowed = entry[0] if entry is not None else None
         collect_ids = set() if cache_key is not None and entry is None else None
         collect_budget = (512 << 10) - (len(repr(cache_key)) * 4 + 256) if cache_key is not None else 0
-        scores = self.flat_topk(table, expr, k, allowed) if table.get('indexes') and (not filter_columns or allowed is not None) else None
+        mask_key = cache_key if filter_columns else self.filter_key(table, ()) if any(p.get('excluded') for p in self.store.segments(table)) else None
+        if mask_key is not None:
+            mask_key = (mask_key, tuple(part.get('index_file') for part in self.store.segments(table)))
+        mask_entry = self.filter_masks.get(mask_key) if mask_key is not None else None
+        has_masks = mask_entry is not None and mask_entry[0] is not None
+        if allowed is not None and not has_masks: allowed = set(allowed)
+        scores = self.flat_topk(table, expr, k, allowed, mask_key, bool(filter_columns)) if table.get('indexes') and (not filter_columns or allowed is not None or has_masks) else None
         heap, radius = [], math.inf
         records = (self.store.records(table, ordered=False) if scores is None else
                    ((ident, self.store.lookup(table, ident)[1]) for ident in scores))
@@ -369,7 +420,7 @@ class Database:
                     radius = math.sqrt(-heap[0][0]) * (1.0 + 1e-12) + 1e-300
         finally:
             records.close()
-        if cache_key is not None and entry is None:
+        if cache_key is not None and entry is None and scores is None:
             self.remember_filter(cache_key, collect_ids)
         if scores is None:
             selected = [(-neg_distance, -neg_ident, raw) for neg_distance, neg_ident, raw in heap]

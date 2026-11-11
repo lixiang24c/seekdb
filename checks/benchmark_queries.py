@@ -26,7 +26,9 @@ def main():
     parser.add_argument('--rounds', type=int, default=1)
     parser.add_argument('--queries', type=int, default=80)
     parser.add_argument('--seed', type=int, default=20261112)
+    parser.add_argument('--filter-categories',type=int,default=1)
     args = parser.parse_args()
+    if not 1 <= args.filter_categories <= 10: parser.error('filter-categories must be 1..10')
     out = ROOT / args.output
     out.mkdir(parents=True, exist_ok=True)
     config = json.loads((ROOT / 'protocol_check/config.json').read_text())
@@ -35,10 +37,10 @@ def main():
     vectors = [[rng.randrange(-64, 65) / 8 for _ in range(128)] for _ in range(10000)]
     query_vectors = [[rng.randrange(-64, 65) / 8 for _ in range(128)] for _ in range(args.queries)]
     statements = [f"SELECT id,L2_DISTANCE(v,'{json.dumps(q)}') AS d FROM t " +
-                  ('WHERE category=3 ' if i % 2 else '') + 'ORDER BY d LIMIT 10'
+                  (f'WHERE category={3 if args.filter_categories==1 else (i//2)%args.filter_categories} ' if i % 2 else '') + 'ORDER BY d LIMIT 10'
                   for i, q in enumerate(query_vectors)]
     report = {'rows': 10000, 'dimensions': 128, 'queries': args.queries, 'filtered_queries': args.queries//2,
-              'projected_distance': True, 'content_bytes_per_row': 512,
+              'filter_categories':args.filter_categories, 'projected_distance': True, 'content_bytes_per_row': 512,
               'cpus': config['cpus'], 'memory': config['memory'], 'seed': args.seed,
               'scope': 'Alternating image order across rounds; local comparison, not formal score', 'rounds':args.rounds, 'samples':{'baseline':[], 'candidate':[]}, 'runs':{}}
     expected = []
@@ -72,7 +74,7 @@ def main():
                     if i < 8:
                         q = query_vectors[i]
                         truth = sorted((math.fsum((x-y)*(x-y) for x,y in zip(vec,q)), j)
-                                       for j,vec in enumerate(vectors) if not i%2 or j%10 == 3)[:10]
+                                       for j,vec in enumerate(vectors) if not i%2 or j%10 == (3 if args.filter_categories==1 else (i//2)%args.filter_categories))[:10]
                         assert result['rows'] == [[j,math.sqrt(d)] for d,j in truth]
                 else:
                     assert result['rows'] == expected[i], (i, result['rows'], expected[i])

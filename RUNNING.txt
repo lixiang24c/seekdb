@@ -99,3 +99,7 @@ ABI为2，构建继续RUN断网，细节见TOPK_MIGRATION.txt，实验与最终�
 SIMD调度
 原生ABI为3；支持AVX2且块足够密集时自动向量化，否则使用标量。MINIDB_SIMD=0可强制标量进行对照，正常启动不需要参数。
 没有新增依赖；构建仍RUN断网。细节见SIMD_MIGRATION.txt。
+
+过滤缓存
+候选ID采用紧凑int64数组，预算512KiB；另用128KiB缓存索引顺序字节掩码，按数据/索引版本隔离。超预算回到原路径。
+没有新的依赖或持久化文件；详见FILTER_MASK_MIGRATION.txt。
