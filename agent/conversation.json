@@ -1,7 +1,7 @@
 {
-  "material_version": "authentic-development-records-1",
+  "material_version": "authentic-development-records-3",
   "synthetic": false,
-  "scope": "包含本次重写的真实用户指令、明确标注的Agent摘要和实际工具验证，以及用户在当前对话中补充的早期团队经历复盘。早期经历的来源为用户当前回顾，不伪装成当时的原始交互；较早完整对话未纳入。用户原文保留，Agent设计和工具执行不冒充学生自身解释。",
+  "scope": "包含本次重写的真实用户指令、明确标注的Agent摘要和实际工具验证，以及用户在当前对话中补充的早期团队经历复盘。早期经历的来源为用户当前回顾，不伪装成当时的原始交互；较早完整对话未纳入。用户原文保留，Agent设计和工具执行不冒充学生自身解释。 另含role_legend与evidence_index（仅定位原文与结果，不代表得分），以及学生对覆盖段尖峰实验结果的解释、影响判断和修改方案（逐字）和据此实现的覆盖段小段归并改动的复测记录。",
   "conversations": [
     {
       "id": "u1",
@@ -311,6 +311,65 @@
       "id": "a-projection-distance",
       "role": "assistant",
       "content": "继续优化查询端：把TopK已算出的精确分数在当前SELECT投影阶段复用，并省去未输出向量的解码。不同查询向量保持独立，触发排序回退清除局部复用；不新增跨语句缓存。"
+    },
+    {
+      "id": "u-compile-material",
+      "role": "user",
+      "content": "当前项目是一个比赛项目，现在我们要完成agent prompt子赛题，该赛题要求在reports文件夹下，同时，该文件夹下还有整道赛题的要求，你可以以此作为参考来编纂该子赛题，另外，当前工作区内该赛题还未成熟实现，如果你编纂这道题目时需要实现参考，github.com/Chenyifu0215/competition_seekdb下的2026-competition-round2分支里的实现你可以作为参考"
+    },
+    {
+      "id": "a-compile-material",
+      "role": "assistant",
+      "content": "整理摘要：本地分支快进到远端minivectordb-rewrite最新提交后，沿用已有真实记录，新增role_legend与evidence_index，仅按原文定位学生发言与对应实际结果；参考round2分支的材料格式与格式检查脚本，未引入该分支的实验结果，也未新增任何学生解释。"
+    },
+    {
+      "id": "pred-A",
+      "role": "user",
+      "kind": "prediction-before-run",
+      "context": "Agent提问（选项文字由Agent拟定）：实验A，1万行128维表，对100个不同主键各做一次单行UPDATE；代码单行更新追加替代段并屏蔽旧记录，段数>=32或失效主键>=64时才归并。预测每条UPDATE耗时变化？",
+      "content": "约第32-33条尖峰",
+      "note": "学生从Agent给出的四个选项中选择，没有写理由。"
+    },
+    {
+      "id": "pred-B",
+      "role": "user",
+      "kind": "prediction-before-run",
+      "context": "Agent提问：实验B，同一张1万行表重启后依次执行6条WHERE c=X的TopK查询（X取6个不同值）；代码在同一列出现第二种不同条件时才构建列值分组缓存。预测哪条查询最慢？",
+      "content": "为什么不选 1 - 重启后的第 1 条是全表扫描，第 2 条也是全表扫描，所以\"之后都更快\"不成立。第 2 条还没变快，第 3 条起才变快。 为什么选 2 - 分组缓存在第 2 条的同一次扫描里顺带构建（engine.py:422-429、engine.py:444），所以它比第 1 条多一份收集开销。 - 第 3 到 6 条改为用分组选出候选主键，再按 allowed 扫紧凑的向量索引文件，不再读整行，明显更快。 不确定的地方 - 第 1 条和第 2 条差距应该很小，因为都是全扫描。第 2 条多出来的只是收集分组的那一点。 - 第 1 条还要付冷文件读取的成本，这个我无法从代码判断。 - 仓库里没有\"第 2 条比第 1 条慢多少\"的单独数据。所以选 2 是依据代码机制的判断，不是实测。 重启后缓存是空的，第 1 条只能全表扫描，但这时还不建分组。第 2 条换了一个不同的 X，代码发现同一列出现了第二种条件，才在这次扫描里顺带把各个值对应的主键收集成分组，所以这一条扫描加建分组，成本最高。第 3 条起可以直接用分组选出候选行，不用再读整行数据，因此变快。我不选第 1 条最慢，是因为第 2 条同样是全扫描，还多了建分组的开销。第 1 条和第 2 条差距可能不大，如果冷读文件很慢，第 1 条也有可能反超。",
+      "note": "学生在提问界面备注中写出的原文，逐字保留（仅把原有分行合并为一行）。"
+    },
+    {
+      "id": "a-exp-flaw",
+      "role": "assistant",
+      "content": "Agent发现：实验A首次运行的耗时恒为约0.05ms且段数恒为3，原因是Agent设计的新值k%6恰好等于旧值id%6（97对6取余为1），100次都是同值更新，走同值快速路径，未触发覆盖段机制。该次运行不能检验学生预测。该问题由Agent发现并修正，不是学生贡献。"
+    },
+    {
+      "id": "explain-spike",
+      "role": "user",
+      "kind": "student explanation of experiment A result (recorded verbatim from the user's message)",
+      "content": "1. 尖峰位置的解释\n我之前预测第 32 次，是假设加载后只有 1 个段。代码是先检查再追加，所以首次触发在第 33−S0 次（S0 是初始段数）。你的数据里段数从 4 开始涨，说明第 1 次更新后是 3+1，S0=3。33−3=30，正好是第 30 条。\n\n我预测第 32 条，是因为默认建表后只有 1 个段。代码是先检查再追加，首次触发序号是 33 减初始段数。实测第 1 条更新后段数是 4，说明加载后有 3 个基础段，所以 33−3=30，尖峰出现在第 30 条。归并后只剩 1 个归并段，加上本次追加的 1 段，共 2 段。之后每次更新加 1 段，到更新前段数重新达到 32 需要 31 条，所以尖峰每 31 条重复一次，也就是第 30、61、92 条。\n\n这个解释和你的三个数字（30、61、92，回落到 2 段）都对得上。我只是反推出\"加载后有 3 个段\"，没有去验证为什么是 3 个，可能是分批 INSERT 产生的几何合并。要确认的话，看一下加载后的初始段数就行。"
+    },
+    {
+      "id": "impact-judgement",
+      "role": "user",
+      "kind": "student judgement of impact (recorded verbatim from the user's message)",
+      "content": "2. 对尖峰影响的判断\n单条中位数约 6.4ms，尖峰约 95 到 100ms，大约是 15 倍，每 31 条出现一次。摊到每条平均约 (30×6.4+97)/31≈9.3ms，比中位数高约 45%。对批量写入的总吞吐影响中等，对单条延迟的尾部（p99）影响很大。归并要重写全部数据和向量索引并逐个 fsync，开销随行数×维度增长，表越大尖峰越高。所以如果比赛看尾延迟或表更大，值得改；只看总吞吐、表在 1 万行量级，可以不改。"
+    },
+    {
+      "id": "proposed-change",
+      "role": "user",
+      "kind": "student proposed modification (recorded verbatim from the user's message)",
+      "content": "3. 我想改的方案\n方案：归并只合并小的覆盖段，不重写基础段。基础段里被屏蔽的旧记录继续靠失效主键集合处理，只有失效主键累积到 64 时才做一次全量重写。预期是段数阈值触发的尖峰从约 95ms 降到十几毫秒以内，因为只处理几十个单行段。全量重写的频率会下降，但它不会消失，在失效主键到 64 时仍会出现一次大尖峰，所以 p99 不一定明显改善，要看复测。风险是读路径要对更多被屏蔽记录做过滤，查询可能略慢，所以复测时要同时测 TopK 查询耗时。"
+    },
+    {
+      "id": "a-impl-findings",
+      "role": "assistant",
+      "content": "Agent撰写，不是学生贡献。(1)验证了学生说“没有验证”的一点：按每批100行连续INSERT 100批，段数序列为1,2,2,3,2,3,3,4,...，等于批次号二进制中1的个数，100=0b1100100有3个1，所以加载后为3个段（几何合并），见experiments中exp-init-segments。(2)读replace_point发现：旧代码两个触发条件命中后调用rewrite重写全表（不只是覆盖段）；单行UPDATE每次只给excluded加1，两次重写之间最多累积约31个，所以excluded>=64这条在单行UPDATE下之前从未先于段数条件触发。(3)覆盖段与100行INSERT段结构上相同（level=0），故“小段”以count<64界定；合并对任意段语义安全，只影响代价。(4)实现：新增merge_overlays，段数>=32时只合并末尾连续小段；excluded>=64时才全量重写；无可合并时退回全量重写。常量SMALL_SEGMENT=64,MAX_SEGMENTS=32,MAX_EXCLUDED=64。(5)该改动随本次提交一并提交。"
+    },
+    {
+      "id": "a-retest-note",
+      "role": "assistant",
+      "content": "Agent撰写，不是学生解释。复测见experiments中exp-retest-*。结果与学生预期的对照：第30条尖峰由约90-96ms降到约11-13ms（符合“十几毫秒以内”）；全量重写推迟到第65条，周期由31变为约64（符合“频率下降但不会消失”）；400条稳态下>50ms尖峰次数由12降到6，均值约9.1ms降到约8.1ms，p99几乎不变（符合学生写的“p99不一定明显改善”）；屏蔽记录达到上限时(64条更新后)的TopK第3-6条多约0.1-0.8ms，部分轮次在噪声内。本地3轮样本小，B组噪声约±1ms，不能据此认定读路径无退化。400条更新后B组6条查询都约24ms（新旧一致），推测是c已有约400种取值，列值分组缓存不再生效，该推测未单独验证。未实现的后续选项：调大MAX_EXCLUDED会进一步降低全量重写频率但增加读路径屏蔽；是否采用待学生决定。"
     }
   ],
   "experiments": [
@@ -505,6 +564,84 @@
       "role": "tool",
       "output": "{\"public20_passed\": true, \"boundaries\": {\"status\": \"PASS\", \"oracle_queries\": 20, \"rows\": 320, \"dimensions\": 128, \"coverage\": [\"raw scan before index\", \"no duplicate Python distance computation\", \"vector decoding omitted when unused\", \"same/different query vectors\", \"explicit vector projection\", \"alias/expression ordering\", \"filter cache reuse\", \"native off\", \"DESC/range/multi-key plans\", \"LIMIT0\", \"large-row heap fallback to sort\", \"transaction mutation/delete\", \"rollback\", \"extreme primary keys\", \"restart\"]}, \"graph\": {\"status\": \"PASS\", \"oracle_queries\": 43, \"ann_mean_recall\": 1.0, \"graph_hits_before_mutation\": 12, \"rows\": 2048, \"dimensions\": 32, \"coverage\": [\"negative IDs\", \"graph actually used\", \"exact unchanged\", \"filtered exact\", \"transaction update visibility\", \"rollback\", \"committed delete invalidation\", \"rebuild with excluded rows\", \"restart rebuild\"]}, \"full_workload_medians\": {\"baseline\": {\"write_seconds\": 2.68457220797427, \"query_seconds\": 4.0050067230477, \"write_memory_peak_bytes\": 26914816, \"query_memory_peak_bytes\": 32686080, \"write_device_bytes\": 40857600, \"query_device_bytes\": 46067712}, \"candidate\": {\"write_seconds\": 2.7330926419817843, \"query_seconds\": 3.917819974012673, \"write_memory_peak_bytes\": 26927104, \"query_memory_peak_bytes\": 32219136, \"write_device_bytes\": 40857600, \"query_device_bytes\": 46067712}}, \"full_workload_query_pairs\": {\"baseline\": [3.8084713770076632, 4.025801043026149, 4.0050067230477], \"candidate\": [4.340500900987536, 3.863884854945354, 3.917819974012673]}, \"query_focused_medians\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.0046966770314611495, \"cold_filtered_seconds\": 0.057864001020789146, \"total_seconds\": 1.0608753919950686, \"unfiltered_seconds\": 0.4900894271559082, \"filtered_seconds\": 0.5698813559138216, \"median_ms\": 3.951710998080671, \"max_ms\": 60.62635098351166}, \"candidate\": {\"cold_unfiltered_seconds\": 0.004716940980870277, \"cold_filtered_seconds\": 0.05694338399916887, \"total_seconds\": 1.0009814829099923, \"unfiltered_seconds\": 0.4613277902826667, \"filtered_seconds\": 0.5452528332243674, \"median_ms\": 3.734710509888828, \"max_ms\": 60.19559898413718}}, \"query_focused_correctness\": \"All 1440 measured responses checked; first 8 independently checked\"}",
       "interpretation": "完整负载中位约快2.18%，首对样本回退；专项三对均改善，中位约快5.65%。不丢弃不利数据，结合调用/解码计数证明省去了重复工作，再保留此改动。结果及解释由Agent产生；用户贡献为明确要求Prompt讨论不停止优化推进。"
+    },
+    {
+      "id": "exp-A-invalid-first-run",
+      "source": "tool",
+      "command": "python3 checks/experiment_overlay_groups.py（首版：UPDATE t SET c=k%6，与原值相同）",
+      "output": "segments after load 3; A median ms 0.05; A slowest5 (n,ms,seg) [(18,0.15,3),(1,0.13,3),(59,0.1,3),(19,0.09,3),(61,0.08,3)]; B per-query ms [[1,24.64],[2,26.21],[3,6.23],[4,7.0],[5,5.62],[6,5.88]]",
+      "interpretation": "A部分无效（全为同值更新，段数始终为3）。B部分有效：该次运行的表未被A修改，第2条最慢，第3条起约6ms。解释由Agent撰写。"
+    },
+    {
+      "id": "exp-A-B-round1",
+      "source": "tool",
+      "command": "python3 checks/experiment_overlay_groups.py（UPDATE t SET c=1000+k，真实改值；B在A之后重启同一数据目录运行）",
+      "output": "{\"A_median_ms\": 6.47, \"A_slowest5_(n,ms,segments)\": [[30, 100.86, 2], [92, 100.21, 2], [61, 88.9, 2], [51, 7.99, 23], [14, 7.89, 17]], \"A_segments_after_update_n_(n,segments)_for_n=26..35\": [[26, 29], [27, 30], [28, 31], [29, 32], [30, 2], [31, 3], [32, 4], [33, 5], [34, 6], [35, 7]], \"B_ms_per_query_(n,ms)\": [[1, 22.92], [2, 28.35], [3, 5.97], [4, 6.28], [5, 5.66], [6, 5.8]]}",
+      "scope": "本机Python 3.11直接调用Database，非Docker、非官方资源配置，1万行128维，seed 20261120；每轮独立数据目录。"
+    },
+    {
+      "id": "exp-A-B-round2",
+      "source": "tool",
+      "command": "python3 checks/experiment_overlay_groups.py（UPDATE t SET c=1000+k，真实改值；B在A之后重启同一数据目录运行）",
+      "output": "{\"A_median_ms\": 6.38, \"A_slowest5_(n,ms,segments)\": [[30, 96.82, 2], [92, 96.71, 2], [61, 93.59, 2], [82, 8.94, 23], [46, 8.22, 18]], \"A_segments_after_update_n_(n,segments)_for_n=26..35\": [[26, 29], [27, 30], [28, 31], [29, 32], [30, 2], [31, 3], [32, 4], [33, 5], [34, 6], [35, 7]], \"B_ms_per_query_(n,ms)\": [[1, 23.11], [2, 29.11], [3, 7.59], [4, 6.92], [5, 6.58], [6, 6.49]]}",
+      "scope": "本机Python 3.11直接调用Database，非Docker、非官方资源配置，1万行128维，seed 20261120；每轮独立数据目录。"
+    },
+    {
+      "id": "exp-A-B-round3",
+      "source": "tool",
+      "command": "python3 checks/experiment_overlay_groups.py（UPDATE t SET c=1000+k，真实改值；B在A之后重启同一数据目录运行）",
+      "output": "{\"A_median_ms\": 6.37, \"A_slowest5_(n,ms,segments)\": [[92, 100.14, 2], [61, 95.68, 2], [30, 94.57, 2], [91, 9.86, 32], [23, 8.33, 26]], \"A_segments_after_update_n_(n,segments)_for_n=26..35\": [[26, 29], [27, 30], [28, 31], [29, 32], [30, 2], [31, 3], [32, 4], [33, 5], [34, 6], [35, 7]], \"B_ms_per_query_(n,ms)\": [[1, 25.57], [2, 26.35], [3, 5.91], [4, 5.9], [5, 5.52], [6, 7.29]]}",
+      "scope": "本机Python 3.11直接调用Database，非Docker、非官方资源配置，1万行128维，seed 20261120；每轮独立数据目录。"
+    },
+    {
+      "id": "exp-A-round1-raw",
+      "source": "tool",
+      "output": "[[1, 6.63, 4], [2, 6.07, 5], [3, 6.82, 6], [4, 6.42, 7], [5, 5.89, 8], [6, 7.07, 9], [7, 5.66, 10], [8, 6.02, 11], [9, 6.15, 12], [10, 5.86, 13], [11, 6.21, 14], [12, 5.98, 15], [13, 5.94, 16], [14, 7.89, 17], [15, 6.39, 18], [16, 7.66, 19], [17, 6.48, 20], [18, 6.9, 21], [19, 6.28, 22], [20, 6.34, 23], [21, 6.29, 24], [22, 7.33, 25], [23, 7.02, 26], [24, 6.8, 27], [25, 6.99, 28], [26, 6.64, 29], [27, 6.44, 30], [28, 7.16, 31], [29, 7.03, 32], [30, 100.86, 2], [31, 7.01, 3], [32, 6.07, 4], [33, 7.07, 5], [34, 6.5, 6], [35, 6.4, 7], [36, 6.16, 8], [37, 6.31, 9], [38, 6.28, 10], [39, 6.08, 11], [40, 6.1, 12], [41, 6.37, 13], [42, 6.83, 14], [43, 6.83, 15], [44, 6.3, 16], [45, 6.53, 17], [46, 6.3, 18], [47, 6.38, 19], [48, 6.19, 20], [49, 6.57, 21], [50, 6.3, 22], [51, 7.99, 23], [52, 7.36, 24], [53, 7.34, 25], [54, 6.7, 26], [55, 6.45, 27], [56, 6.43, 28], [57, 6.43, 29], [58, 6.34, 30], [59, 6.57, 31], [60, 6.93, 32], [61, 88.9, 2], [62, 6.48, 3], [63, 6.12, 4], [64, 6.46, 5], [65, 6.2, 6], [66, 6.16, 7], [67, 6.01, 8], [68, 6.03, 9], [69, 6.06, 10], [70, 6.63, 11], [71, 7.4, 12], [72, 6.43, 13], [73, 7.13, 14], [74, 6.66, 15], [75, 6.51, 16], [76, 6.84, 17], [77, 6.51, 18], [78, 6.69, 19], [79, 6.65, 20], [80, 6.93, 21], [81, 6.34, 22], [82, 6.23, 23], [83, 6.61, 24], [84, 6.39, 25], [85, 7.04, 26], [86, 6.98, 27], [87, 6.96, 28], [88, 6.83, 29], [89, 6.98, 30], [90, 6.47, 31], [91, 6.31, 32], [92, 100.21, 2], [93, 6.99, 3], [94, 5.92, 4], [95, 7.19, 5], [96, 6.43, 6], [97, 5.93, 7], [98, 5.99, 8], [99, 5.99, 9], [100, 6.14, 10]]",
+      "scope": "第1轮实验A逐条结果，格式[序号,毫秒,段数]。"
+    },
+    {
+      "id": "exp-init-segments",
+      "source": "tool",
+      "command": "python3内联脚本：Database建表t(id,c,v VECTOR(4))，每批100行INSERT共100批，每批后打印段数",
+      "output": "segments over 100 batches: [1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2] ... [2, 3, 3, 4, 3]; final segments=3 (rows 6400/3200/400 by merge level)",
+      "interpretation": "Agent撰写：段数等于批次号二进制1的个数，100批后为3，解释了学生反推的S0=3。输出行为内联脚本打印的原文，行尾说明为Agent补充的最终段数。"
+    },
+    {
+      "id": "exp-retest-n100-paired",
+      "source": "tool",
+      "command": "同一脚本checks/experiment_overlay_groups.py（默认100次更新）：旧代码(修改前storage.py副本)与新代码各3轮，交替运行，每轮独立数据目录",
+      "output": "{\"old\": [{\"median\": 6.55, \"mean\": 9.31, \"max\": 96.25, \"over50ms_updates\": [30, 61, 92], \"update30_ms_segments\": [96.25, 2], \"B_ms\": [24.34, 26.43, 6.22, 6.08, 6.37, 6.08]}, {\"median\": 6.52, \"mean\": 9.17, \"max\": 96.87, \"over50ms_updates\": [30, 61, 92], \"update30_ms_segments\": [91.54, 2], \"B_ms\": [24.38, 27.99, 6.02, 6.14, 5.68, 5.42]}, {\"median\": 6.41, \"mean\": 9.21, \"max\": 94.85, \"over50ms_updates\": [30, 61, 92], \"update30_ms_segments\": [89.03, 2], \"B_ms\": [23.72, 27.45, 7.07, 7.88, 5.78, 5.88]}], \"new\": [{\"median\": 6.46, \"mean\": 8.04, \"max\": 94.0, \"over50ms_updates\": [65], \"update30_ms_segments\": [13.32, 5], \"B_ms\": [24.25, 26.7, 5.98, 6.24, 5.79, 5.68]}, {\"median\": 6.61, \"mean\": 7.63, \"max\": 95.91, \"over50ms_updates\": [65], \"update30_ms_segments\": [12.8, 5], \"B_ms\": [24.68, 25.04, 6.03, 5.92, 5.72, 5.63]}, {\"median\": 6.33, \"mean\": 7.42, \"max\": 90.78, \"over50ms_updates\": [65], \"update30_ms_segments\": [11.27, 5], \"B_ms\": [23.45, 25.55, 5.96, 7.72, 5.62, 6.52]}]}",
+      "interpretation": "Agent撰写：旧代码第30/61/92条各一次约90-96ms；新代码第30条约13ms，第65条一次约91-96ms。B列为重启后6条TopK耗时(ms)。",
+      "scope": "本机Python 3.11.11直接调用Database，非Docker、非官方资源配置，1万行128维，seed 20261120。"
+    },
+    {
+      "id": "exp-retest-n100-raw",
+      "source": "tool",
+      "command": "同上，第1轮新代码原始A输出 (n,ms,segments)",
+      "output": "[[1, 6.39, 4], [2, 6.18, 5], [3, 6.48, 6], [4, 6.09, 7], [5, 6.11, 8], [6, 6.22, 9], [7, 6.08, 10], [8, 6.13, 11], [9, 5.96, 12], [10, 8.02, 13], [11, 6.1, 14], [12, 6.26, 15], [13, 6.27, 16], [14, 6.14, 17], [15, 6.39, 18], [16, 6.19, 19], [17, 6.44, 20], [18, 6.38, 21], [19, 6.25, 22], [20, 6.81, 23], [21, 6.32, 24], [22, 6.63, 25], [23, 6.14, 26], [24, 7.83, 27], [25, 7.26, 28], [26, 7.28, 29], [27, 8.61, 30], [28, 7.7, 31], [29, 7.57, 32], [30, 13.32, 5], [31, 6.37, 6], [32, 6.27, 7], [33, 5.98, 8], [34, 5.91, 9], [35, 6.93, 10], [36, 6.19, 11], [37, 6.28, 12], [38, 6.52, 13], [39, 5.95, 14], [40, 12.28, 15], [41, 16.66, 16], [42, 7.19, 17], [43, 12.76, 18], [44, 17.06, 19], [45, 11.49, 20], [46, 6.98, 21], [47, 9.33, 22], [48, 8.76, 23], [49, 6.68, 24], [50, 6.88, 25], [51, 7.38, 26], [52, 7.27, 27], [53, 6.76, 28], [54, 6.89, 29], [55, 6.76, 30], [56, 6.46, 31], [57, 7.51, 32], [58, 11.57, 5], [59, 6.39, 6], [60, 6.09, 7], [61, 6.21, 8], [62, 6.07, 9], [63, 6.43, 10], [64, 6.59, 11], [65, 94.0, 2], [66, 6.72, 3], [67, 6.11, 4], [68, 6.45, 5], [69, 6.59, 6], [70, 6.89, 7], [71, 6.45, 8], [72, 6.46, 9], [73, 6.26, 10], [74, 6.36, 11], [75, 5.87, 12], [76, 5.95, 13], [77, 6.63, 14], [78, 6.13, 15], [79, 6.87, 16], [80, 6.53, 17], [81, 8.47, 18], [82, 6.32, 19], [83, 6.18, 20], [84, 6.67, 21], [85, 6.14, 22], [86, 6.46, 23], [87, 6.61, 24], [88, 6.25, 25], [89, 6.19, 26], [90, 6.34, 27], [91, 8.15, 28], [92, 6.96, 29], [93, 6.57, 30], [94, 6.53, 31], [95, 6.28, 32], [96, 12.89, 3], [97, 6.32, 4], [98, 5.79, 5], [99, 5.62, 6], [100, 6.17, 7]]"
+    },
+    {
+      "id": "exp-retest-n400",
+      "source": "tool",
+      "command": "python3 checks/experiment_overlay_groups.py 400：旧/新代码各3轮",
+      "output": "{\"old\": [{\"A\": \"A updates 400 median ms 6.39 mean ms 9.13 p99 ms 90.72 over50ms 12\", \"B_ms\": [23.93, 26.07, 24.16, 24.05, 24.52, 24.32]}, {\"A\": \"A updates 400 median ms 6.39 mean ms 9.07 p99 ms 92.45 over50ms 12\", \"B_ms\": [24.56, 28.71, 24.39, 23.94, 23.42, 23.71]}, {\"A\": \"A updates 400 median ms 6.4 mean ms 9.18 p99 ms 94.29 over50ms 12\", \"B_ms\": [24.14, 27.45, 24.64, 25.29, 24.83, 26.63]}], \"new\": [{\"A\": \"A updates 400 median ms 6.31 mean ms 7.9 p99 ms 90.78 over50ms 6\", \"B_ms\": [23.93, 27.16, 23.26, 23.25, 23.49, 23.01]}, {\"A\": \"A updates 400 median ms 6.51 mean ms 8.22 p99 ms 88.74 over50ms 6\", \"B_ms\": [25.12, 26.52, 24.67, 26.76, 23.23, 24.86]}, {\"A\": \"A updates 400 median ms 6.54 mean ms 8.14 p99 ms 88.44 over50ms 6\", \"B_ms\": [23.87, 27.89, 23.23, 22.83, 23.27, 24.34]}]}",
+      "interpretation": "Agent撰写：稳态下>50ms尖峰次数12→6，均值约9.1→约8.1ms，p99约88-94ms基本未变；B组6条查询均约24ms，新旧一致。",
+      "scope": "同exp-retest-n100-paired。"
+    },
+    {
+      "id": "exp-retest-n64-readpath",
+      "source": "tool",
+      "command": "python3 checks/experiment_overlay_groups.py 64：旧/新代码各3轮；64次更新后新方案屏蔽记录达到上限，用于测读路径",
+      "output": "{\"old\": [{\"A\": \"A updates 64 median ms 6.45 mean ms 9.65 p99 ms 95.89 over50ms 2\", \"B_ms\": [23.66, 26.86, 6.43, 6.0, 5.94, 6.22]}, {\"A\": \"A updates 64 median ms 6.3 mean ms 9.21 p99 ms 95.86 over50ms 2\", \"B_ms\": [26.26, 26.48, 6.0, 6.0, 5.59, 5.78]}, {\"A\": \"A updates 64 median ms 6.41 mean ms 9.31 p99 ms 93.76 over50ms 2\", \"B_ms\": [25.12, 25.52, 5.86, 7.85, 5.79, 5.82]}], \"new\": [{\"A\": \"A updates 64 median ms 6.38 mean ms 6.94 p99 ms 17.35 over50ms 0\", \"B_ms\": [24.6, 26.56, 6.56, 7.74, 6.07, 7.84]}, {\"A\": \"A updates 64 median ms 6.48 mean ms 6.69 p99 ms 11.62 over50ms 0\", \"B_ms\": [26.16, 26.23, 6.28, 6.11, 5.82, 5.79]}, {\"A\": \"A updates 64 median ms 6.29 mean ms 6.55 p99 ms 12.42 over50ms 0\", \"B_ms\": [25.35, 28.04, 6.78, 6.77, 6.18, 5.89]}]}",
+      "interpretation": "Agent撰写：新代码无>50ms尖峰，最大11-17ms；B组第3-6条按3轮中位数，新比旧多约0.07-0.77ms(第3条6.0→6.56，第4条6.0→6.77，第5条5.79→6.07，第6条5.82→5.89)，部分轮次在噪声内。",
+      "scope": "同exp-retest-n100-paired。"
+    },
+    {
+      "id": "exp-correctness-after-change",
+      "source": "tool",
+      "command": "checks/overlay_boundaries.py; checks/overlay_recovery.py; checks/merge_recovery.py; checks/recovery.py; checks/model.py(补丁为源码进程启动); protocol_check/run.py --command python3 -B -u -m minidb.server",
+      "output": "overlay_boundaries: PASS updates=101 point_deletes=90; overlay_recovery: PASS; merge_recovery: PASS; recovery: PASS scenarios=5; model: PASS operations=250 oracle_queries=750; protocol_check: 20/20 cases PASS; merge_boundaries: NOT RUN (needs docker pull of minivectordb:merge-candidate; network error)",
+      "interpretation": "Agent撰写：上述检查针对修改后的源码进程。merge_boundaries未能运行。merge_overlays的退回全量重写分支(无可合并小段)没有被单独测试。"
     }
   ],
   "implementation": {
@@ -519,21 +656,27 @@
       "minidb/native.py": "a7211c7a40ba581cad3596be74d63985da1e1d8cec7d49f825a5d410f68ed7d0",
       "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
       "minidb/sql.py": "87a41384e63776025b973b92b43ed4a8e135def7dce180f56c56a3ac8ee830a1",
-      "minidb/storage.py": "dd7d744775b2fbe85ed7cf5e4b901b0e15317d929e26ca738cc51f3fac313dc4",
+      "minidb/storage.py": "8f1201ce90b2d6179cbf539956e603ecfa66d26b904ce89948399975502ef187",
       "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
       "native/screen.c": "0fdb28a9619aa00c7a33a6cd3b49fec6206fbba3b2bcbc46a1fe33f9b54dca89"
     },
     "storage": "Immutable segments, bounded point overlays, preplanned <=16-old-run INSERT fusion with original wide-cascade fallback; atomic fsynced manifest retained.",
     "query": "Exact C-products/Python-fsum TopK, per-query projection distance reuse, batched row lookup and bounded scalar caches; optional graph remains off.",
     "vector_input": "Original numeric grammar validated per bounded vector body, standard-library maps convert elements; large inputs retain scalar validation; finite/type/dimension semantics preserved.",
-    "sql_lexer": "Quote-delimited chunk extraction via str.find, with existing doubled-quote/backtick and malformed-input semantics."
+    "sql_lexer": "Quote-delimited chunk extraction via str.find, with existing doubled-quote/backtick and malformed-input semantics.",
+    "overlay_compaction_change": "minidb/storage.py: replace_point分两级——excluded>=64全量重写，段数>=32时merge_overlays只合并末尾count<64的连续小段；checks/experiment_overlay_groups.py为实验脚本。"
   },
   "limitations": [
     "图索引默认关闭，仅对1024–20000行、16–256维、单表、无普通列过滤且K<=64的ann TopK生效；总分配预算16MiB。",
     "图按索引数据在CREATE INDEX或重启时建立；数据变更会失效并走精确路径，事务内建索引不触发图构建。",
     "召回验证为小样本，单轮查询耗时与构建成本分开记录；图实验未测完整物理I/O；之后默认精确版本已补齐本地cgroup资源快照，仍无最新平台正式成绩。",
     "学生理解仅依据真实用户原文；Agent解释和工具执行不冒充学生贡献。",
-    "列值分组是256KiB估算预算的内存缓存，第二种同列条件才构建；不是持久化普通列索引，首两种条件、超预算及多列过滤仍需扫描。"
+    "列值分组是256KiB估算预算的内存缓存，第二种同列条件才构建；不是持久化普通列索引，首两种条件、超预算及多列过滤仍需扫描。",
+    "学生原话大多是短指令；上述单元中学生未提供自己的技术解释，成因分析、修正与复测由Agent完成，不能据此认定学生理解。",
+    "evidence_index由Agent整理，仅定位已有原文，不含新增对话或实验。没有学生撰写的反思。",
+    "预测A学生未写理由，选项由Agent拟定；预测B的理由由学生书写。尖峰位置、影响判断和修改方案三段文字按用户消息逐字记录；材料无法证明其撰写过程，只能按对话角色记录。学生没有对实验B(重启后6条TopK)的结果作出解释。",
+    "学生在消息中明确说明没有验证初始段数为什么是3；该验证由Agent完成(exp-init-segments)。Agent另外发现旧代码excluded>=64条件在单行UPDATE下实际不会先于段数条件触发(a-impl-findings)，并把小段界定为count<64；这些细节不是学生提出的。",
+    "复测为本机3轮小样本，B组耗时噪声约±1ms；读路径是否退化不能下定论。merge_boundaries未能运行(网络拉取镜像失败)，merge_overlays的退回全量重写分支未单独测试。无Docker/官方资源配置下的正式评测分数。"
   ],
   "implementation_history": [
     {
@@ -785,5 +928,175 @@
     "author": "assistant",
     "content": "这次资料学习围绕工程路线展开：先从老师的FAISS、HNSW、PQ/OPQ和RoarGraph资料中筛选适合比赛规模的思路。1万条128维向量本身约4.88MiB，因此先优化连续布局、分块距离和TopK选择；随后用采样定位SQL解析与候选距离计算，分别落地整段字符串扫描、批量数字/float32转换和C逐项乘积加原math.fsum。过滤部分参考ACORN的问题视角，用有界候选、掩码和同列分组复用，测试不同条件轮换的收益。图索引参考HNSW做成独立实验，并借鉴RoarGraph对查询分布的关注，增加均匀、聚类与偏移查询验证。图查询虽有收益，但构建和资源成本、召回余量仍需考虑，因此默认保留精确检索。PQ/OPQ暂缓，动态更新借鉴问题拆解而采用当前存储机制。TextGrad提供反馈迭代的讨论背景，实际取舍由真实测试和性能对比决定。",
     "current_supplement": "本轮增加Elastic过滤检索工程博客及Python、Docker、cgroup正式文档，帮助解释已有现象和后续方向；不把后来补读的资料写成早期已经阅读或实现。"
+  },
+  "role_legend": {
+    "user": "学生本人的原始指令，逐字保留。",
+    "assistant": "Agent的阶段摘要，不是学生贡献，也不是逐字记录。",
+    "tool": "实际命令或检查器输出；其中interpretation字段由Agent撰写，不是学生解释。",
+    "synthetic": "本材料不含合成内容。"
+  },
+  "evidence_index": {
+    "purpose": "帮助定位；所有quote均为所指字符串字段内的原文片段。条目不是评分，学生贡献与实际结果分开列出，Agent回复单独标注。",
+    "units": [
+      {
+        "unit_id": "U1-deliverable-challenge",
+        "topic": "学生质疑只通过启动握手的版本能否通过正式准入",
+        "candidate_dimension": "独立验证与质疑",
+        "student_evidence": [
+          {
+            "pointer": "/conversations/2/content",
+            "quote": "不是，我要提交测评的啊，你这个版本确定能通过吗"
+          }
+        ],
+        "agent_response_not_student_evidence": [
+          {
+            "pointer": "/conversations/3/content",
+            "quote": "SQL 全部返回 NOT_IMPLEMENTED，提交正式测评无法通过 MySQL 功能准入"
+          }
+        ],
+        "result_evidence": [
+          {
+            "pointer": "/experiments/1/output",
+            "quote": "{\"passed\": true, \"cases\": [{\"id\": \"sql_crud\", \"status\": \"PASS\"}, {\"id\": \"sql_comparisons\", \"status\": \"PASS\"}, {\"id\": \"sql_ordering\", \"status\": \"PASS\"}"
+          }
+        ],
+        "chain": "学生追问后，Agent承认该版本不能通过准入；此后补齐实现，公开用例检查器通过（该结果对应后续版本c965e86e9，由Agent执行）。",
+        "not_shown": "学生没有写出自己的判断依据或验证方案；结果由Agent运行，学生对结果的解释未记录。"
+      },
+      {
+        "unit_id": "U2-unfiltered-slowdown-query",
+        "topic": "学生追问无过滤组变慢，并要求通用版不应含不确定的优化",
+        "candidate_dimension": "实验与反馈迭代",
+        "student_evidence": [
+          {
+            "pointer": "/conversations/17/content",
+            "quote": "无过滤组本轮变慢是什么情况，通用版应该是绝对有优化的版本吧，模糊的应该放其他版本"
+          }
+        ],
+        "trigger_result": [
+          {
+            "pointer": "/experiments/12/output",
+            "quote": "Single local round: filtered queries improve; unfiltered group is slower in this round. Do not infer formal score or universal speedup."
+          }
+        ],
+        "agent_response_not_student_evidence": [
+          {
+            "pointer": "/conversations/18/content",
+            "quote": "采用三轮交替镜像顺序复测，无过滤组未复现先前单轮近29%的差距。发现并修正过滤缓存首条查询额外扫描的问题"
+          }
+        ],
+        "result_evidence": [
+          {
+            "pointer": "/experiments/13/output",
+            "quote": "All 720 measured responses checked; first 8 independently checked"
+          },
+          {
+            "pointer": "/experiments/13/output",
+            "quote": "\"first_filtered_query_scans\": 1"
+          }
+        ],
+        "chain": "单轮结果显示无过滤组较慢；学生要求解释并限定通用版范围；Agent改为三轮交替顺序复测并修正首条过滤查询的额外扫描，复测中无过滤组基本持平、过滤组明显更快。",
+        "not_shown": "学生没有自行提出差距成因或设计复测方案；成因分析、修正和复测均由Agent完成，学生未解释复测结果。"
+      },
+      {
+        "unit_id": "U3-batch-by-evaluation-cost",
+        "topic": "学生按评测周期把通用优化合并为批次，并规划先通用、后经验迁移的提交顺序",
+        "candidate_dimension": "问题理解与自主拆解",
+        "student_evidence": [
+          {
+            "pointer": "/conversations/11/content",
+            "quote": "我认为是不是可以把这些通用的全做完，因为评测一次要半个小时"
+          },
+          {
+            "pointer": "/conversations/13/content",
+            "quote": "先把所有能想到的通用优化做好，然后现在正在评测的这版初步的评完后我将交一轮通用优化吧"
+          }
+        ],
+        "result_evidence": [
+          {
+            "pointer": "/experiments/10/output",
+            "quote": "\"speedup\": {\"load_s\": 0.9701762128783821, \"index_s\": 4.170034750542721, \"point_select_s\": 60.81269754760575, \"point_update_s\": 16.905119373982668"
+          }
+        ],
+        "chain": "学生以评测一次约半小时为由，把通用优化合并成批次；该批次的本地同数据对比结果见result_evidence。",
+        "not_shown": "结果只说明该批优化的本地效果，不能证明批次划分本身正确；正式平台反馈不在本文件内。学生未给出对本地结果的解释。"
+      },
+      {
+        "unit_id": "U4-overlay-spike-chain",
+        "topic": "覆盖段归并尖峰：预测→实验→学生解释→学生提出修改→复测",
+        "candidate_dimension": "实验与反馈迭代",
+        "student_evidence": [
+          {
+            "pointer": "/conversations/61/content",
+            "quote": "约第32-33条尖峰"
+          },
+          {
+            "pointer": "/conversations/64/content",
+            "quote": "首次触发在第 33−S0 次（S0 是初始段数）"
+          },
+          {
+            "pointer": "/conversations/64/content",
+            "quote": "S0=3。33−3=30，正好是第 30 条"
+          },
+          {
+            "pointer": "/conversations/65/content",
+            "quote": "对批量写入的总吞吐影响中等，对单条延迟的尾部（p99）影响很大"
+          },
+          {
+            "pointer": "/conversations/66/content",
+            "quote": "所以 p99 不一定明显改善，要看复测"
+          },
+          {
+            "pointer": "/conversations/66/content",
+            "quote": "风险是读路径要对更多被屏蔽记录做过滤，查询可能略慢，所以复测时要同时测 TopK 查询耗时"
+          }
+        ],
+        "result_evidence": [
+          {
+            "pointer": "/experiments/35/output",
+            "quote": "\"update30_ms_segments\": [96.25, 2]"
+          },
+          {
+            "pointer": "/experiments/35/output",
+            "quote": "\"over50ms_updates\": [65]"
+          },
+          {
+            "pointer": "/experiments/37/output",
+            "quote": "over50ms 6"
+          },
+          {
+            "pointer": "/experiments/38/output",
+            "quote": "\"B_ms\": [24.6, 26.56, 6.56, 7.74, 6.07, 7.84]"
+          }
+        ],
+        "agent_response_not_student_evidence": [
+          {
+            "pointer": "/conversations/67/content",
+            "quote": "新增merge_overlays，段数>=32时只合并末尾连续小段"
+          }
+        ],
+        "chain": "学生预测第32-33条尖峰；实测第30条；学生用S0=3与先检查后追加解释位置与周期；判断尾延迟影响并提出只合并小覆盖段的方案，并预先写下p99可能不改善和读路径变慢两个风险；Agent按该方案实现；复测显示第30条尖峰降至约13ms，全量重写周期变为约64，400条稳态p99几乎不变，最坏读状态的TopK约多0.1-0.8ms。",
+        "not_shown": "学生没有自己验证S0=3的成因(由Agent验证)，也没有设计复测，实现与复测由Agent执行；学生尚未对复测结果作出解释或决定是否调大MAX_EXCLUDED。"
+      },
+      {
+        "unit_id": "U5-restart-query-prediction",
+        "topic": "重启后6条不同X的TopK：学生预测第2条最慢并给出机制理由",
+        "candidate_dimension": "技术理解与迁移",
+        "student_evidence": [
+          {
+            "pointer": "/conversations/62/content",
+            "quote": "第 2 条还没变快，第 3 条起才变快"
+          }
+        ],
+        "result_evidence": [
+          {
+            "pointer": "/experiments/35/output",
+            "quote": "\"B_ms\": [24.34, 26.43, 6.22, 6.08, 6.37, 6.08]"
+          }
+        ],
+        "chain": "学生基于代码机制预测第2条同一次扫描里顺带构建分组所以最慢、第3条起明显变快；实测(旧代码3轮)第1条约24ms、第2条约26-28ms、第3-6条约6ms，第2条在3轮中都比第1条高约2-4ms。",
+        "not_shown": "学生未对实测结果作解释，也未据此修改方案；第1、2条差距小，学生自己也说无法判断冷读成本。"
+      }
+    ]
   }
 }

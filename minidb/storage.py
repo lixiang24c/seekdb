@@ -18,6 +18,7 @@ OFFSET_MAGIC = b'MVKEY002'
 KEY_OFFSET = struct.Struct('<qQ')
 U32 = struct.Struct('<I')
 I64 = struct.Struct('<q')
+SMALL_SEGMENT, MAX_SEGMENTS, MAX_EXCLUDED = 64, 32, 64
 
 
 def strict_json(text):
@@ -509,11 +510,31 @@ class Storage:
             for path in created: path.unlink(missing_ok=True)
             raise
 
-    def replace_point(self, table, part, ident, replacement):
-        # Bounded overlays amortize large rewrites without unbounded readers or metadata.
+    def merge_overlays(self, table):
+        """Merge the trailing run of small segments; larger segments stay untouched."""
         parts = self.segments(table)
-        if len(parts) >= 32 or sum(len(p.get('excluded', ())) for p in parts) >= 64:
+        start = len(parts)
+        while start and parts[start - 1]['count'] < SMALL_SEGMENT: start -= 1
+        tail = parts[start:]
+        if len(tail) < 2 or start + 1 >= MAX_SEGMENTS: return None
+        created, readers = [], [self.part_records(table, p) for p in tail]
+        try:
+            merged = self.write_segment(table, heapq.merge(*readers, key=lambda item: item[0]), created)
+        finally:
+            for reader in readers: reader.close()
+        new = copy.deepcopy(table)
+        new.update(segments=copy.deepcopy(parts[:start]) + ([merged] if merged['count'] else []))
+        new.pop('file', None); new.pop('index_file', None)
+        return new
+
+    def replace_point(self, table, part, ident, replacement):
+        # Small overlays merge cheaply; the whole table is rewritten only when masks pile up.
+        parts = self.segments(table)
+        if sum(len(p.get('excluded', ())) for p in parts) >= MAX_EXCLUDED:
             table = self.rewrite(table, self.rows(table))
+            part, _ = self.lookup(table, ident)
+        elif len(parts) >= MAX_SEGMENTS:
+            table = self.merge_overlays(table) or self.rewrite(table, self.rows(table))
             part, _ = self.lookup(table, ident)
         new, created = copy.deepcopy(table), []
         parts = copy.deepcopy(self.segments(table))
