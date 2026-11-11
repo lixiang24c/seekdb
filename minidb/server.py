@@ -17,6 +17,10 @@ def emit_query(ident, result):
     try:
         head = json.dumps({'id': ident, 'ok': True, 'columns': result.columns},
                           ensure_ascii=False, allow_nan=False, separators=(',', ':'))
+        if result.path is None:
+            sys.stdout.write(head[:-1] + ',"rows":[' + ','.join(result.encoded_rows) + ']}\n')
+            sys.stdout.flush()
+            return
         sys.stdout.write(head[:-1] + ',"rows":[')
         first = True
         with open(result.path, encoding='utf-8') as f:
@@ -27,7 +31,7 @@ def emit_query(ident, result):
         sys.stdout.write(']}\n')
         sys.stdout.flush()
     finally:
-        result.path.unlink(missing_ok=True)
+        if result.path is not None: result.path.unlink(missing_ok=True)
 
 
 def run():

@@ -13,6 +13,8 @@ from pathlib import Path
 MAGIC = b'MVROW001'
 INDEX_MAGIC = b'MVFLT001'
 KEY_MAGIC = b'MVKEY001'
+OFFSET_MAGIC = b'MVKEY002'
+KEY_OFFSET = struct.Struct('<qQ')
 U32 = struct.Struct('<I')
 I64 = struct.Struct('<q')
 
@@ -149,7 +151,7 @@ class Storage:
                     for key, magic in [('file', MAGIC), ('index_file', INDEX_MAGIC), ('keys', KEY_MAGIC)]:
                         if part.get(key):
                             with open(self.path(part[key]), 'rb') as f:
-                                if f.read(8) != magic:
+                                if f.read(8) not in ((KEY_MAGIC, OFFSET_MAGIC) if key == 'keys' else (magic,)):
                                     raise OSError('invalid committed file header')
         except FileNotFoundError:
             # A missing committed data file is an error; only an absent manifest means new DB.
@@ -226,16 +228,17 @@ class Storage:
         opened = []
         try:
             f = open(path, 'xb'); opened.append(f); f.write(MAGIC)
-            k = open(keys, 'xb'); opened.append(k); k.write(KEY_MAGIC)
+            k = open(keys, 'xb'); opened.append(k); k.write(OFFSET_MAGIC)
             v = None
             if idx:
                 v = open(idx, 'xb'); opened.append(v); v.write(INDEX_MAGIC)
             for ident, raw in records:
                 if part['count'] and ident <= part['max']:
                     raise OSError('records must have unique ascending primary keys')
+                row_offset = f.tell()
                 f.write(U32.pack(len(raw))); f.write(raw)
                 packed_key = I64.pack(ident)
-                k.write(packed_key)
+                k.write(KEY_OFFSET.pack(ident, row_offset))
                 if v:
                     offset, size = codec.field(raw, vc)
                     v.write(packed_key); v.write(memoryview(raw)[offset:offset + size])
@@ -289,12 +292,14 @@ class Storage:
                 if lo == hi:
                     continue
                 with open(self.path(part['keys']), 'rb') as f:
-                    if f.read(8) != KEY_MAGIC: raise OSError('invalid key index header')
+                    header = f.read(8)
+                    if header not in (KEY_MAGIC, OFFSET_MAGIC): raise OSError('invalid key index header')
+                    stride = 16 if header == OFFSET_MAGIC else 8
                     for ident in ids[lo:hi]:
                         left, right = 0, part['count']
                         while left < right:
                             mid = (left + right) // 2
-                            raw = os.pread(f.fileno(), 8, 8 + mid * 8)
+                            raw = os.pread(f.fileno(), 8, 8 + mid * stride)
                             if len(raw) != 8: raise OSError('incomplete key index')
                             found = I64.unpack(raw)[0]
                             if found == ident: fail('duplicate primary key', 'duplicate_key')
@@ -317,6 +322,119 @@ class Storage:
         except BaseException:
             for path in created: path.unlink(missing_ok=True)
             raise
+
+    def lookup(self, table, ident):
+        """Return a binary row and its segment; old key files remain readable."""
+        codec = Codec(table['cols'])
+        for part in self.segments(table):
+            if not part['count']: continue
+            if part.get('min') is not None and not part['min'] <= ident <= part['max']: continue
+            if part.get('keys'):
+                with open(self.path(part['keys']), 'rb') as f:
+                    header = f.read(8)
+                    if header not in (KEY_MAGIC, OFFSET_MAGIC): raise OSError('invalid key index header')
+                    stride = 16 if header == OFFSET_MAGIC else 8
+                    left, right = 0, part['count']
+                    found = None
+                    while left < right:
+                        mid = (left + right) // 2
+                        data = os.pread(f.fileno(), stride, 8 + mid * stride)
+                        if len(data) != stride: raise OSError('incomplete key index')
+                        key = I64.unpack_from(data)[0]
+                        if key == ident:
+                            found = data; break
+                        if key < ident: left = mid + 1
+                        else: right = mid
+                    if found is None: continue
+                    if header == OFFSET_MAGIC:
+                        offset = KEY_OFFSET.unpack(found)[1]
+                        with open(self.path(part['file']), 'rb') as rows:
+                            rows.seek(offset)
+                            head = rows.read(4)
+                            if len(head) != 4: raise OSError('incomplete row header')
+                            size = U32.unpack(head)[0]; raw = rows.read(size)
+                            if len(raw) != size: raise OSError('incomplete row')
+                            return part, raw
+            for key, raw in raw_rows(self.path(part['file']), codec, table['pk']):
+                if key == ident: return part, raw
+                if key > ident: break
+        return None, None
+
+    def add_index(self, table):
+        new, created = copy.deepcopy(table), []
+        codec = Codec(table['cols'])
+        vc = next(i for i, c in enumerate(table['cols']) if c['type'] == 'VECTOR')
+        parts = copy.deepcopy(self.segments(table))
+        try:
+            for part in parts:
+                if part.get('index_file'): continue
+                path = self.fresh('index'); created.append(path)
+                with open(path, 'xb') as f:
+                    f.write(INDEX_MAGIC)
+                    for ident, raw in raw_rows(self.path(part['file']), codec, table['pk']):
+                        offset, size = codec.field(raw, vc)
+                        f.write(I64.pack(ident)); f.write(memoryview(raw)[offset:offset + size])
+                    f.flush(); os.fsync(f.fileno())
+                part['index_file'] = path.name
+            new.update(segments=parts)
+            new.pop('file', None); new.pop('index_file', None)
+            return new
+        except BaseException:
+            for path in created: path.unlink(missing_ok=True)
+            raise
+
+    def mutate(self, table, match, filter_columns, sets, delete):
+        """Keep untouched segments and copy unchanged binary rows without decoding."""
+        codec, created = Codec(table['cols']), []
+        new, parts, count = copy.deepcopy(table), [], 0
+        def replace(ident, raw):
+            nonlocal count
+            count += 1
+            if not delete:
+                row = codec.decode(raw)
+                for i, value in sets: row[i] = value
+                yield ident, codec.encode(row)
+        try:
+            for part in self.segments(table):
+                reader = raw_rows(self.path(part['file']), codec, table['pk'])
+                try:
+                    for skipped, (ident, raw) in enumerate(reader):
+                        if match(codec.decode_fields(raw, filter_columns)): break
+                    else:
+                        parts.append(copy.deepcopy(part)); continue
+                    def changed():
+                        prefix = raw_rows(self.path(part['file']), codec, table['pk'])
+                        try: yield from itertools.islice(prefix, skipped)
+                        finally: prefix.close()
+                        yield from replace(ident, raw)
+                        for key, data in reader:
+                            if match(codec.decode_fields(data, filter_columns)):
+                                yield from replace(key, data)
+                            else: yield key, data
+                    updated = self.write_segment(table, changed(), created)
+                    updated['level'] = part.get('level', 0)
+                    parts.append(updated)
+                finally: reader.close()
+            new.update(segments=parts, count=table['count'] - (count if delete else 0))
+            new.pop('file', None); new.pop('index_file', None)
+            return new, count
+        except BaseException:
+            for path in created: path.unlink(missing_ok=True)
+            raise
+
+    def replace_point(self, table, part, ident, replacement):
+        codec, created = Codec(table['cols']), []
+        def records():
+            for key, raw in raw_rows(self.path(part['file']), codec, table['pk']):
+                if key != ident: yield key, raw
+                elif replacement is not None: yield key, codec.encode(replacement)
+        new = copy.deepcopy(table)
+        updated = self.write_segment(table, records(), created)
+        updated['level'] = part.get('level', 0)
+        new['segments'] = [updated if p == part else copy.deepcopy(p) for p in self.segments(table)]
+        new['count'] -= int(replacement is None)
+        new.pop('file', None); new.pop('index_file', None)
+        return new
 
     def records(self, table, ordered=True):
         codec = Codec(table['cols'])

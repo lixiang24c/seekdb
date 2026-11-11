@@ -1,0 +1,37 @@
+{
+  "rows": 10000,
+  "dimensions": 128,
+  "point_queries": 100,
+  "point_updates": 20,
+  "topk_queries": 40,
+  "filtered_queries": 20,
+  "scope": "single local run, independent identical fixtures, Docker 2 CPU / 2 GiB",
+  "runs": {
+    "baseline": {
+      "load_s": 4.788485849974677,
+      "index_s": 0.24860180501127616,
+      "point_select_s": 4.759942832984962,
+      "point_update_s": 4.004031146003399,
+      "topk_s": 2.62799842399545,
+      "conditional_mutations_s": 0.37688101100502536
+    },
+    "candidate": {
+      "load_s": 4.93568672001129,
+      "index_s": 0.0596162430010736,
+      "point_select_s": 0.07827218697639182,
+      "point_update_s": 0.23685317195486277,
+      "topk_s": 2.2735189860104583,
+      "conditional_mutations_s": 0.26026575901778415
+    }
+  },
+  "speedup": {
+    "load_s": 0.9701762128783821,
+    "index_s": 4.170034750542721,
+    "point_select_s": 60.81269754760575,
+    "point_update_s": 16.905119373982668,
+    "topk_s": 1.1559166385529192,
+    "conditional_mutations_s": 1.44806221312913
+  },
+  "correctness": "All 264 collected responses identical; point transaction rollback and committed restart checked per image",
+  "baseline_commit": "77808f7c2053f394c354f9cbc249fe9f86f48835"
+}

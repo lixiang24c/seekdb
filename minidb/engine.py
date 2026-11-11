@@ -33,7 +33,8 @@ class Worst:
 @dataclass
 class QueryResult:
     columns: list
-    path: object
+    path: object = None
+    encoded_rows: object = None
 
 
 def row_cost(row):
@@ -72,6 +73,12 @@ class Database:
                 value = convert(col, value)
             bound.append((i, OPS[op], value))
         return lambda row: all(op(row[i], value) for i, op, value in bound)
+
+    def primary_equal(self, table, conditions):
+        for name, op, value in conditions:
+            if op == '=' and self.column(table, name) == table['pk']:
+                return convert(table['cols'][table['pk']], value)
+        return None
 
     def expression(self, table, expr):
         i = self.column(table, expr[1])
@@ -127,7 +134,7 @@ class Database:
                 fail('index already exists', 'already_exists')
             new = copy.deepcopy(table)
             new['indexes'].append(st['name'])
-            new = self.store.rewrite(new, self.store.rows(table))
+            new = self.store.add_index(new)
             self.store.install(name, new)
             return {}
         if op == 'select':
@@ -150,7 +157,8 @@ class Database:
             new = self.store.insert(table, incoming)
             self.store.install(name, new)
             return {'affected_rows': len(incoming)}
-        match = self.conditions(table, st['where'])
+        filter_columns = set()
+        match = self.conditions(table, st['where'], filter_columns)
         sets = []
         if op == 'update':
             for col, value in st['sets']:
@@ -160,19 +168,18 @@ class Database:
                 if any(j == i for j, _ in sets):
                     fail('duplicate assignment')
                 sets.append((i, convert(table['cols'][i], value)))
-        count = 0
-        def changed():
-            nonlocal count
-            for row in self.store.rows(table):
-                if match(row):
-                    if op == 'delete':
-                        count += 1; continue
-                    count += 1
-                    for i, value in sets:
-                        row[i] = value
-                yield row
-        new = self.store.rewrite(table, changed())
-        self.store.install(name, new)
+        ident = self.primary_equal(table, st['where'])
+        if ident is not None:
+            part, raw = self.store.lookup(table, ident)
+            if raw is None: return {'affected_rows': 0}
+            row = Codec(table['cols']).decode(raw)
+            if not match(row): return {'affected_rows': 0}
+            for i, value in sets: row[i] = value
+            new = self.store.replace_point(table, part, ident, None if op == 'delete' else row)
+            self.store.install(name, new)
+            return {'affected_rows': 1}
+        new, count = self.store.mutate(table, match, filter_columns, sets, op == 'delete')
+        if count: self.store.install(name, new)
         return {'affected_rows': count}
 
     def external_sort(self, table, source, key):
@@ -257,7 +264,8 @@ class Database:
         selected, cost = [], 0
         scores = self.flat_topk(table, expr, k) if not filter_columns and table.get('indexes') else None
         heap, radius = [], math.inf
-        records = self.store.records(table, ordered=False)
+        records = (self.store.records(table, ordered=False) if scores is None else
+                   ((ident, self.store.lookup(table, ident)[1]) for ident in scores))
         try:
             for ident, raw in records:
                 if scores is not None:
@@ -316,7 +324,14 @@ class Database:
         def key(row):
             return tuple(Desc(value(e, row, True)) if desc else value(e, row, True) for e, desc in keys) + (row[table['pk']],)
         needed = {table['pk']} | filter_columns | {e[1] for e in outs} | {e[1] for e, _ in keys}
+        ident = self.primary_equal(table, st['where'])
         def source(full=False):
+            if ident is not None:
+                _, raw = self.store.lookup(table, ident)
+                if raw is not None:
+                    row = Codec(table['cols']).decode(raw)
+                    if match(row): yield row
+                return
             yield from self.store.rows(table, None if full else needed,
                                        match if filter_columns else None, filter_columns)
         result = self.store.fresh('result')
@@ -328,7 +343,7 @@ class Database:
                 rows = source()
             else:
                 if limit is not None and limit <= 1024:
-                    if len(keys) == 1 and keys[0][0][0] == 'distance' and not keys[0][1]:
+                    if ident is None and len(keys) == 1 and keys[0][0][0] == 'distance' and not keys[0][1]:
                         rows = self.vector_topk(table, keys[0][0], limit, needed, match, filter_columns)
                     else:
                         selected = source()
@@ -338,11 +353,21 @@ class Database:
                             selected.close()
                 if rows is None:
                     rows = self.external_sort(table, source(full=True), key)
-            with open(result, 'x', encoding='utf-8') as f:
+            encoded, size, stream = [], 0, None
+            try:
                 for row in itertools.islice(rows, limit):
-                    json.dump([value(expr, row) for expr in outs], f, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
-                    f.write('\n')
-            return QueryResult(names, result)
+                    line = json.dumps([value(expr, row) for expr in outs], ensure_ascii=False,
+                                      allow_nan=False, separators=(',', ':'))
+                    size += len(line) * 4 + 64
+                    if stream is None and size > 65536:
+                        stream = open(result, 'x', encoding='utf-8')
+                        for previous in encoded: stream.write(previous + '\n')
+                        encoded = []
+                    if stream is None: encoded.append(line)
+                    else: stream.write(line + '\n')
+            finally:
+                if stream is not None: stream.close()
+            return QueryResult(names, result if stream is not None else None, encoded)
         except BaseException:
             result.unlink(missing_ok=True)
             raise

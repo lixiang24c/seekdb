@@ -1,15 +1,15 @@
 {
   "official_protocol_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
-  "baseline_commit": "fc2567d9cea6b361bdf566216cc2f5c7da507412",
+  "baseline_commit": "77808f7c2053f394c354f9cbc249fe9f86f48835",
   "source_sha256": {
     "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-    "minidb/engine.py": "1f2721d0d8a084bc03c37e44637564ff1e499313fb68c5d0101004753dbbb435",
-    "minidb/server.py": "731d19710fc385de5433f74344e6f8ab9aa44b3899a9083f030d5ce977795e27",
+    "minidb/engine.py": "c7daa972572df943cfd2dd58918ab4cd8c113d1dbd0ae4287bcd3f0900686a73",
+    "minidb/server.py": "d0c8c480b01c607c9567b05fe433293ebe860a5d704ba4e0ed5fd60364837aa6",
     "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
-    "minidb/storage.py": "d3ec07273ac3f4d10b165f62b5fbfa16cb6fc7bd16e7fdce3a1666c2328f4f2a",
+    "minidb/storage.py": "3284b31f3b4d01422715fe7295d06aa0041f247f3ded4e0a005eba15764943dc",
     "Dockerfile": "49f332ee4d77c71516b0e71b9dea9cee5fcdb18e7c085c716c13e6772c4c15d2"
   },
-  "image_id": "sha256:1a50ddce15185d4345aebb6217d3f91f76d2a8931c743f0f7c1ffe13f9a697ce",
+  "image_id": "sha256:e301b8e3d98b8f01dec460669edab2cf166ec5f2d499700178d4e6816ffb3206",
   "public": {
     "scope": "public-protocol-check",
     "passed": true,
@@ -18,103 +18,103 @@
         "id": "sql_crud",
         "status": "PASS",
         "message": "",
-        "duration_ms": 709
+        "duration_ms": 671
       },
       {
         "id": "sql_comparisons",
         "status": "PASS",
         "message": "",
-        "duration_ms": 602
+        "duration_ms": 608
       },
       {
         "id": "sql_ordering",
         "status": "PASS",
         "message": "",
-        "duration_ms": 546
+        "duration_ms": 540
       },
       {
         "id": "sql_empty",
         "status": "PASS",
         "message": "",
-        "duration_ms": 541
+        "duration_ms": 548
       },
       {
         "id": "sql_primary_key",
         "status": "PASS",
         "message": "",
-        "duration_ms": 582
+        "duration_ms": 537
       },
       {
         "id": "sql_unicode",
         "status": "PASS",
         "message": "",
-        "duration_ms": 549
+        "duration_ms": 553
       },
       {
         "id": "sql_bigint",
         "status": "PASS",
         "message": "",
-        "duration_ms": 557
+        "duration_ms": 509
       },
       {
         "id": "sql_unsupported",
         "status": "PASS",
         "message": "",
-        "duration_ms": 559
+        "duration_ms": 535
       },
       {
         "id": "storage_restart",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1120
+        "duration_ms": 1085
       },
       {
         "id": "vector_euclidean",
         "status": "PASS",
         "message": "",
-        "duration_ms": 576
+        "duration_ms": 632
       },
       {
         "id": "transaction_commit",
         "status": "PASS",
         "message": "",
-        "duration_ms": 591
+        "duration_ms": 542
       },
       {
         "id": "transaction_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 565
+        "duration_ms": 540
       },
       {
         "id": "storage_mutations",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1118
+        "duration_ms": 1007
       },
       {
         "id": "storage_multiple_tables",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1155
+        "duration_ms": 1036
       },
       {
         "id": "vector_ties_and_filter",
         "status": "PASS",
         "message": "",
-        "duration_ms": 544
+        "duration_ms": 563
       },
       {
         "id": "vector_float32",
         "status": "PASS",
         "message": "",
-        "duration_ms": 531
+        "duration_ms": 584
       },
       {
         "id": "vector_index_maintenance",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1140
+        "duration_ms": 1050
       },
       {
         "id": "transaction_failed_insert",
@@ -126,13 +126,13 @@
         "id": "transaction_autocommit_atomic",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1017
+        "duration_ms": 1047
       },
       {
         "id": "transaction_shutdown_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1047
+        "duration_ms": 1072
       }
     ],
     "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
@@ -463,5 +463,194 @@
     "correctness": "All 80 candidate responses equal baseline; 8 baseline queries independently checked",
     "baseline_commit": "fc2567d9cea6b361bdf566216cc2f5c7da507412"
   },
-  "scope": "This stage ran public cases, 21 focused query requests and the 80-query actual-image comparison; inherited write/crash/resource evidence remains associated with its earlier commits."
+  "scope": "Current source: final Docker public 20 cases, focused offset-index/transaction/result-spill compatibility checks, five manifest/crash recovery scenarios, one final 10k-row common-operation comparison. Earlier resource/model reports belong to earlier commits.",
+  "previous_stages": [
+    {
+      "commit": "77808f7c2053f394c354f9cbc249fe9f86f48835",
+      "baseline_commit": "fc2567d9cea6b361bdf566216cc2f5c7da507412",
+      "source_sha256": {
+        "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+        "minidb/engine.py": "1f2721d0d8a084bc03c37e44637564ff1e499313fb68c5d0101004753dbbb435",
+        "minidb/server.py": "731d19710fc385de5433f74344e6f8ab9aa44b3899a9083f030d5ce977795e27",
+        "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
+        "minidb/storage.py": "d3ec07273ac3f4d10b165f62b5fbfa16cb6fc7bd16e7fdce3a1666c2328f4f2a",
+        "Dockerfile": "49f332ee4d77c71516b0e71b9dea9cee5fcdb18e7c085c716c13e6772c4c15d2"
+      },
+      "image_id": "sha256:1a50ddce15185d4345aebb6217d3f91f76d2a8931c743f0f7c1ffe13f9a697ce",
+      "public": {
+        "scope": "public-protocol-check",
+        "passed": true,
+        "cases": [
+          {
+            "id": "sql_crud",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 709
+          },
+          {
+            "id": "sql_comparisons",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 602
+          },
+          {
+            "id": "sql_ordering",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 546
+          },
+          {
+            "id": "sql_empty",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 541
+          },
+          {
+            "id": "sql_primary_key",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 582
+          },
+          {
+            "id": "sql_unicode",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 549
+          },
+          {
+            "id": "sql_bigint",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 557
+          },
+          {
+            "id": "sql_unsupported",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 559
+          },
+          {
+            "id": "storage_restart",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1120
+          },
+          {
+            "id": "vector_euclidean",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 576
+          },
+          {
+            "id": "transaction_commit",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 591
+          },
+          {
+            "id": "transaction_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 565
+          },
+          {
+            "id": "storage_mutations",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1118
+          },
+          {
+            "id": "storage_multiple_tables",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1155
+          },
+          {
+            "id": "vector_ties_and_filter",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 544
+          },
+          {
+            "id": "vector_float32",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 531
+          },
+          {
+            "id": "vector_index_maintenance",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1140
+          },
+          {
+            "id": "transaction_failed_insert",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1058
+          },
+          {
+            "id": "transaction_autocommit_atomic",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1017
+          },
+          {
+            "id": "transaction_shutdown_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1047
+          }
+        ],
+        "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
+      },
+      "scope": "This stage ran public cases, 21 focused query requests and the 80-query actual-image comparison; inherited write/crash/resource evidence remains associated with its earlier commits."
+    }
+  ],
+  "general_benchmark": {
+    "rows": 10000,
+    "dimensions": 128,
+    "point_queries": 100,
+    "point_updates": 20,
+    "topk_queries": 40,
+    "filtered_queries": 20,
+    "scope": "single local run, independent identical fixtures, Docker 2 CPU / 2 GiB",
+    "runs": {
+      "baseline": {
+        "load_s": 4.788485849974677,
+        "index_s": 0.24860180501127616,
+        "point_select_s": 4.759942832984962,
+        "point_update_s": 4.004031146003399,
+        "topk_s": 2.62799842399545,
+        "conditional_mutations_s": 0.37688101100502536
+      },
+      "candidate": {
+        "load_s": 4.93568672001129,
+        "index_s": 0.0596162430010736,
+        "point_select_s": 0.07827218697639182,
+        "point_update_s": 0.23685317195486277,
+        "topk_s": 2.2735189860104583,
+        "conditional_mutations_s": 0.26026575901778415
+      }
+    },
+    "speedup": {
+      "load_s": 0.9701762128783821,
+      "index_s": 4.170034750542721,
+      "point_select_s": 60.81269754760575,
+      "point_update_s": 16.905119373982668,
+      "topk_s": 1.1559166385529192,
+      "conditional_mutations_s": 1.44806221312913
+    },
+    "correctness": "All 264 collected responses identical; point transaction rollback and committed restart checked per image",
+    "baseline_commit": "77808f7c2053f394c354f9cbc249fe9f86f48835"
+  },
+  "general_boundaries": {
+    "status": "PASS",
+    "script": "checks/general_boundaries.py"
+  },
+  "current_recovery": {
+    "status": "PASS",
+    "scenarios": 5,
+    "script": "checks/recovery.py"
+  }
 }
