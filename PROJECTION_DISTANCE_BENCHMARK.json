@@ -1,0 +1,336 @@
+{
+  "baseline_commit": "7a81de12005ae78f2413f32601e59487a5658bee",
+  "baseline_runtime_commit": "d53ce73b973f42551d7c5850227351ca65eddd75",
+  "full_workload": {
+    "rows": 10000,
+    "dimensions": 128,
+    "batch_size": 100,
+    "queries": 1000,
+    "filtered_queries": 500,
+    "k": 10,
+    "rounds": 3,
+    "seed": 20261207,
+    "samples": {
+      "baseline": [
+        {
+          "write_seconds": 2.789017867005896,
+          "write_resources": {
+            "memory_peak_bytes": 36007936,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 9117696,
+                "wbytes": 40857600,
+                "rios": 165,
+                "wios": 316,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 49975296
+          },
+          "index_prepare_seconds": 0.062090407009236515,
+          "query_seconds": 3.8084713770076632,
+          "query_resources": {
+            "memory_peak_bytes": 41648128,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 9207808,
+                "wbytes": 46067712,
+                "rios": 167,
+                "wios": 323,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 55275520
+          }
+        },
+        {
+          "write_seconds": 2.68457220797427,
+          "write_resources": {
+            "memory_peak_bytes": 26804224,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 40857600,
+                "rios": 0,
+                "wios": 316,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 40857600
+          },
+          "index_prepare_seconds": 0.05979423300595954,
+          "query_seconds": 4.025801043026149,
+          "query_resources": {
+            "memory_peak_bytes": 32169984,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 46067712,
+                "rios": 0,
+                "wios": 324,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 46067712
+          }
+        },
+        {
+          "write_seconds": 2.626525929023046,
+          "write_resources": {
+            "memory_peak_bytes": 26914816,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 40857600,
+                "rios": 0,
+                "wios": 314,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 40857600
+          },
+          "index_prepare_seconds": 0.06350999302230775,
+          "query_seconds": 4.0050067230477,
+          "query_resources": {
+            "memory_peak_bytes": 32686080,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 46067712,
+                "rios": 0,
+                "wios": 321,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 46067712
+          }
+        }
+      ],
+      "candidate": [
+        {
+          "write_seconds": 2.752068286994472,
+          "write_resources": {
+            "memory_peak_bytes": 26898432,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 40857600,
+                "rios": 0,
+                "wios": 315,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 40857600
+          },
+          "index_prepare_seconds": 0.0652109479997307,
+          "query_seconds": 4.340500900987536,
+          "query_resources": {
+            "memory_peak_bytes": 32354304,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 46067712,
+                "rios": 0,
+                "wios": 323,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 46067712
+          }
+        },
+        {
+          "write_seconds": 2.7136188820004463,
+          "write_resources": {
+            "memory_peak_bytes": 26927104,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 40857600,
+                "rios": 0,
+                "wios": 315,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 40857600
+          },
+          "index_prepare_seconds": 0.062223627988714725,
+          "query_seconds": 3.863884854945354,
+          "query_resources": {
+            "memory_peak_bytes": 32120832,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 46067712,
+                "rios": 0,
+                "wios": 323,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 46067712
+          }
+        },
+        {
+          "write_seconds": 2.7330926419817843,
+          "write_resources": {
+            "memory_peak_bytes": 26992640,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 40857600,
+                "rios": 0,
+                "wios": 315,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 40857600
+          },
+          "index_prepare_seconds": 0.0600742069655098,
+          "query_seconds": 3.917819974012673,
+          "query_resources": {
+            "memory_peak_bytes": 32219136,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 46067712,
+                "rios": 0,
+                "wios": 322,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 46067712
+          }
+        }
+      ]
+    },
+    "scope": "Independent volumes and alternating image order. Query preparation outside query T but inside query B/M. Local per-device cgroup IO, filesystem sync before snapshots. No platform cache-reset procedure or fixed baseline; no formal E. Small in-container cat/sync diagnostic processes included in resource snapshots.",
+    "medians": {
+      "baseline": {
+        "write_seconds": 2.68457220797427,
+        "query_seconds": 4.0050067230477,
+        "write_memory_peak_bytes": 26914816,
+        "query_memory_peak_bytes": 32686080,
+        "write_device_bytes": 40857600,
+        "query_device_bytes": 46067712
+      },
+      "candidate": {
+        "write_seconds": 2.7330926419817843,
+        "query_seconds": 3.917819974012673,
+        "write_memory_peak_bytes": 26927104,
+        "query_memory_peak_bytes": 32219136,
+        "write_device_bytes": 40857600,
+        "query_device_bytes": 46067712
+      }
+    },
+    "correctness": "6000 timed responses compared; first8 per run match independent exact oracle; committed rows checked after each restart.",
+    "status": "PASS"
+  },
+  "query_focused": {
+    "rows": 10000,
+    "dimensions": 128,
+    "queries": 240,
+    "filtered_queries": 120,
+    "filter_categories": 10,
+    "projected_distance": true,
+    "content_bytes_per_row": 512,
+    "cpus": "2",
+    "memory": "2g",
+    "seed": 20261112,
+    "scope": "Alternating image order across rounds; local comparison, not formal score",
+    "rounds": 3,
+    "samples": {
+      "baseline": [
+        {
+          "cold_unfiltered_seconds": 0.0053370840032584965,
+          "cold_filtered_seconds": 0.05795482895337045,
+          "total_seconds": 1.0608753919950686,
+          "unfiltered_seconds": 0.49099403608124703,
+          "filtered_seconds": 0.5698813559138216,
+          "median_ms": 3.951710998080671,
+          "max_ms": 60.62635098351166
+        },
+        {
+          "cold_unfiltered_seconds": 0.0046966770314611495,
+          "cold_filtered_seconds": 0.057864001020789146,
+          "total_seconds": 1.0672234668163583,
+          "unfiltered_seconds": 0.4900894271559082,
+          "filtered_seconds": 0.5771340396604501,
+          "median_ms": 4.001811961643398,
+          "max_ms": 61.34805199690163
+        },
+        {
+          "cold_unfiltered_seconds": 0.004360782040748745,
+          "cold_filtered_seconds": 0.05742440203903243,
+          "total_seconds": 1.027956921781879,
+          "unfiltered_seconds": 0.4761704672127962,
+          "filtered_seconds": 0.5517864545690827,
+          "median_ms": 3.8580615364480764,
+          "max_ms": 60.1888460223563
+        }
+      ],
+      "candidate": [
+        {
+          "cold_unfiltered_seconds": 0.005233979958575219,
+          "cold_filtered_seconds": 0.05694338399916887,
+          "total_seconds": 1.0009814829099923,
+          "unfiltered_seconds": 0.455728649685625,
+          "filtered_seconds": 0.5452528332243674,
+          "median_ms": 3.734710509888828,
+          "max_ms": 60.77069300226867
+        },
+        {
+          "cold_unfiltered_seconds": 0.004716940980870277,
+          "cold_filtered_seconds": 0.05602471000747755,
+          "total_seconds": 1.0186455550719984,
+          "unfiltered_seconds": 0.469924709352199,
+          "filtered_seconds": 0.5487208457197994,
+          "median_ms": 3.8167639868333936,
+          "max_ms": 60.19559898413718
+        },
+        {
+          "cold_unfiltered_seconds": 0.0045521120191551745,
+          "cold_filtered_seconds": 0.058027243008837104,
+          "total_seconds": 0.9891560159157962,
+          "unfiltered_seconds": 0.4613277902826667,
+          "filtered_seconds": 0.5278282256331295,
+          "median_ms": 3.640884009655565,
+          "max_ms": 57.46617401018739
+        }
+      ]
+    },
+    "runs": {
+      "baseline": {
+        "cold_unfiltered_seconds": 0.0046966770314611495,
+        "cold_filtered_seconds": 0.057864001020789146,
+        "total_seconds": 1.0608753919950686,
+        "unfiltered_seconds": 0.4900894271559082,
+        "filtered_seconds": 0.5698813559138216,
+        "median_ms": 3.951710998080671,
+        "max_ms": 60.62635098351166
+      },
+      "candidate": {
+        "cold_unfiltered_seconds": 0.004716940980870277,
+        "cold_filtered_seconds": 0.05694338399916887,
+        "total_seconds": 1.0009814829099923,
+        "unfiltered_seconds": 0.4613277902826667,
+        "filtered_seconds": 0.5452528332243674,
+        "median_ms": 3.734710509888828,
+        "max_ms": 60.19559898413718
+      }
+    },
+    "speedup": 1.059835181876648,
+    "correctness": "All 1440 measured responses checked; first 8 independently checked"
+  },
+  "scope": "Both cohorts kept;full-workload first pair regressed,query-focused3pairs improved.Not a guarantee for all workloads or formal E."
+}

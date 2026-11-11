@@ -387,7 +387,7 @@ class Database:
             self.remember_masks(mask_key, pending)
         return {item[2]: -item[0] for item in heap}
 
-    def vector_topk(self, table, expr, k, columns, match, filter_columns, conditions, mode='exact'):
+    def vector_topk(self, table, expr, k, columns, match, filter_columns, conditions, mode='exact', distance_scores=None):
         """Filter scalars first, retain binary candidates, decode only the winners."""
         codec = Codec(table['cols'])
         vc, query = expr[1], expr[2]
@@ -399,9 +399,15 @@ class Database:
                 try:
                     for ident, raw in records:
                         row = codec.decode_fields(raw, columns)
-                        ranked.append((squared(query, row[vc]), ident, row))
+                        if vc in columns: vec = row[vc]
+                        else:
+                            offset, _ = codec.field(raw, vc)
+                            vec = codec.formats[vc].unpack_from(raw, offset)
+                        ranked.append((squared(query, vec), ident, row))
                 finally: records.close()
                 if len(ranked) == k:
+                    if distance_scores is not None:
+                        distance_scores.update((ident, distance) for distance, ident, row in ranked)
                     return [row for _, _, row in sorted(ranked, key=lambda item: item[:2])]
         selected, cost = [], 0
         cache_key = self.filter_key(table, conditions) if filter_columns and table.get('indexes') else None
@@ -473,6 +479,8 @@ class Database:
         if scores is None:
             selected = [(-neg_distance, -neg_ident, raw) for neg_distance, neg_ident, raw in heap]
         selected.sort(key=lambda item: (item[0], item[1]))
+        if distance_scores is not None:
+            distance_scores.update((ident, distance) for distance, ident, raw in selected)
         return [codec.decode_fields(raw, columns) for _, _, raw in selected]
 
     def select(self, table, st, mode='exact'):
@@ -494,9 +502,11 @@ class Database:
             if bound[0] == 'column' and table['cols'][bound[1]]['type'] == 'VECTOR':
                 fail('cannot ORDER BY VECTOR')
             keys.append((bound, desc))
+        distance_expr, distance_scores = None, None
         def value(expr, row, square=False):
             if expr[0] == 'column': return row[expr[1]]
-            d = squared(expr[2], row[expr[1]])
+            d = distance_scores.get(row[table['pk']]) if distance_expr is not None and expr == distance_expr else None
+            if d is None: d = squared(expr[2], row[expr[1]])
             return d if square else math.sqrt(d)
         def key(row):
             return tuple(Desc(value(e, row, True)) if desc else value(e, row, True) for e, desc in keys) + (row[table['pk']],)
@@ -525,7 +535,16 @@ class Database:
             else:
                 if limit is not None and limit <= 1024:
                     if ident is None and bounds is None and len(keys) == 1 and keys[0][0][0] == 'distance' and not keys[0][1]:
-                        rows = self.vector_topk(table, keys[0][0], limit, needed, match, filter_columns, st['where'], mode)
+                        ordered_expr = keys[0][0]
+                        columns = needed
+                        if any(expr == ordered_expr for expr in outs):
+                            distance_expr, distance_scores = ordered_expr, {}
+                            # Keep vectors only if explicitly projected or needed by
+                            # another distance expression; ordering already has scores.
+                            vc = ordered_expr[1]
+                            if all(expr[1] != vc or (expr[0] == 'distance' and expr == ordered_expr) for expr in outs):
+                                columns = needed - {vc}
+                        rows = self.vector_topk(table, ordered_expr, limit, columns, match, filter_columns, st['where'], mode, distance_scores)
                     else:
                         selected = source()
                         try:
@@ -533,6 +552,7 @@ class Database:
                         finally:
                             selected.close()
                 if rows is None:
+                    distance_expr = distance_scores = None
                     rows = self.external_sort(table, source(), key, needed)
             encoded, size, stream = [], 0, None
             encode = json.JSONEncoder(ensure_ascii=False, allow_nan=False, separators=(',', ':')).encode

@@ -301,6 +301,16 @@
       "id": "u-add-research-materials",
       "role": "user",
       "content": "然后里面加入相关的各种论文材料，博客等"
+    },
+    {
+      "id": "u-keep-algorithms-during-prompt",
+      "role": "user",
+      "content": "你这边在和我讨论prompt的时候算法优化不能停啊"
+    },
+    {
+      "id": "a-projection-distance",
+      "role": "assistant",
+      "content": "继续优化查询端：把TopK已算出的精确分数在当前SELECT投影阶段复用，并省去未输出向量的解码。不同查询向量保持独立，触发排序回退清除局部复用；不新增跨语句缓存。"
     }
   ],
   "experiments": [
@@ -489,6 +499,12 @@
       "role": "tool",
       "output": "{\"public20_passed\": true, \"native_auto\": {\"status\": \"PASS\", \"backend\": \"avx2\", \"screen_checks\": 648, \"topk_checks\": 828, \"reference_terms_checks\": 891, \"distributions\": [\"uniform\", \"mixed float32 exponents\"], \"dimensions\": [16, 17, 31, 32, 127, 128, 129, 512, 4096], \"coverage\": [\"bitwise reference terms plus fsum\", \"near threshold\", \"zero/ties\", \"finite extrema/subnormals\", \"mask/empty mask\", \"malformed record length\", \"dimension fallback\"]}, \"native_scalar\": {\"status\": \"PASS\", \"backend\": \"scalar\", \"screen_checks\": 648, \"topk_checks\": 828, \"reference_terms_checks\": 891, \"distributions\": [\"uniform\", \"mixed float32 exponents\"], \"dimensions\": [16, 17, 31, 32, 127, 128, 129, 512, 4096], \"coverage\": [\"bitwise reference terms plus fsum\", \"near threshold\", \"zero/ties\", \"finite extrema/subnormals\", \"mask/empty mask\", \"malformed record length\", \"dimension fallback\"]}, \"sanitizer\": \"PASS\", \"sql\": {\"status\": \"PASS\", \"oracle_queries\": 24, \"transaction_visibility\": \"PASS\", \"dimensions\": 128, \"rows\": 200, \"K\": [1, 10, 127, 128, 512, 1024], \"extreme_bigint_keys\": true}, \"missing_library_sql\": {\"status\": \"PASS\", \"oracle_queries\": 24, \"transaction_visibility\": \"PASS\", \"dimensions\": 128, \"rows\": 200, \"K\": [1, 10, 127, 128, 512, 1024], \"extreme_bigint_keys\": true}, \"graph\": {\"status\": \"PASS\", \"oracle_queries\": 43, \"ann_mean_recall\": 1.0, \"graph_hits_before_mutation\": 12, \"rows\": 2048, \"dimensions\": 32, \"coverage\": [\"negative IDs\", \"graph actually used\", \"exact unchanged\", \"filtered exact\", \"transaction update visibility\", \"rollback\", \"committed delete invalidation\", \"rebuild with excluded rows\", \"restart rebuild\"]}, \"workload_medians\": {\"baseline\": {\"write_seconds\": 2.6315922749927267, \"query_seconds\": 4.638880807964597, \"write_memory_peak_bytes\": 26746880, \"query_memory_peak_bytes\": 32210944, \"write_device_bytes\": 40857600, \"query_device_bytes\": 46067712}, \"candidate\": {\"write_seconds\": 2.6287646120181307, \"query_seconds\": 3.9021420539938845, \"write_memory_peak_bytes\": 27021312, \"query_memory_peak_bytes\": 32272384, \"write_device_bytes\": 40857600, \"query_device_bytes\": 46067712}}, \"query_time_reduction\": 0.1588182116483332}",
       "interpretation": "1000查询三轮中位4.638881→3.902142秒，减少15.88%；写入、I/O和峰值内存基本持平。乘积后仍使用math.fsum，不以普通double累加近似替换。测试和解释来自Agent，不冒充学生贡献；本地资源不推算正式E。"
+    },
+    {
+      "id": "projection-distance-stage",
+      "role": "tool",
+      "output": "{\"public20_passed\": true, \"boundaries\": {\"status\": \"PASS\", \"oracle_queries\": 20, \"rows\": 320, \"dimensions\": 128, \"coverage\": [\"raw scan before index\", \"no duplicate Python distance computation\", \"vector decoding omitted when unused\", \"same/different query vectors\", \"explicit vector projection\", \"alias/expression ordering\", \"filter cache reuse\", \"native off\", \"DESC/range/multi-key plans\", \"LIMIT0\", \"large-row heap fallback to sort\", \"transaction mutation/delete\", \"rollback\", \"extreme primary keys\", \"restart\"]}, \"graph\": {\"status\": \"PASS\", \"oracle_queries\": 43, \"ann_mean_recall\": 1.0, \"graph_hits_before_mutation\": 12, \"rows\": 2048, \"dimensions\": 32, \"coverage\": [\"negative IDs\", \"graph actually used\", \"exact unchanged\", \"filtered exact\", \"transaction update visibility\", \"rollback\", \"committed delete invalidation\", \"rebuild with excluded rows\", \"restart rebuild\"]}, \"full_workload_medians\": {\"baseline\": {\"write_seconds\": 2.68457220797427, \"query_seconds\": 4.0050067230477, \"write_memory_peak_bytes\": 26914816, \"query_memory_peak_bytes\": 32686080, \"write_device_bytes\": 40857600, \"query_device_bytes\": 46067712}, \"candidate\": {\"write_seconds\": 2.7330926419817843, \"query_seconds\": 3.917819974012673, \"write_memory_peak_bytes\": 26927104, \"query_memory_peak_bytes\": 32219136, \"write_device_bytes\": 40857600, \"query_device_bytes\": 46067712}}, \"full_workload_query_pairs\": {\"baseline\": [3.8084713770076632, 4.025801043026149, 4.0050067230477], \"candidate\": [4.340500900987536, 3.863884854945354, 3.917819974012673]}, \"query_focused_medians\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.0046966770314611495, \"cold_filtered_seconds\": 0.057864001020789146, \"total_seconds\": 1.0608753919950686, \"unfiltered_seconds\": 0.4900894271559082, \"filtered_seconds\": 0.5698813559138216, \"median_ms\": 3.951710998080671, \"max_ms\": 60.62635098351166}, \"candidate\": {\"cold_unfiltered_seconds\": 0.004716940980870277, \"cold_filtered_seconds\": 0.05694338399916887, \"total_seconds\": 1.0009814829099923, \"unfiltered_seconds\": 0.4613277902826667, \"filtered_seconds\": 0.5452528332243674, \"median_ms\": 3.734710509888828, \"max_ms\": 60.19559898413718}}, \"query_focused_correctness\": \"All 1440 measured responses checked; first 8 independently checked\"}",
+      "interpretation": "完整负载中位约快2.18%，首对样本回退；专项三对均改善，中位约快5.65%。不丢弃不利数据，结合调用/解码计数证明省去了重复工作，再保留此改动。结果及解释由Agent产生；用户贡献为明确要求Prompt讨论不停止优化推进。"
     }
   ],
   "implementation": {
@@ -497,7 +513,7 @@
     "source_sha256": {
       "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
       "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-      "minidb/engine.py": "193757b1257782ed574030bba8d922ee89f4a8b920852b28cbd023afcfaaa8c9",
+      "minidb/engine.py": "a5ca4b3c529f49c5f30b88ee921be62e4d5b354466ef794480af67d1a1516270",
       "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
       "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
       "minidb/native.py": "a7211c7a40ba581cad3596be74d63985da1e1d8cec7d49f825a5d410f68ed7d0",
@@ -508,7 +524,7 @@
       "native/screen.c": "0fdb28a9619aa00c7a33a6cd3b49fec6206fbba3b2bcbc46a1fe33f9b54dca89"
     },
     "storage": "Immutable segments, bounded point overlays, preplanned <=16-old-run INSERT fusion with original wide-cascade fallback; atomic fsynced manifest retained.",
-    "query": "Exact native screening and native binary64 products with original Python fsum, batched TopK row lookup and bounded predicate caches; graph stays opt-in.",
+    "query": "Exact C-products/Python-fsum TopK, per-query projection distance reuse, batched row lookup and bounded scalar caches; optional graph remains off.",
     "vector_input": "Original numeric grammar validated per bounded vector body, standard-library maps convert elements; large inputs retain scalar validation; finite/type/dimension semantics preserved.",
     "sql_lexer": "Quote-delimited chunk extraction via str.find, with existing doubled-quote/backtick and malformed-input semantics."
   },
@@ -576,13 +592,18 @@
     {
       "commit": "d12d6e8f17aa74473467696419940f9a7a7551f2",
       "note": "Bounded vector-text batching retained; native kernel now ABI5."
+    },
+    {
+      "commit": "7a81de12005ae78f2413f32601e59487a5658bee",
+      "note": "Prior engineering and literature material preserved; native ABI5 retained."
     }
   ],
   "material_notes": {
     "team_investigation": "已阅读用户提供的MIGRATION_PLAN.md。预装GCC镜像、RUN断网构建、ctypes回退方向已在当前实现落实并本地验证；队友对平台失败根因的判断与平台日志确认区分。文档为队友资料，不作为当前用户本人理解或发言。",
     "prompt_work": "用户开始与Agent共同讨论学习证据；后续保留真实用户解释、预测、验证及修正，不补写虚构学生发言。",
     "retrospective_source": "当前用户提供三人独立开发、跨电脑复现、选择较稳定版本、正式提测失败、换用旧实现仍失败、最小重写有效、额度用尽后筹备三类次日候选的复盘。该段是用户报告；具体失败根因、各候选完成情况、测试数值与commit需由已有记录分别支持。",
-    "discussion_style": "用户要求按工程决策归纳已有材料，停止逐项问答。后续优先整理真实证据和结果，不要求用户复述Agent技术解释。"
+    "discussion_style": "用户要求按工程决策归纳已有材料，停止逐项问答。后续优先整理真实证据和结果，不要求用户复述Agent技术解释。",
+    "workflow_preference": "用户要求讨论Prompt时持续推进算法优化，材料整理与代码工作并行安排；不因切换话题而停止优化。"
   },
   "engineering_summary": {
     "author": "assistant",
