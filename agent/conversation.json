@@ -47,6 +47,16 @@
       "id": "a3",
       "role": "assistant",
       "content": "本阶段只修改批量写入：每批写独立有序段，分层合并时复制二进制记录并同步索引；保留原提交发布机制、启动入口和依赖。"
+    },
+    {
+      "id": "u7",
+      "role": "user",
+      "content": "我现在正在评测，我认为你可以先继续推进下一步通用优化"
+    },
+    {
+      "id": "a4",
+      "role": "assistant",
+      "content": "本阶段优化查询的过滤、解码和TopK候选处理。入选结果仍按原平方距离及主键排序，保持当前评测提交可追溯。"
     }
   ],
   "experiments": [
@@ -103,14 +113,30 @@
       "source": "tool",
       "status": "executed",
       "command": "actual Docker image, 200 batches of 100 rows with 128-dimensional vectors, index before loading",
-      "output": "{\"scope\": \"Local single-run write comparison, not official performance score or hidden timeout reproduction\", \"rows\": 20000, \"dimension\": 128, \"batch_rows\": 100, \"index_created_before_loading\": true, \"cpus\": 2, \"memory\": \"2g\", \"baseline_commit\": \"c965e86e9da81a089057aa944db078b1014fd3f0\", \"baseline_seconds\": 43.06494199601002, \"optimized_seconds\": 6.79940787301166, \"speedup\": 6.33363122205747, \"baseline_last_batch_seconds\": 0.40391581202857196, \"optimized_last_batch_seconds\": 0.04761942505137995, \"content_filter_and_restart\": \"PASS\"}"
+      "output": "{\"scope\": \"Local single-run write comparison, not official performance score or hidden timeout reproduction\", \"rows\": 20000, \"dimension\": 128, \"batch_rows\": 100, \"index_created_before_loading\": true, \"cpus\": 2, \"memory\": \"2g\", \"baseline_commit\": \"c965e86e9da81a089057aa944db078b1014fd3f0\", \"baseline_seconds\": 43.06494199601002, \"optimized_seconds\": 6.79940787301166, \"speedup\": 6.33363122205747, \"baseline_last_batch_seconds\": 0.40391581202857196, \"optimized_last_batch_seconds\": 0.04761942505137995, \"content_filter_and_restart\": \"PASS\"}",
+      "version": "fc2567d9cea6b361bdf566216cc2f5c7da507412"
     },
     {
       "id": "tool8",
       "source": "tool",
       "status": "executed",
       "command": "protocol_check/run.py and checks/recovery.py; focused segment and old-format migration checks",
-      "output": "{\"public_cases_passed\": 20, \"recovery_scenarios_passed\": 5, \"targeted_checks\": [\"unordered negative primary keys and non-first primary-key column: PASS\", \"duplicate statement inside transaction retains prior successful insert: PASS\", \"rollback and restart of segmented tables: PASS\", \"read MVP data, migrate primary key metadata, insert, reject duplicate and restart indexed query: PASS\"]}"
+      "output": "{\"public_cases_passed\": 20, \"recovery_scenarios_passed\": 5, \"targeted_checks\": [\"unordered negative primary keys and non-first primary-key column: PASS\", \"duplicate statement inside transaction retains prior successful insert: PASS\", \"rollback and restart of segmented tables: PASS\", \"read MVP data, migrate primary key metadata, insert, reject duplicate and restart indexed query: PASS\"]}",
+      "version": "fc2567d9cea6b361bdf566216cc2f5c7da507412"
+    },
+    {
+      "id": "tool9",
+      "source": "tool",
+      "status": "executed",
+      "command": "python3 checks/benchmark_queries.py",
+      "output": "{\"rows\": 10000, \"dimensions\": 128, \"queries\": 80, \"filtered_queries\": 40, \"projected_distance\": true, \"content_bytes_per_row\": 512, \"cpus\": \"2\", \"memory\": \"2g\", \"seed\": 20261112, \"scope\": \"Local single-run comparison, not the formal benchmark score\", \"runs\": {\"baseline\": {\"total_seconds\": 13.480338636960369, \"unfiltered_seconds\": 9.268134338897653, \"filtered_seconds\": 4.212204298062716, \"median_ms\": 168.6384635104332, \"max_ms\": 258.40125599643216}, \"candidate\": {\"total_seconds\": 5.247898717934731, \"unfiltered_seconds\": 3.0226560620358214, \"filtered_seconds\": 2.22524265589891, \"median_ms\": 67.75652000214905, \"max_ms\": 83.6187910172157}}, \"speedup\": 2.568711661848811, \"correctness\": \"All 80 candidate responses equal baseline; 8 baseline queries independently checked\", \"baseline_commit\": \"fc2567d9cea6b361bdf566216cc2f5c7da507412\"}"
+    },
+    {
+      "id": "tool10",
+      "source": "tool",
+      "status": "executed",
+      "command": "official protocol checker and 21 focused query requests",
+      "output": "{\"official_public_cases\": \"20/20 PASS\", \"focused_requests\": 21, \"coverage\": \"filtered and unfiltered TopK, no index and indexed modes, partial projection, ties, non-first primary key, transaction/rollback/restart, oversized heap candidate external-sort fallback\"}"
     }
   ],
   "implementation": {
@@ -118,13 +144,14 @@
     "official_protocol_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
     "source_sha256": {
       "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-      "minidb/engine.py": "41175fecf4d0e5c11c602ed21d7ec0062effbcb13ec6ea3ee47bdcfe503cf740",
+      "minidb/engine.py": "1f2721d0d8a084bc03c37e44637564ff1e499313fb68c5d0101004753dbbb435",
       "minidb/server.py": "731d19710fc385de5433f74344e6f8ab9aa44b3899a9083f030d5ce977795e27",
       "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
-      "minidb/storage.py": "a2d527a906bf0a3d2544756d3b8c94d7155b8461f996bff5fbc9d7ac50210bcd",
+      "minidb/storage.py": "d3ec07273ac3f4d10b165f62b5fbfa16cb6fc7bd16e7fdce3a1666c2328f4f2a",
       "Dockerfile": "49f332ee4d77c71516b0e71b9dea9cee5fcdb18e7c085c716c13e6772c4c15d2"
     },
-    "storage": "Immutable sorted segments, disk primary-key binary search and geometric merges; atomic manifest publication retained."
+    "storage": "Immutable sorted segments, disk primary-key binary search and geometric merges; atomic manifest publication retained.",
+    "query": "Decode predicate fields first, keep binary TopK candidates, decode winning projections only, stream primary-key ascending limits."
   },
   "limitations": [
     "INSERT使用分段写入与分层归并；UPDATE/DELETE仍顺序生成整表新版本。",
@@ -143,6 +170,19 @@
         "minidb/storage.py": "3310cc562ef0b07f0bda8a5e4485778e827798e7a41e66b330f3fb8a579784e1",
         "Dockerfile": "49f332ee4d77c71516b0e71b9dea9cee5fcdb18e7c085c716c13e6772c4c15d2"
       }
+    },
+    {
+      "language": "Python 3.12.8 standard library",
+      "official_protocol_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
+      "source_sha256": {
+        "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+        "minidb/engine.py": "41175fecf4d0e5c11c602ed21d7ec0062effbcb13ec6ea3ee47bdcfe503cf740",
+        "minidb/server.py": "731d19710fc385de5433f74344e6f8ab9aa44b3899a9083f030d5ce977795e27",
+        "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
+        "minidb/storage.py": "a2d527a906bf0a3d2544756d3b8c94d7155b8461f996bff5fbc9d7ac50210bcd",
+        "Dockerfile": "49f332ee4d77c71516b0e71b9dea9cee5fcdb18e7c085c716c13e6772c4c15d2"
+      },
+      "storage": "Immutable sorted segments, disk primary-key binary search and geometric merges; atomic manifest publication retained."
     }
   ]
 }

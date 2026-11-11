@@ -2,6 +2,7 @@
 import copy
 import bisect
 import heapq
+import itertools
 import json
 import math
 import os
@@ -63,6 +64,19 @@ class Codec:
                 row.append(list(fmt.unpack_from(data, pos))); pos += fmt.size
         if pos != len(data):
             raise OSError('invalid row length')
+        return row
+
+    def decode_fields(self, data, fields):
+        row, pos = [None] * len(self.cols), 0
+        for i, (col, fmt) in enumerate(zip(self.cols, self.formats)):
+            kind = col['type']
+            size = 8 if kind == 'BIGINT' else fmt.size if fmt else 4 + U32.unpack_from(data, pos)[0]
+            if i in fields:
+                if kind == 'BIGINT': row[i] = I64.unpack_from(data, pos)[0]
+                elif kind == 'VARCHAR': row[i] = data[pos + 4:pos + size].decode('utf-8')
+                else: row[i] = list(fmt.unpack_from(data, pos))
+            pos += size
+        if pos != len(data): raise OSError('invalid row length')
         return row
 
     def field(self, data, target):
@@ -304,14 +318,27 @@ class Storage:
             for path in created: path.unlink(missing_ok=True)
             raise
 
-    def rows(self, table):
+    def records(self, table, ordered=True):
         codec = Codec(table['cols'])
         readers = [raw_rows(self.path(part['file']), codec, table['pk']) for part in self.segments(table)]
         try:
-            for _, raw in heapq.merge(*readers, key=lambda item: item[0]):
-                yield codec.decode(raw)
+            if ordered:
+                yield from heapq.merge(*readers, key=lambda item: item[0])
+            else:
+                yield from itertools.chain.from_iterable(readers)
         finally:
             for reader in readers: reader.close()
+
+    def rows(self, table, columns=None, predicate=None, predicate_columns=None):
+        codec = Codec(table['cols'])
+        records = self.records(table)
+        try:
+            for _, raw in records:
+                if predicate is not None and not predicate(codec.decode_fields(raw, predicate_columns)):
+                    continue
+                yield codec.decode(raw) if columns is None else codec.decode_fields(raw, columns)
+        finally:
+            records.close()
 
     def close(self):
         try:

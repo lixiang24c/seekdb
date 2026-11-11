@@ -51,6 +51,9 @@ UPDATE和DELETE仍流式生成表的新版本。语句失败时删除该语句�
 COMMIT先fsync全部新文件及文件名，再fsync新manifest，原子替换manifest.json并fsync目录，然后回复成功。
 多表修改一次发布。自动提交使用相同机制。进程强杀后只需读取完整旧manifest或完整新manifest，未引用的文件回收；回收中再次退出可以重做。
 查询使用流式扫描、受内存预算约束的TopK堆；普通排序或大K使用/data分段归并。响应先完成查询，再流式输出JSON，避免错误后输出半份成功结果。
+查询只解码实际使用的列，先检查普通列过滤条件再处理向量；TopK候选保留二进制记录，确定结果后才解码输出字段。
+距离候选使用math.dist做带宽余量的排除检查，入选候选仍按原math.fsum平方距离和主键排序；不是近似剪枝。
+主键升序读取直接使用数据段的有序归并，LIMIT满足后停止，不再扫描全部记录维护排序堆。
 
 本地复现
 python3 protocol_check/run.py --image minivectordb:rewrite-complete --output protocol-results/public
@@ -62,5 +65,5 @@ python3 checks/model.py
 
 当前取舍
 INSERT采用分段写入及分层归并；UPDATE/DELETE仍顺序生成整表新版本，磁盘需容纳提交前后版本及归并临时段。
-索引采用精确线性扫描，不作近似剪枝。本版本已完成批量写入的第一阶段优化，后续继续按单项测量迁移。
+索引采用精确线性扫描，不作近似剪枝。已完成批量写入与查询解码/TopK候选处理的两阶段优化。
 本地64MiB压力条件与官方公开2GiB配置分开记录。正式成绩由平台对指定提交评测产生。

@@ -1,15 +1,15 @@
 {
   "official_protocol_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
-  "baseline_commit": "c965e86e9da81a089057aa944db078b1014fd3f0",
+  "baseline_commit": "fc2567d9cea6b361bdf566216cc2f5c7da507412",
   "source_sha256": {
     "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-    "minidb/engine.py": "41175fecf4d0e5c11c602ed21d7ec0062effbcb13ec6ea3ee47bdcfe503cf740",
+    "minidb/engine.py": "1f2721d0d8a084bc03c37e44637564ff1e499313fb68c5d0101004753dbbb435",
     "minidb/server.py": "731d19710fc385de5433f74344e6f8ab9aa44b3899a9083f030d5ce977795e27",
     "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
-    "minidb/storage.py": "a2d527a906bf0a3d2544756d3b8c94d7155b8461f996bff5fbc9d7ac50210bcd",
+    "minidb/storage.py": "d3ec07273ac3f4d10b165f62b5fbfa16cb6fc7bd16e7fdce3a1666c2328f4f2a",
     "Dockerfile": "49f332ee4d77c71516b0e71b9dea9cee5fcdb18e7c085c716c13e6772c4c15d2"
   },
-  "image_id": "sha256:af1f4ffc9769f3d724d2b816eeaa64025d6241f75b330f51f49d4db83ebb6b48",
+  "image_id": "sha256:1a50ddce15185d4345aebb6217d3f91f76d2a8931c743f0f7c1ffe13f9a697ce",
   "public": {
     "scope": "public-protocol-check",
     "passed": true,
@@ -18,171 +18,450 @@
         "id": "sql_crud",
         "status": "PASS",
         "message": "",
-        "duration_ms": 695
+        "duration_ms": 709
       },
       {
         "id": "sql_comparisons",
         "status": "PASS",
         "message": "",
-        "duration_ms": 567
+        "duration_ms": 602
       },
       {
         "id": "sql_ordering",
         "status": "PASS",
         "message": "",
-        "duration_ms": 566
+        "duration_ms": 546
       },
       {
         "id": "sql_empty",
         "status": "PASS",
         "message": "",
-        "duration_ms": 552
+        "duration_ms": 541
       },
       {
         "id": "sql_primary_key",
         "status": "PASS",
         "message": "",
-        "duration_ms": 558
+        "duration_ms": 582
       },
       {
         "id": "sql_unicode",
         "status": "PASS",
         "message": "",
-        "duration_ms": 557
+        "duration_ms": 549
       },
       {
         "id": "sql_bigint",
         "status": "PASS",
         "message": "",
-        "duration_ms": 558
+        "duration_ms": 557
       },
       {
         "id": "sql_unsupported",
         "status": "PASS",
         "message": "",
-        "duration_ms": 521
+        "duration_ms": 559
       },
       {
         "id": "storage_restart",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1032
+        "duration_ms": 1120
       },
       {
         "id": "vector_euclidean",
         "status": "PASS",
         "message": "",
-        "duration_ms": 527
+        "duration_ms": 576
       },
       {
         "id": "transaction_commit",
         "status": "PASS",
         "message": "",
-        "duration_ms": 579
+        "duration_ms": 591
       },
       {
         "id": "transaction_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 554
+        "duration_ms": 565
       },
       {
         "id": "storage_mutations",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1070
+        "duration_ms": 1118
       },
       {
         "id": "storage_multiple_tables",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1059
+        "duration_ms": 1155
       },
       {
         "id": "vector_ties_and_filter",
         "status": "PASS",
         "message": "",
-        "duration_ms": 536
+        "duration_ms": 544
       },
       {
         "id": "vector_float32",
         "status": "PASS",
         "message": "",
-        "duration_ms": 519
+        "duration_ms": 531
       },
       {
         "id": "vector_index_maintenance",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1048
+        "duration_ms": 1140
       },
       {
         "id": "transaction_failed_insert",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1052
+        "duration_ms": 1058
       },
       {
         "id": "transaction_autocommit_atomic",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1013
+        "duration_ms": 1017
       },
       {
         "id": "transaction_shutdown_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 984
+        "duration_ms": 1047
       }
     ],
     "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
   },
-  "recovery": [
+  "focused_query_checks": [
     {
-      "cut": "before",
-      "explicit_multitable": false,
-      "two_restarts": "PASS"
+      "sql": "CREATE TABLE t(txt VARCHAR(32),v VECTOR(2),id BIGINT PRIMARY KEY,g BIGINT)",
+      "mode": "exact",
+      "ok": true,
+      "rows": null
     },
     {
-      "cut": "before",
-      "explicit_multitable": true,
-      "two_restarts": "PASS"
+      "sql": "INSERT INTO t VALUES ('文-9','[-9,0]',-9,1),('文-8','[-8,0]',-8,0),('文-7','[-7,0]',-7,1),('文-6','[-6,0]',-6,0),('文-5','[-5,0]',-5,1),('文-4','[-4,0]',-4,0),('文-3','[-3,0]',-3,1),('文-2','[-2,0]',-2,0),('文-1','[-1,0]',-1,1),('文0','[0,0]',0,0),('文1','[1,0]',1,1),('文2','[2,0]',2,0),('文3','[3,0]',3,1),('文4','[4,0]',4,0),('文5','[5,0]',5,1),('文6','[6,0]',6,0),('文7','[7,0]',7,1),('文8','[8,0]',8,0),('文9','[9,0]',9,1)",
+      "mode": "exact",
+      "ok": true,
+      "rows": null
     },
     {
-      "cut": "after",
-      "explicit_multitable": false,
-      "two_restarts": "PASS"
+      "sql": "SELECT id,L2_DISTANCE(v,'[0,0]') AS d FROM t WHERE g=1 ORDER BY d LIMIT 3",
+      "mode": "exact",
+      "ok": true,
+      "rows": [
+        [
+          -1,
+          1.0
+        ],
+        [
+          1,
+          1.0
+        ],
+        [
+          -3,
+          3.0
+        ]
+      ]
     },
     {
-      "cut": "after",
-      "explicit_multitable": true,
-      "two_restarts": "PASS"
+      "sql": "SELECT id,txt FROM t WHERE g=1 ORDER BY id LIMIT 3",
+      "mode": "exact",
+      "ok": true,
+      "rows": [
+        [
+          -9,
+          "文-9"
+        ],
+        [
+          -7,
+          "文-7"
+        ],
+        [
+          -5,
+          "文-5"
+        ]
+      ]
     },
     {
-      "kill_without_commit": "PASS"
+      "sql": "CREATE VECTOR INDEX ix ON t(v)",
+      "mode": "exact",
+      "ok": true,
+      "rows": null
+    },
+    {
+      "sql": "SELECT id,L2_DISTANCE(v,'[0,0]') AS d FROM t WHERE g=1 ORDER BY d LIMIT 3",
+      "mode": "ann",
+      "ok": true,
+      "rows": [
+        [
+          -1,
+          1.0
+        ],
+        [
+          1,
+          1.0
+        ],
+        [
+          -3,
+          3.0
+        ]
+      ]
+    },
+    {
+      "sql": "SELECT id FROM t ORDER BY L2_DISTANCE(v,'[0,0]') LIMIT 3",
+      "mode": "ann",
+      "ok": true,
+      "rows": [
+        [
+          0
+        ],
+        [
+          -1
+        ],
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "sql": "BEGIN",
+      "mode": "exact",
+      "ok": true,
+      "rows": null
+    },
+    {
+      "sql": "UPDATE t SET v='[0,0]' WHERE g=1",
+      "mode": "exact",
+      "ok": true,
+      "rows": null
+    },
+    {
+      "sql": "SELECT id,L2_DISTANCE(v,'[0,0]') AS d FROM t WHERE g=1 ORDER BY d LIMIT 3",
+      "mode": "ann",
+      "ok": true,
+      "rows": [
+        [
+          -9,
+          0.0
+        ],
+        [
+          -7,
+          0.0
+        ],
+        [
+          -5,
+          0.0
+        ]
+      ]
+    },
+    {
+      "sql": "INSERT INTO t VALUES('new','[0,0]',-10,1)",
+      "mode": "exact",
+      "ok": true,
+      "rows": null
+    },
+    {
+      "sql": "SELECT id,L2_DISTANCE(v,'[0,0]') AS d FROM t WHERE g=1 ORDER BY d LIMIT 3",
+      "mode": "ann",
+      "ok": true,
+      "rows": [
+        [
+          -10,
+          0.0
+        ],
+        [
+          -9,
+          0.0
+        ],
+        [
+          -7,
+          0.0
+        ]
+      ]
+    },
+    {
+      "sql": "ROLLBACK",
+      "mode": "exact",
+      "ok": true,
+      "rows": null
+    },
+    {
+      "sql": "SELECT id,L2_DISTANCE(v,'[0,0]') AS d FROM t WHERE g=1 ORDER BY d LIMIT 3",
+      "mode": "ann",
+      "ok": true,
+      "rows": [
+        [
+          -1,
+          1.0
+        ],
+        [
+          1,
+          1.0
+        ],
+        [
+          -3,
+          3.0
+        ]
+      ]
+    },
+    {
+      "sql": "SELECT id FROM t ORDER BY g,id LIMIT 1500",
+      "mode": "exact",
+      "ok": true,
+      "rows": [
+        [
+          -8
+        ],
+        [
+          -6
+        ],
+        [
+          -4
+        ],
+        [
+          -2
+        ],
+        [
+          0
+        ],
+        [
+          2
+        ],
+        [
+          4
+        ],
+        [
+          6
+        ],
+        [
+          8
+        ],
+        [
+          -9
+        ],
+        [
+          -7
+        ],
+        [
+          -5
+        ],
+        [
+          -3
+        ],
+        [
+          -1
+        ],
+        [
+          1
+        ],
+        [
+          3
+        ],
+        [
+          5
+        ],
+        [
+          7
+        ],
+        [
+          9
+        ]
+      ]
+    },
+    {
+      "sql": "CREATE TABLE wide(id BIGINT PRIMARY KEY,s VARCHAR(400000),v VECTOR(2))",
+      "mode": "exact",
+      "ok": true,
+      "rows": null
+    },
+    {
+      "sql": "INSERT INTO wide VALUES(1,'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx [large value omitted]",
+      "mode": "exact",
+      "ok": true,
+      "rows": null
+    },
+    {
+      "sql": "SELECT id FROM wide ORDER BY L2_DISTANCE(v,'[0,0]') LIMIT 1",
+      "mode": "exact",
+      "ok": true,
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "sql": "CREATE VECTOR INDEX wix ON wide(v)",
+      "mode": "exact",
+      "ok": true,
+      "rows": null
+    },
+    {
+      "sql": "SELECT id FROM wide ORDER BY L2_DISTANCE(v,'[0,0]') LIMIT 1",
+      "mode": "ann",
+      "ok": true,
+      "rows": [
+        [
+          1
+        ]
+      ]
+    },
+    {
+      "sql": "SELECT id,L2_DISTANCE(v,'[0,0]') AS d FROM t WHERE g=1 ORDER BY d LIMIT 3",
+      "mode": "ann",
+      "ok": true,
+      "rows": [
+        [
+          -1,
+          1.0
+        ],
+        [
+          1,
+          1.0
+        ],
+        [
+          -3,
+          3.0
+        ]
+      ]
     }
   ],
-  "targeted_checks": [
-    "unordered negative primary keys and non-first primary-key column: PASS",
-    "duplicate statement inside transaction retains prior successful insert: PASS",
-    "rollback and restart of segmented tables: PASS",
-    "read MVP data, migrate primary key metadata, insert, reject duplicate and restart indexed query: PASS"
-  ],
-  "write_benchmark": {
-    "scope": "Local single-run write comparison, not official performance score or hidden timeout reproduction",
-    "rows": 20000,
-    "dimension": 128,
-    "batch_rows": 100,
-    "index_created_before_loading": true,
-    "cpus": 2,
+  "query_benchmark": {
+    "rows": 10000,
+    "dimensions": 128,
+    "queries": 80,
+    "filtered_queries": 40,
+    "projected_distance": true,
+    "content_bytes_per_row": 512,
+    "cpus": "2",
     "memory": "2g",
-    "baseline_commit": "c965e86e9da81a089057aa944db078b1014fd3f0",
-    "baseline_seconds": 43.06494199601002,
-    "optimized_seconds": 6.79940787301166,
-    "speedup": 6.33363122205747,
-    "baseline_last_batch_seconds": 0.40391581202857196,
-    "optimized_last_batch_seconds": 0.04761942505137995,
-    "content_filter_and_restart": "PASS"
+    "seed": 20261112,
+    "scope": "Local single-run comparison, not the formal benchmark score",
+    "runs": {
+      "baseline": {
+        "total_seconds": 13.480338636960369,
+        "unfiltered_seconds": 9.268134338897653,
+        "filtered_seconds": 4.212204298062716,
+        "median_ms": 168.6384635104332,
+        "max_ms": 258.40125599643216
+      },
+      "candidate": {
+        "total_seconds": 5.247898717934731,
+        "unfiltered_seconds": 3.0226560620358214,
+        "filtered_seconds": 2.22524265589891,
+        "median_ms": 67.75652000214905,
+        "max_ms": 83.6187910172157
+      }
+    },
+    "speedup": 2.568711661848811,
+    "correctness": "All 80 candidate responses equal baseline; 8 baseline queries independently checked",
+    "baseline_commit": "fc2567d9cea6b361bdf566216cc2f5c7da507412"
   },
-  "scope": "Current stage ran public cases, recovery, focused segment checks and one write comparison. Baseline 78-contract/750-oracle/64MiB stress checks are recorded in c965e86e; not rerun in this stage."
+  "scope": "This stage ran public cases, 21 focused query requests and the 80-query actual-image comparison; inherited write/crash/resource evidence remains associated with its earlier commits."
 }

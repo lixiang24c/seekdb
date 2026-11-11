@@ -55,10 +55,11 @@ class Database:
                 return i
         fail('unknown column ' + name, 'unknown_column')
 
-    def conditions(self, table, conditions):
+    def conditions(self, table, conditions, columns=None):
         bound = []
         for name, op, value in conditions:
             i = self.column(table, name)
+            if columns is not None: columns.add(i)
             col = table['cols'][i]
             if col['type'] == 'VECTOR':
                 fail('VECTOR comparison is unsupported')
@@ -229,23 +230,69 @@ class Database:
     def flat_topk(self, table, expr, k):
         vc, query = expr[1], expr[2]
         fmt = struct.Struct('<q' + str(len(query)) + 'f')
-        heap = []
+        heap, radius = [], math.inf
         for path in self.store.index_paths(table):
             with open(path, 'rb') as f:
                 if f.read(8) != INDEX_MAGIC: raise OSError('invalid index header')
                 while data := f.read(fmt.size):
                     if len(data) != fmt.size: raise OSError('incomplete index record')
                     values = fmt.unpack(data)
+                    # A conservative rejection bound only; accepted candidates are
+                    # ranked with the original fsum squared distance, including ties.
+                    if math.dist(query, values[1:]) > radius: continue
                     key = (squared(query, values[1:]), values[0])
                     item = (-key[0], -key[1], values[0])
                     if len(heap) < k:
                         heapq.heappush(heap, item)
                     elif item > heap[0]:
                         heapq.heapreplace(heap, item)
-        return {item[2] for item in heap}
+                    if len(heap) == k:
+                        radius = math.sqrt(-heap[0][0]) * (1.0 + 1e-12) + 1e-300
+        return {item[2]: -item[0] for item in heap}
+
+    def vector_topk(self, table, expr, k, columns, match, filter_columns):
+        """Filter scalars first, retain binary candidates, decode only the winners."""
+        codec = Codec(table['cols'])
+        vc, query = expr[1], expr[2]
+        selected, cost = [], 0
+        scores = self.flat_topk(table, expr, k) if not filter_columns and table.get('indexes') else None
+        heap, radius = [], math.inf
+        records = self.store.records(table, ordered=False)
+        try:
+            for ident, raw in records:
+                if scores is not None:
+                    if ident not in scores: continue
+                    selected.append((scores[ident], ident, raw))
+                    cost += len(raw) * 10 + 256 + len(table['cols']) * 64
+                    if cost > HEAP_BYTES: return None
+                    if len(selected) == len(scores): break
+                    continue
+                if filter_columns and not match(codec.decode_fields(raw, filter_columns)):
+                    continue
+                offset, _ = codec.field(raw, vc)
+                vec = codec.formats[vc].unpack_from(raw, offset)
+                if math.dist(query, vec) > radius: continue
+                distance = squared(query, vec)
+                candidate = (-distance, -ident, raw)
+                if len(heap) < k:
+                    heapq.heappush(heap, candidate)
+                    cost += len(raw) * 10 + 256 + len(table['cols']) * 64
+                elif candidate[:2] > heap[0][:2]:
+                    removed = heapq.heapreplace(heap, candidate)
+                    cost += (len(raw) - len(removed[2])) * 10
+                if cost > HEAP_BYTES: return None
+                if len(heap) == k:
+                    radius = math.sqrt(-heap[0][0]) * (1.0 + 1e-12) + 1e-300
+        finally:
+            records.close()
+        if scores is None:
+            selected = [(-neg_distance, -neg_ident, raw) for neg_distance, neg_ident, raw in heap]
+        selected.sort(key=lambda item: (item[0], item[1]))
+        return [codec.decode_fields(raw, columns) for _, _, raw in selected]
 
     def select(self, table, st):
-        match = self.conditions(table, st['where'])
+        filter_columns = set()
+        match = self.conditions(table, st['where'], filter_columns)
         outs, names = [], []
         if st['projection'] is None:
             outs = [('column', i) for i in range(len(table['cols']))]
@@ -268,28 +315,29 @@ class Database:
             return d if square else math.sqrt(d)
         def key(row):
             return tuple(Desc(value(e, row, True)) if desc else value(e, row, True) for e, desc in keys) + (row[table['pk']],)
-        def source():
-            for row in self.store.rows(table):
-                if match(row): yield row
+        needed = {table['pk']} | filter_columns | {e[1] for e in outs} | {e[1] for e, _ in keys}
+        def source(full=False):
+            yield from self.store.rows(table, None if full else needed,
+                                       match if filter_columns else None, filter_columns)
         result = self.store.fresh('result')
         rows, limit = None, st['limit']
         try:
             if limit == 0:
                 rows = iter(())
-            elif not keys:
+            elif not keys or keys == [(('column', table['pk']), False)]:
                 rows = source()
             else:
                 if limit is not None and limit <= 1024:
-                    selected = source()
-                    if not st['where'] and len(keys) == 1 and keys[0][0][0] == 'distance' and not keys[0][1] and table.get('indexes'):
-                        ids = self.flat_topk(table, keys[0][0], limit)
-                        selected = (row for row in self.store.rows(table) if row[table['pk']] in ids)
-                    try:
-                        rows = self.topk(selected, key, limit)
-                    finally:
-                        selected.close()
+                    if len(keys) == 1 and keys[0][0][0] == 'distance' and not keys[0][1]:
+                        rows = self.vector_topk(table, keys[0][0], limit, needed, match, filter_columns)
+                    else:
+                        selected = source()
+                        try:
+                            rows = self.topk(selected, key, limit)
+                        finally:
+                            selected.close()
                 if rows is None:
-                    rows = self.external_sort(table, source(), key)
+                    rows = self.external_sort(table, source(full=True), key)
             with open(result, 'x', encoding='utf-8') as f:
                 for row in itertools.islice(rows, limit):
                     json.dump([value(expr, row) for expr in outs], f, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
