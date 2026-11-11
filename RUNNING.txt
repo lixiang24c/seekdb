@@ -1,0 +1,24 @@
+官方启动协议基线
+
+分支：minivectordb-rewrite
+官方基点：f4d4e26653af823a7601668802f80e374ad6643c
+
+直接运行官方 protocol_check/example_stdio.py，原文件未修改。
+采用其配套 _transport.py 的 strict_json，全部依赖来自 Python 标准库。
+Python 3.12.8 基础镜像按 digest 固定；构建不执行 apt 或 pip。
+
+构建：docker build --platform linux/amd64 -t minivectordb:startup-baseline .
+检查：python3 protocol_check/run.py --image minivectordb:startup-baseline --handshake-only --output protocol-results/handshake
+
+默认入口直接前台运行，无额外参数，无网络监听。
+启动输出 {"type":"ready"} 并立即 flush。
+shutdown 返回原 id 和 ok:true，随后退出码0。
+EOF正常退出。stdout仅输出JSONL报文。
+容器提供/data；官方默认使用命名卷，绑定目录示例要求宿主目录chmod777。
+
+当前范围仅为启动协议。execute按官方骨架返回NOT_IMPLEMENTED。
+没有SQL、存储或事务实现；握手通过不等于MySQL功能准入通过。
+
+本地验证结果：Docker镜像构建成功；官方handshake-only为PASS。
+官方绑定目录示例的限制组合下，shutdown和EOF均退出0，stderr为空。
+握手结果保存在protocol-results/handshake/result.json，绑定目录结果为protocol-results/bind-startup.json。
