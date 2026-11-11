@@ -41,19 +41,17 @@ def tokenize(source):
             i = end + 2
         elif c in "'`":
             quote, buf = c, []
-            i += 1
-            while i < len(source):
-                if source[i] == quote:
-                    i += 1
-                    if i < len(source) and source[i] == quote:
-                        buf.append(quote)
-                        i += 1
-                        continue
-                    break
-                buf.append(source[i])
-                i += 1
-            else:
-                fail('unterminated quoted value')
+            start = i + 1
+            while True:
+                end = source.find(quote, start)
+                if end < 0: fail('unterminated quoted value')
+                buf.append(source[start:end])
+                i = end + 1
+                if i < len(source) and source[i] == quote:
+                    buf.append(quote)
+                    start = i + 1
+                    continue
+                break
             tokens.append(Token('str' if quote == "'" else 'id', ''.join(buf)))
         elif (m := NUMBER.match(source, i)) is not None:
             tokens.append(Token('num', m.group()))
