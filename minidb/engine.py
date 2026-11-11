@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 from .native import Screen
 from .graph import GraphCache
+from .filters import ValueGroups
 from .sql import DBError, Parser, convert, fail, vector
 from .storage import Codec, INDEX_MAGIC, Storage, read_rows, write_rows
 
@@ -74,6 +75,7 @@ class Database:
         self.filter_cache_bytes = 0
         self.filter_masks = OrderedDict()
         self.filter_masks_bytes = 0
+        self.value_groups = ValueGroups()
         self.graphs = GraphCache()
         if self.graphs.enabled:
             for name, table in sorted(self.store.tables.items()):
@@ -409,7 +411,22 @@ class Database:
         mask_entry = self.filter_masks.get(mask_key) if mask_key is not None else None
         has_masks = mask_entry is not None and mask_entry[0] is not None
         if allowed is not None and not has_masks: allowed = set(allowed)
+        group_key, group_column, builder = None, None, None
+        if cache_key is not None and len(filter_columns) == 1:
+            group_column = next(iter(filter_columns))
+            group_key = (cache_key[0], group_column)
+            if allowed is None and not has_masks:
+                allowed = self.value_groups.matching(group_key, group_column, len(table['cols']), match)
+                if allowed is not None: self.remember_filter(cache_key, allowed)
         scores = self.flat_topk(table, expr, k, allowed, mask_key, bool(filter_columns)) if table.get('indexes') and (not filter_columns or allowed is not None or has_masks) else None
+        if scores is None and group_key is not None and group_key not in self.value_groups.entries:
+            # A single repeated predicate needs only the existing predicate cache.
+            # Learn value groups once a different condition on this column occurs.
+            name = table['cols'][group_column]['name'].casefold()
+            if any(previous[0] == cache_key[0] and previous != cache_key and
+                   all(col.casefold() == name for col, _, _ in previous[1])
+                   for previous in self.filter_cache):
+                builder = self.value_groups.begin(group_key, table['count'])
         heap, radius = [], math.inf
         records = (self.store.records(table, ordered=False) if scores is None else
                    self.store.lookup_many(table, scores))
@@ -422,8 +439,10 @@ class Database:
                     if cost > HEAP_BYTES: return None
                     if len(selected) == len(scores): break
                     continue
-                if filter_columns and not match(codec.decode_fields(raw, filter_columns)):
-                    continue
+                if filter_columns:
+                    scalars = codec.decode_fields(raw, filter_columns)
+                    if builder is not None: builder.add(ident, scalars[group_column])
+                    if not match(scalars): continue
                 if collect_ids is not None:
                     collect_ids.add(ident)
                     if len(collect_ids) * 128 > collect_budget: collect_ids = None
@@ -445,6 +464,7 @@ class Database:
             records.close()
         if cache_key is not None and entry is None and scores is None:
             self.remember_filter(cache_key, collect_ids)
+        if builder is not None: self.value_groups.remember(group_key, builder)
         if scores is None:
             selected = [(-neg_distance, -neg_ident, raw) for neg_distance, neg_ident, raw in heap]
         selected.sort(key=lambda item: (item[0], item[1]))

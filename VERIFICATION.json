@@ -1,10 +1,11 @@
 {
   "official_protocol_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
-  "baseline_commit": "a246a09827885a5e2ebf50a31355c6b6b1cb79e6",
+  "baseline_commit": "c4dc9fbce63f317775c933ef4b48fae567757c9e",
   "source_sha256": {
     "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
     "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-    "minidb/engine.py": "eea2443f436844050a428e9ebe456185dbfd9795d9b57baf43daa8f7792adeab",
+    "minidb/engine.py": "73dacbc288b93bd0aea091b0fa55f3b3cd652c035b37303ba240185fd01397f6",
+    "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
     "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
     "minidb/native.py": "97b66b0e47977884bc0a3b414cd5deb2d8a28db3a13a550adca211acb06f9a40",
     "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
@@ -13,7 +14,7 @@
     "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
     "native/screen.c": "0bb4998bc99a0a597c72861859a055916a6019ced614633707b3eccbc7b87796"
   },
-  "image_id": "sha256:af634b15036d9c7799850263be345c49f9081e2f9d687d447664c5cbeb553926",
+  "image_id": "sha256:828537cc859c81f382bcdc4592bae3eac070530281423e0d14d9b7ce4b1900c4",
   "public": {
     "scope": "public-protocol-check",
     "passed": true,
@@ -22,121 +23,121 @@
         "id": "sql_crud",
         "status": "PASS",
         "message": "",
-        "duration_ms": 689
+        "duration_ms": 711
       },
       {
         "id": "sql_comparisons",
         "status": "PASS",
         "message": "",
-        "duration_ms": 539
+        "duration_ms": 626
       },
       {
         "id": "sql_ordering",
         "status": "PASS",
         "message": "",
-        "duration_ms": 555
+        "duration_ms": 575
       },
       {
         "id": "sql_empty",
         "status": "PASS",
         "message": "",
-        "duration_ms": 542
+        "duration_ms": 582
       },
       {
         "id": "sql_primary_key",
         "status": "PASS",
         "message": "",
-        "duration_ms": 538
+        "duration_ms": 571
       },
       {
         "id": "sql_unicode",
         "status": "PASS",
         "message": "",
-        "duration_ms": 591
+        "duration_ms": 613
       },
       {
         "id": "sql_bigint",
         "status": "PASS",
         "message": "",
-        "duration_ms": 543
+        "duration_ms": 581
       },
       {
         "id": "sql_unsupported",
         "status": "PASS",
         "message": "",
-        "duration_ms": 533
+        "duration_ms": 589
       },
       {
         "id": "storage_restart",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1048
+        "duration_ms": 1120
       },
       {
         "id": "vector_euclidean",
         "status": "PASS",
         "message": "",
-        "duration_ms": 561
+        "duration_ms": 570
       },
       {
         "id": "transaction_commit",
         "status": "PASS",
         "message": "",
-        "duration_ms": 578
+        "duration_ms": 570
       },
       {
         "id": "transaction_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 564
+        "duration_ms": 608
       },
       {
         "id": "storage_mutations",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1063
+        "duration_ms": 1126
       },
       {
         "id": "storage_multiple_tables",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1063
+        "duration_ms": 1109
       },
       {
         "id": "vector_ties_and_filter",
         "status": "PASS",
         "message": "",
-        "duration_ms": 567
+        "duration_ms": 571
       },
       {
         "id": "vector_float32",
         "status": "PASS",
         "message": "",
-        "duration_ms": 550
+        "duration_ms": 594
       },
       {
         "id": "vector_index_maintenance",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1098
+        "duration_ms": 1193
       },
       {
         "id": "transaction_failed_insert",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1078
+        "duration_ms": 1127
       },
       {
         "id": "transaction_autocommit_atomic",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1101
+        "duration_ms": 1115
       },
       {
         "id": "transaction_shutdown_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1102
+        "duration_ms": 1122
       }
     ],
     "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
@@ -467,7 +468,7 @@
     "correctness": "All 80 candidate responses equal baseline; 8 baseline queries independently checked",
     "baseline_commit": "fc2567d9cea6b361bdf566216cc2f5c7da507412"
   },
-  "scope": "Current image: public20;64MiB indexed merge21 oracle queries including one-run and >16-run fallback;three source-process crash cuts with two restarts each.Three alternating fresh-volume10000x128 batch100 explicit-transaction write comparisons include restart/content and exact filtered/unfiltered TopK checks. Current image built RUN-offline. Older graph/lookup/native/model/recovery measurements belong to their recorded prior stages, not fresh runs of current image. Graph disabled by default.",
+  "scope": "Current image: public20;24 independent group-cache queries under64MiB including same-column new predicate without row scan,view isolation and budget fallback;two final alternating three-round query cohorts,1440 measured responses. RUN-offline build passed. No runtime dependencies added, no persistent data changes. Earlier eager-build experiment explicitly rejected; other native/graph/lookup/merge/model/resource tests belong to recorded prior commits, not fresh runs. Graph disabled by default.",
   "previous_stages": [
     {
       "commit": "77808f7c2053f394c354f9cbc249fe9f86f48835",
@@ -1954,6 +1955,22 @@
         "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
         "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
         "minidb/storage.py": "1e852e8999ad70a53c3d43989936f8335fbb1b76783e9d948687ced829d34264",
+        "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
+        "native/screen.c": "0bb4998bc99a0a597c72861859a055916a6019ced614633707b3eccbc7b87796"
+      }
+    },
+    {
+      "commit": "c4dc9fbce63f317775c933ef4b48fae567757c9e",
+      "scope": "Current image: public20;64MiB indexed merge21 oracle queries including one-run and >16-run fallback;three source-process crash cuts with two restarts each.Three alternating fresh-volume10000x128 batch100 explicit-transaction write comparisons include restart/content and exact filtered/unfiltered TopK checks. Current image built RUN-offline. Older graph/lookup/native/model/recovery measurements belong to their recorded prior stages, not fresh runs of current image. Graph disabled by default.",
+      "source_sha256": {
+        "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
+        "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+        "minidb/engine.py": "eea2443f436844050a428e9ebe456185dbfd9795d9b57baf43daa8f7792adeab",
+        "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+        "minidb/native.py": "97b66b0e47977884bc0a3b414cd5deb2d8a28db3a13a550adca211acb06f9a40",
+        "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+        "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
+        "minidb/storage.py": "dd7d744775b2fbe85ed7cf5e4b901b0e15317d929e26ca738cc51f3fac313dc4",
         "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
         "native/screen.c": "0bb4998bc99a0a597c72861859a055916a6019ced614633707b3eccbc7b87796"
       }
@@ -4048,6 +4065,423 @@
         "state_and_index": "PASS",
         "orphan_cleanup": "PASS"
       }
+    ]
+  },
+  "value_groups_benchmark": {
+    "baseline_commit": "c4dc9fbce63f317775c933ef4b48fae567757c9e",
+    "final_ten_categories": {
+      "rows": 10000,
+      "dimensions": 128,
+      "queries": 120,
+      "filtered_queries": 60,
+      "filter_categories": 10,
+      "projected_distance": true,
+      "content_bytes_per_row": 512,
+      "cpus": "2",
+      "memory": "2g",
+      "seed": 20261112,
+      "scope": "Alternating image order across rounds; local comparison, not formal score",
+      "rounds": 3,
+      "samples": {
+        "baseline": [
+          {
+            "cold_unfiltered_seconds": 0.005668164987582713,
+            "cold_filtered_seconds": 0.05643393599893898,
+            "total_seconds": 1.0630890038446523,
+            "unfiltered_seconds": 0.28063122188905254,
+            "filtered_seconds": 0.7824577819555998,
+            "median_ms": 4.670734982937574,
+            "max_ms": 59.2562910169363
+          },
+          {
+            "cold_unfiltered_seconds": 0.0063798410119488835,
+            "cold_filtered_seconds": 0.058193899982143193,
+            "total_seconds": 1.0304032621206716,
+            "unfiltered_seconds": 0.2686099925194867,
+            "filtered_seconds": 0.7617932696011849,
+            "median_ms": 4.492687497986481,
+            "max_ms": 58.84098098613322
+          },
+          {
+            "cold_unfiltered_seconds": 0.00585853197844699,
+            "cold_filtered_seconds": 0.05524657596834004,
+            "total_seconds": 1.0497307446785271,
+            "unfiltered_seconds": 0.2771288170479238,
+            "filtered_seconds": 0.7726019276306033,
+            "median_ms": 4.454025503946468,
+            "max_ms": 64.37129597179592
+          }
+        ],
+        "candidate": [
+          {
+            "cold_unfiltered_seconds": 0.005940341972745955,
+            "cold_filtered_seconds": 0.05589094304013997,
+            "total_seconds": 0.6246543018496595,
+            "unfiltered_seconds": 0.2638026931672357,
+            "filtered_seconds": 0.36085160868242383,
+            "median_ms": 4.369306494481862,
+            "max_ms": 59.708592016249895
+          },
+          {
+            "cold_unfiltered_seconds": 0.005211057956330478,
+            "cold_filtered_seconds": 0.05764911603182554,
+            "total_seconds": 0.5976049941382371,
+            "unfiltered_seconds": 0.25716092804213986,
+            "filtered_seconds": 0.34044406609609723,
+            "median_ms": 4.234610503772274,
+            "max_ms": 55.99092104239389
+          },
+          {
+            "cold_unfiltered_seconds": 0.005073646025266498,
+            "cold_filtered_seconds": 0.05656615400221199,
+            "total_seconds": 0.6331019159406424,
+            "unfiltered_seconds": 0.27097216196125373,
+            "filtered_seconds": 0.3621297539793886,
+            "median_ms": 4.512562474701554,
+            "max_ms": 59.37295395415276
+          }
+        ]
+      },
+      "runs": {
+        "baseline": {
+          "cold_unfiltered_seconds": 0.00585853197844699,
+          "cold_filtered_seconds": 0.05643393599893898,
+          "total_seconds": 1.0497307446785271,
+          "unfiltered_seconds": 0.2771288170479238,
+          "filtered_seconds": 0.7726019276306033,
+          "median_ms": 4.492687497986481,
+          "max_ms": 59.2562910169363
+        },
+        "candidate": {
+          "cold_unfiltered_seconds": 0.005211057956330478,
+          "cold_filtered_seconds": 0.05656615400221199,
+          "total_seconds": 0.6246543018496595,
+          "unfiltered_seconds": 0.2638026931672357,
+          "filtered_seconds": 0.36085160868242383,
+          "median_ms": 4.369306494481862,
+          "max_ms": 59.37295395415276
+        }
+      },
+      "speedup": 1.6804987039554145,
+      "correctness": "All 720 measured responses checked; first 8 independently checked"
+    },
+    "final_single_category": {
+      "rows": 10000,
+      "dimensions": 128,
+      "queries": 120,
+      "filtered_queries": 60,
+      "filter_categories": 1,
+      "projected_distance": true,
+      "content_bytes_per_row": 512,
+      "cpus": "2",
+      "memory": "2g",
+      "seed": 20261112,
+      "scope": "Alternating image order across rounds; local comparison, not formal score",
+      "rounds": 3,
+      "samples": {
+        "baseline": [
+          {
+            "cold_unfiltered_seconds": 0.004836672975216061,
+            "cold_filtered_seconds": 0.05609761900268495,
+            "total_seconds": 0.542917370039504,
+            "unfiltered_seconds": 0.2725695882108994,
+            "filtered_seconds": 0.27034778182860464,
+            "median_ms": 4.367699526483193,
+            "max_ms": 8.546255994588137
+          },
+          {
+            "cold_unfiltered_seconds": 0.0052279939991422,
+            "cold_filtered_seconds": 0.055970847024582326,
+            "total_seconds": 0.5299288289970718,
+            "unfiltered_seconds": 0.26203050871845335,
+            "filtered_seconds": 0.2678983202786185,
+            "median_ms": 4.340386483818293,
+            "max_ms": 8.007104974240065
+          },
+          {
+            "cold_unfiltered_seconds": 0.0052546520018950105,
+            "cold_filtered_seconds": 0.05638143001124263,
+            "total_seconds": 0.5381284298491664,
+            "unfiltered_seconds": 0.26765319891273975,
+            "filtered_seconds": 0.27047523093642667,
+            "median_ms": 4.409474495332688,
+            "max_ms": 7.605625956784934
+          }
+        ],
+        "candidate": [
+          {
+            "cold_unfiltered_seconds": 0.0049918260192498565,
+            "cold_filtered_seconds": 0.05515287001617253,
+            "total_seconds": 0.5356459939503111,
+            "unfiltered_seconds": 0.2681195851182565,
+            "filtered_seconds": 0.2675264088320546,
+            "median_ms": 4.309269017539918,
+            "max_ms": 7.309945009183139
+          },
+          {
+            "cold_unfiltered_seconds": 0.005516114993952215,
+            "cold_filtered_seconds": 0.06033899396425113,
+            "total_seconds": 0.5378177429665811,
+            "unfiltered_seconds": 0.2677796950447373,
+            "filtered_seconds": 0.2700380479218438,
+            "median_ms": 4.359273501904681,
+            "max_ms": 9.842795960139483
+          },
+          {
+            "cold_unfiltered_seconds": 0.005938446964137256,
+            "cold_filtered_seconds": 0.05847146100131795,
+            "total_seconds": 0.5299271930707619,
+            "unfiltered_seconds": 0.26516296312911436,
+            "filtered_seconds": 0.2647642299416475,
+            "median_ms": 4.28581252344884,
+            "max_ms": 7.690605998504907
+          }
+        ]
+      },
+      "runs": {
+        "baseline": {
+          "cold_unfiltered_seconds": 0.0052279939991422,
+          "cold_filtered_seconds": 0.05609761900268495,
+          "total_seconds": 0.5381284298491664,
+          "unfiltered_seconds": 0.26765319891273975,
+          "filtered_seconds": 0.27034778182860464,
+          "median_ms": 4.367699526483193,
+          "max_ms": 8.007104974240065
+        },
+        "candidate": {
+          "cold_unfiltered_seconds": 0.005516114993952215,
+          "cold_filtered_seconds": 0.05847146100131795,
+          "total_seconds": 0.5356459939503111,
+          "unfiltered_seconds": 0.2677796950447373,
+          "filtered_seconds": 0.2675264088320546,
+          "median_ms": 4.309269017539918,
+          "max_ms": 7.690605998504907
+        }
+      },
+      "speedup": 1.0046344711374535,
+      "correctness": "All 720 measured responses checked; first 8 independently checked"
+    },
+    "discarded_eager_build": {
+      "ten_categories": {
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 120,
+        "filtered_queries": 60,
+        "filter_categories": 10,
+        "projected_distance": true,
+        "content_bytes_per_row": 512,
+        "cpus": "2",
+        "memory": "2g",
+        "seed": 20261112,
+        "scope": "Alternating image order across rounds; local comparison, not formal score",
+        "rounds": 3,
+        "samples": {
+          "baseline": [
+            {
+              "cold_unfiltered_seconds": 0.005560257006436586,
+              "cold_filtered_seconds": 0.054515808005817235,
+              "total_seconds": 0.9708412950858474,
+              "unfiltered_seconds": 0.25104065996129066,
+              "filtered_seconds": 0.7198006351245567,
+              "median_ms": 4.153848043642938,
+              "max_ms": 55.28470897115767
+            },
+            {
+              "cold_unfiltered_seconds": 0.005082835035864264,
+              "cold_filtered_seconds": 0.053519371955189854,
+              "total_seconds": 0.9848117619403638,
+              "unfiltered_seconds": 0.25816215976374224,
+              "filtered_seconds": 0.7266496021766216,
+              "median_ms": 4.12439598585479,
+              "max_ms": 56.04204797418788
+            },
+            {
+              "cold_unfiltered_seconds": 0.005433465004898608,
+              "cold_filtered_seconds": 0.05756925098830834,
+              "total_seconds": 0.9831188263488002,
+              "unfiltered_seconds": 0.2511274711578153,
+              "filtered_seconds": 0.7319913551909849,
+              "median_ms": 4.154654510784894,
+              "max_ms": 56.552302034106106
+            }
+          ],
+          "candidate": [
+            {
+              "cold_unfiltered_seconds": 0.005465597962029278,
+              "cold_filtered_seconds": 0.0620055390172638,
+              "total_seconds": 0.5281319009372965,
+              "unfiltered_seconds": 0.24880457087419927,
+              "filtered_seconds": 0.2793273300630972,
+              "median_ms": 4.083097504917532,
+              "max_ms": 8.059565967414528
+            },
+            {
+              "cold_unfiltered_seconds": 0.005365841032471508,
+              "cold_filtered_seconds": 0.05539916199631989,
+              "total_seconds": 0.519458185241092,
+              "unfiltered_seconds": 0.2444528064224869,
+              "filtered_seconds": 0.2750053788186051,
+              "median_ms": 3.9976880070753396,
+              "max_ms": 8.297366963233799
+            },
+            {
+              "cold_unfiltered_seconds": 0.004867962969001383,
+              "cold_filtered_seconds": 0.05601471598492935,
+              "total_seconds": 0.5218870979733765,
+              "unfiltered_seconds": 0.24848776403814554,
+              "filtered_seconds": 0.27339933393523097,
+              "median_ms": 4.012902005342767,
+              "max_ms": 7.602846948429942
+            }
+          ]
+        },
+        "runs": {
+          "baseline": {
+            "cold_unfiltered_seconds": 0.005433465004898608,
+            "cold_filtered_seconds": 0.054515808005817235,
+            "total_seconds": 0.9831188263488002,
+            "unfiltered_seconds": 0.2511274711578153,
+            "filtered_seconds": 0.7266496021766216,
+            "median_ms": 4.153848043642938,
+            "max_ms": 56.04204797418788
+          },
+          "candidate": {
+            "cold_unfiltered_seconds": 0.005365841032471508,
+            "cold_filtered_seconds": 0.05601471598492935,
+            "total_seconds": 0.5218870979733765,
+            "unfiltered_seconds": 0.24848776403814554,
+            "filtered_seconds": 0.2750053788186051,
+            "median_ms": 4.012902005342767,
+            "max_ms": 8.059565967414528
+          }
+        },
+        "speedup": 1.8837768363435436,
+        "correctness": "All 720 measured responses checked; first 8 independently checked"
+      },
+      "single_category": {
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 120,
+        "filtered_queries": 60,
+        "filter_categories": 1,
+        "projected_distance": true,
+        "content_bytes_per_row": 512,
+        "cpus": "2",
+        "memory": "2g",
+        "seed": 20261112,
+        "scope": "Alternating image order across rounds; local comparison, not formal score",
+        "rounds": 3,
+        "samples": {
+          "baseline": [
+            {
+              "cold_unfiltered_seconds": 0.0059523010277189314,
+              "cold_filtered_seconds": 0.05709604802541435,
+              "total_seconds": 0.5523501666029915,
+              "unfiltered_seconds": 0.27803033374948427,
+              "filtered_seconds": 0.27431983285350725,
+              "median_ms": 4.4466649706009775,
+              "max_ms": 8.219167008064687
+            },
+            {
+              "cold_unfiltered_seconds": 0.00544410600559786,
+              "cold_filtered_seconds": 0.05643014400266111,
+              "total_seconds": 0.5715675089741126,
+              "unfiltered_seconds": 0.2853130731964484,
+              "filtered_seconds": 0.2862544357776642,
+              "median_ms": 4.648858972359449,
+              "max_ms": 8.736381947528571
+            },
+            {
+              "cold_unfiltered_seconds": 0.007140113972127438,
+              "cold_filtered_seconds": 0.05379731103312224,
+              "total_seconds": 0.5712080475059338,
+              "unfiltered_seconds": 0.285948503180407,
+              "filtered_seconds": 0.2852595443255268,
+              "median_ms": 4.592939512804151,
+              "max_ms": 7.26639200001955
+            }
+          ],
+          "candidate": [
+            {
+              "cold_unfiltered_seconds": 0.006058202008716762,
+              "cold_filtered_seconds": 0.06094789697090164,
+              "total_seconds": 0.5332874296000227,
+              "unfiltered_seconds": 0.2673748276429251,
+              "filtered_seconds": 0.26591260195709765,
+              "median_ms": 4.3648545106407255,
+              "max_ms": 7.63101305346936
+            },
+            {
+              "cold_unfiltered_seconds": 0.005687818978913128,
+              "cold_filtered_seconds": 0.05818473803810775,
+              "total_seconds": 0.5574784953496419,
+              "unfiltered_seconds": 0.27941326232394204,
+              "filtered_seconds": 0.27806523302569985,
+              "median_ms": 4.529936530161649,
+              "max_ms": 7.65712303109467
+            },
+            {
+              "cold_unfiltered_seconds": 0.006505027995444834,
+              "cold_filtered_seconds": 0.06247169402195141,
+              "total_seconds": 0.6307131419307552,
+              "unfiltered_seconds": 0.3176643199985847,
+              "filtered_seconds": 0.31304882193217054,
+              "median_ms": 5.141542496858165,
+              "max_ms": 8.145992993377149
+            }
+          ]
+        },
+        "runs": {
+          "baseline": {
+            "cold_unfiltered_seconds": 0.0059523010277189314,
+            "cold_filtered_seconds": 0.05643014400266111,
+            "total_seconds": 0.5712080475059338,
+            "unfiltered_seconds": 0.2853130731964484,
+            "filtered_seconds": 0.2852595443255268,
+            "median_ms": 4.592939512804151,
+            "max_ms": 8.219167008064687
+          },
+          "candidate": {
+            "cold_unfiltered_seconds": 0.006058202008716762,
+            "cold_filtered_seconds": 0.06094789697090164,
+            "total_seconds": 0.5574784953496419,
+            "unfiltered_seconds": 0.27941326232394204,
+            "filtered_seconds": 0.27806523302569985,
+            "median_ms": 4.529936530161649,
+            "max_ms": 7.65712303109467
+          }
+        },
+        "speedup": 1.0246279493663355,
+        "correctness": "All 720 measured responses checked; first 8 independently checked"
+      },
+      "decision": "First-scan builder cost is unnecessary for a single repeated predicate; final code waits for a second distinct same-column predicate."
+    },
+    "scope": "Final code two alternating three-round cohorts,1440 responses. Earlier eager-build results are experimental, not measurements of final code. No new formal I/O/memory/E measurement."
+  },
+  "value_groups_boundaries": {
+    "status": "PASS",
+    "oracle_queries": 24,
+    "rows": 5000,
+    "dimensions": 128,
+    "cache_budget": 262144,
+    "coverage": [
+      "new predicate without row scan",
+      "missing value",
+      "Unicode codepoint ranges",
+      "same-column AND",
+      "numeric comparisons",
+      "dense match fallback",
+      "multiple-column fallback",
+      "native disabled",
+      "transaction mutation",
+      "failed statement",
+      "rollback",
+      "committed delete",
+      "second index",
+      "high cardinality overflow",
+      "preflight budget fallback",
+      "LRU eviction",
+      "restart rebuild on demand"
     ]
   }
 }

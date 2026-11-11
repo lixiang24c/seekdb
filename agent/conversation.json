@@ -187,6 +187,16 @@
       "id": "a-fused-merge",
       "role": "assistant",
       "content": "INSERT先规划原有层级归并链，最多16个旧段时直接流式生成最终段；更宽时使用原两读者归并。省掉中间文件和其重复同步，最终文件及manifest持久化规则不变。"
+    },
+    {
+      "id": "u-continue-groups",
+      "role": "user",
+      "content": "继续"
+    },
+    {
+      "id": "a-groups-change",
+      "role": "assistant",
+      "content": "跨条件列值分组只在出现同列第二种未命中条件时建立，避免单一条件付出构建成本。缓存估算预算256KiB，按不可变记录文件和失效主键隔离；超限或匹配超过4096个主键时回到原路径。"
     }
   ],
   "experiments": [
@@ -345,6 +355,12 @@
       "role": "tool",
       "output": "{\"public20_passed\": true, \"merge_boundaries\": {\"status\": \"PASS\", \"oracle_queries\": 21, \"fused_segment_writes\": 1, \"wide_fallback_segment_writes\": 22, \"coverage\": [\"overlapping key ranges\", \"overlay visibility\", \"one final run\", \"indexed insert\", \"duplicate statement atomicity\", \"prior successful transaction statement\", \"rollback\", \"wide-cascade bounded fallback\", \"distance ties\", \"restart\"]}, \"merge_recovery\": {\"status\": \"PASS\", \"scope\": \"Current Python source processes; fault injection outside production code\", \"scenarios\": [{\"cut\": \"during\", \"two_restarts\": \"PASS\", \"state_and_index\": \"PASS\", \"orphan_cleanup\": \"PASS\"}, {\"cut\": \"before\", \"two_restarts\": \"PASS\", \"state_and_index\": \"PASS\", \"orphan_cleanup\": \"PASS\"}, {\"cut\": \"after\", \"two_restarts\": \"PASS\", \"state_and_index\": \"PASS\", \"orphan_cleanup\": \"PASS\"}]}, \"write_benchmark\": {\"rows\": 10000, \"dimensions\": 128, \"batch_size\": 100, \"explicit_transaction_per_batch\": true, \"rounds\": 3, \"samples\": {\"baseline\": [{\"seconds\": 4.996567177993711, \"memory_peak_bytes\": 42614784, \"io_delta_by_device\": {\"8:48\": {\"rbytes\": 4096, \"wbytes\": 70635520, \"rios\": 1, \"wios\": 512, \"dbytes\": 0, \"dios\": 0}}}, {\"seconds\": 5.149886836996302, \"memory_peak_bytes\": 33472512, \"io_delta_by_device\": {\"8:48\": {\"rbytes\": 0, \"wbytes\": 70635520, \"rios\": 0, \"wios\": 512, \"dbytes\": 0, \"dios\": 0}}}, {\"seconds\": 5.159881511004642, \"memory_peak_bytes\": 33624064, \"io_delta_by_device\": {\"8:48\": {\"rbytes\": 0, \"wbytes\": 70635520, \"rios\": 0, \"wios\": 512, \"dbytes\": 0, \"dios\": 0}}}], \"candidate\": [{\"seconds\": 4.667965701955836, \"memory_peak_bytes\": 26722304, \"io_delta_by_device\": {\"8:48\": {\"rbytes\": 4096, \"wbytes\": 40849408, \"rios\": 1, \"wios\": 313, \"dbytes\": 0, \"dios\": 0}}}, {\"seconds\": 4.786442671029363, \"memory_peak_bytes\": 26890240, \"io_delta_by_device\": {\"8:48\": {\"rbytes\": 0, \"wbytes\": 40849408, \"rios\": 0, \"wios\": 315, \"dbytes\": 0, \"dios\": 0}}}, {\"seconds\": 4.657707109989133, \"memory_peak_bytes\": 26959872, \"io_delta_by_device\": {\"8:48\": {\"rbytes\": 0, \"wbytes\": 40849408, \"rios\": 0, \"wios\": 313, \"dbytes\": 0, \"dios\": 0}}}]}, \"scope\": \"Independent data volume per run; T includes BEGIN/INSERT/COMMIT and output. Local cgroup snapshots are per reported device, not a certified dedicated-device metric; no formal E.\", \"medians\": {\"baseline\": {\"seconds\": 5.149886836996302, \"memory_peak_bytes\": 33624064}, \"candidate\": {\"seconds\": 4.667965701955836, \"memory_peak_bytes\": 26890240}}, \"status\": \"PASS\", \"baseline_commit\": \"a246a09827885a5e2ebf50a31355c6b6b1cb79e6\", \"time_reduction\": 0.09357897567348272, \"memory_peak_reduction\": 0.20026799853818977}}",
       "interpretation": "三轮写入耗时中位减少9.36%，本地设备写入字节减少42.17%，容器峰值内存中位减少20.03%。本地I/O窗口不等于平台全程统计，不推算正式E；这些执行和解释来自Agent。"
+    },
+    {
+      "id": "value-groups-stage",
+      "role": "tool",
+      "output": "{\"public20_passed\": true, \"boundaries\": {\"status\": \"PASS\", \"oracle_queries\": 24, \"rows\": 5000, \"dimensions\": 128, \"cache_budget\": 262144, \"coverage\": [\"new predicate without row scan\", \"missing value\", \"Unicode codepoint ranges\", \"same-column AND\", \"numeric comparisons\", \"dense match fallback\", \"multiple-column fallback\", \"native disabled\", \"transaction mutation\", \"failed statement\", \"rollback\", \"committed delete\", \"second index\", \"high cardinality overflow\", \"preflight budget fallback\", \"LRU eviction\", \"restart rebuild on demand\"]}, \"final_ten_medians\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.00585853197844699, \"cold_filtered_seconds\": 0.05643393599893898, \"total_seconds\": 1.0497307446785271, \"unfiltered_seconds\": 0.2771288170479238, \"filtered_seconds\": 0.7726019276306033, \"median_ms\": 4.492687497986481, \"max_ms\": 59.2562910169363}, \"candidate\": {\"cold_unfiltered_seconds\": 0.005211057956330478, \"cold_filtered_seconds\": 0.05656615400221199, \"total_seconds\": 0.6246543018496595, \"unfiltered_seconds\": 0.2638026931672357, \"filtered_seconds\": 0.36085160868242383, \"median_ms\": 4.369306494481862, \"max_ms\": 59.37295395415276}}, \"final_single_medians\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.0052279939991422, \"cold_filtered_seconds\": 0.05609761900268495, \"total_seconds\": 0.5381284298491664, \"unfiltered_seconds\": 0.26765319891273975, \"filtered_seconds\": 0.27034778182860464, \"median_ms\": 4.367699526483193, \"max_ms\": 8.007104974240065}, \"candidate\": {\"cold_unfiltered_seconds\": 0.005516114993952215, \"cold_filtered_seconds\": 0.05847146100131795, \"total_seconds\": 0.5356459939503111, \"unfiltered_seconds\": 0.2677796950447373, \"filtered_seconds\": 0.2675264088320546, \"median_ms\": 4.309269017539918, \"max_ms\": 7.690605998504907}}, \"final_responses_checked\": 1440, \"discarded_eager_first_filter_seconds\": {\"baseline\": 0.05643014400266111, \"candidate\": 0.06094789697090164}}",
+      "interpretation": "提前构建方案首次过滤中位0.05643秒→0.06095秒，遂改为第二种条件触发。最终十类轮换1.04973秒→0.62465秒；单类0.53813秒→0.53565秒，按基本持平解释。没有新功能的容器内存/I/O完整测量，不把预算当测量。Agent设计、运行和解释不冒充学生自身贡献。"
     }
   ],
   "implementation": {
@@ -353,7 +369,8 @@
     "source_sha256": {
       "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
       "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-      "minidb/engine.py": "eea2443f436844050a428e9ebe456185dbfd9795d9b57baf43daa8f7792adeab",
+      "minidb/engine.py": "73dacbc288b93bd0aea091b0fa55f3b3cd652c035b37303ba240185fd01397f6",
+      "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
       "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
       "minidb/native.py": "97b66b0e47977884bc0a3b414cd5deb2d8a28db3a13a550adca211acb06f9a40",
       "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
@@ -363,13 +380,14 @@
       "native/screen.c": "0bb4998bc99a0a597c72861859a055916a6019ced614633707b3eccbc7b87796"
     },
     "storage": "Immutable segments, bounded point overlays, preplanned <=16-old-run INSERT fusion with original wide-cascade fallback; atomic fsynced manifest retained.",
-    "query": "Default exact native scan, bounded predicate caches and per-segment batched TopK row lookup; optional graph stays disabled."
+    "query": "Exact native scan, batched TopK row lookup, bounded per-predicate masks and on-demand same-column value groups; ANN remains opt-in."
   },
   "limitations": [
     "图索引默认关闭，仅对1024–20000行、16–256维、单表、无普通列过滤且K<=64的ann TopK生效；总分配预算16MiB。",
     "图按索引数据在CREATE INDEX或重启时建立；数据变更会失效并走精确路径，事务内建索引不触发图构建。",
     "召回验证为小样本，单轮查询耗时与构建成本分开记录；无物理I/O采集和正式评测分数。",
-    "学生理解仅依据真实用户原文；Agent解释和工具执行不冒充学生贡献。"
+    "学生理解仅依据真实用户原文；Agent解释和工具执行不冒充学生贡献。",
+    "列值分组是256KiB估算预算的内存缓存，第二种同列条件才构建；不是持久化普通列索引，首两种条件、超预算及多列过滤仍需扫描。"
   ],
   "implementation_history": [
     {
@@ -408,6 +426,10 @@
     {
       "commit": "a246a09827885a5e2ebf50a31355c6b6b1cb79e6",
       "note": "TopK batched lookup stage, unchanged in this merge stage."
+    },
+    {
+      "commit": "c4dc9fbce63f317775c933ef4b48fae567757c9e",
+      "note": "Preplanned insert merge stage retained."
     }
   ]
 }
