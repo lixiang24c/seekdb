@@ -93,5 +93,7 @@
   "speedup": 4.60499690342806,
   "correctness": "All 720 measured responses checked; first 8 independently checked",
   "baseline_commit": "7cb0c2865075f2a6b8bcb3a1a5b64aaf7d7de56b",
-  "notes": "Final three rounds ran separately from cold build and correctness jobs. Earlier concurrent-build timing was discarded."
+  "notes": "Final three rounds ran separately from cold build and correctness jobs. Earlier concurrent-build timing was discarded.",
+  "candidate_commit": "f416b729eb5e360ce6066c73f1264c7454a290a5",
+  "compiler": "Original GCC 12.2.0-14+deb12u1 toolchain; not retimed after build-only change"
 }

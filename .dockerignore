@@ -4,4 +4,3 @@
 !minidb/*.py
 !native/
 !native/*.c
-!debian-packages.lock

@@ -122,6 +122,16 @@
       "id": "native-assistant",
       "role": "assistant",
       "content": "阶段摘要：迁移自编译C距离筛选内核，按块读取原索引并使用保守误差余量排除不可能入选的记录；最终距离和排序仍由原Python参考计算。只对16至4096维启用，其他维度或库不可用时回退。构建阶段锁定GCC和Debian快照，不增加pip依赖；运行镜像仅复制约15KiB自编译库，启动握手不依赖内核预加载。"
+    },
+    {
+      "id": "offline-build-user",
+      "role": "user",
+      "content": "你这部分按照这个修法先搞一下，我们这个阶段要考虑到这个问题"
+    },
+    {
+      "id": "offline-build-assistant",
+      "role": "assistant",
+      "content": "构建适配摘要：native-build改为固定digest的gcc:12-bookworm镜像，使用预装GCC12.5.0从源码编译，删除apt/Debian快照及包清单。保留原Python运行镜像和入口。验证RUN断网、无缓存构建；FROM镜像获取仍由Docker引擎完成。"
     }
   ],
   "experiments": [
@@ -238,6 +248,12 @@
       "source": "tool",
       "output": "{\"public\": \"20/20 PASS\", \"model\": {\"status\": \"PASS\", \"seed\": 20261119, \"dimensions\": 128, \"operations\": 250, \"queries\": 750}, \"resource\": {\"memory\": \"64m\", \"limit_source\": \"local stress condition; official public config is 2g\", \"stages\": [{\"stage\": \"load_beyond_memory\", \"elapsed\": 12.203, \"details\": {\"rows\": 9000, \"data_bytes\": 74093133}}, {\"stage\": \"index_and_exact_ann_distance_projection\", \"elapsed\": 12.385, \"details\": \"PASS\"}, {\"stage\": \"full_table_update\", \"elapsed\": 12.685, \"details\": \"PASS\"}, {\"stage\": \"external_sort\", \"elapsed\": 13.821, \"details\": \"PASS\"}, {\"stage\": \"rollback_crash_restart\", \"elapsed\": 14.853, \"details\": {\"status\": \"PASS\", \"restart_memory_peak_bytes\": 53383168}}, {\"stage\": \"complete\", \"elapsed\": 14.956, \"details\": null}], \"status\": \"PASS\"}, \"screen_probe\": {\"status\": \"PASS\", \"screen_checks\": 648, \"distributions\": [\"uniform\", \"mixed float32 exponents\"], \"dimensions\": [16, 17, 31, 32, 127, 128, 129, 512, 4096], \"coverage\": [\"near threshold\", \"zero/ties\", \"finite extrema/subnormals\", \"mask/empty mask\", \"malformed record length\", \"dimension fallback\"]}, \"sanitizer\": {\"status\": \"PASS\", \"compiler\": \"host GCC 13.3.0\", \"flags\": [\"-fsanitize=address,undefined\"], \"script\": \"checks/native_sanitizer.c\"}, \"cold_build\": {\"cold_build\": \"PASS: docker build --no-cache-filter native-build\", \"cold_build_package_download_bytes_approx\": 54800000, \"cold_build_install_seconds\": 23.2, \"warm_and_cold_library_hash_equal\": true}, \"three_round_performance\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.054999120999127626, \"cold_filtered_seconds\": 0.05319475900614634, \"total_seconds\": 3.9018974759383127, \"unfiltered_seconds\": 3.247432488773484, \"filtered_seconds\": 0.6544649871648289, \"median_ms\": 32.03091199975461, \"max_ms\": 63.94568702671677}, \"candidate\": {\"cold_unfiltered_seconds\": 0.00672336301067844, \"cold_filtered_seconds\": 0.053822644986212254, \"total_seconds\": 0.8473181541194208, \"unfiltered_seconds\": 0.37756993307266384, \"filtered_seconds\": 0.46974822104675695, \"median_ms\": 7.188495015725493, \"max_ms\": 10.097079968545586}}, \"speedup\": 4.60499690342806}",
       "interpretation": "相对存储迁移版，120条128维查询三轮中位总耗时3.902秒→0.847秒，约4.6倍；无过滤约8.6倍，过滤约1.4倍。库在冷/缓存构建下哈希一致，实际隔离镜像数值边界、状态机、资源检查通过。尚未实现HNSW或PQ/OPQ，不把这些算法的潜在收益记为本阶段已实现。"
+    },
+    {
+      "id": "offline-build-results",
+      "source": "tool",
+      "output": "{\"command\": \"docker build --platform linux/amd64 --network=none --no-cache -t minivectordb:offline-native .\", \"build_status\": \"PASS\", \"compiler\": \"GCC 12.5.0\", \"runtime_native_load\": \"PASS\", \"runtime_compiler_present\": false, \"library_bytes\": 15264, \"library_sha256\": \"21abd8123a7045685e95ce375120a97023333260e51694d030a1c2c168ae5633\", \"runtime_libraries\": [\"libc.so.6\", \"libm.so.6\"], \"screen_probe\": {\"status\": \"PASS\", \"screen_checks\": 648, \"distributions\": [\"uniform\", \"mixed float32 exponents\"], \"dimensions\": [16, 17, 31, 32, 127, 128, 129, 512, 4096], \"coverage\": [\"near threshold\", \"zero/ties\", \"finite extrema/subnormals\", \"mask/empty mask\", \"malformed record length\", \"dimension fallback\"]}, \"screen_probe_memory_limit\": \"64MiB\", \"public\": {\"passed\": true, \"cases\": 20}}",
+      "interpretation": "实际--network=none --no-cache构建通过，证明本实现的RUN步骤无需联网。该检查不等于确认平台此前失败根因，也不代表Docker引擎无需获取FROM镜像。新编译器产物已通过648项筛选检查和公开20例，本轮不重报旧性能数据为新测量。"
     }
   ],
   "implementation": {

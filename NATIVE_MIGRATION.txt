@@ -13,10 +13,12 @@
 
 依赖与可复现构建
 C源码：native/screen.c；Python标准库ctypes接口：minidb/native.py。没有NumPy/Faiss/HNSWlib或其他pip依赖。
-Docker多阶段构建，在固定Python镜像与Debian快照中安装debian-packages.lock列出的精确版本GCC工具链，编译后只复制libscreen.so到运行镜像。
-编译器及开发包不进入运行镜像。运行库约15136字节，ldd未列出额外动态依赖；没有本机预编译产物交付。
-对native-build禁用构建缓存后，实际下载约54.8MB编译包，安装阶段约23.2秒；重新编译后的库与缓存构建版本SHA-256相同。
-构建阶段需要访问基础镜像与固定Debian快照；正式运行禁止联网，现有公开检查器的隔离运行已通过。
+Docker多阶段构建，native-build使用自带GCC的gcc:12-bookworm镜像并锁定linux/amd64 manifest digest；编译后只复制libscreen.so到原Python运行镜像。
+删除apt安装、Debian快照与debian-packages.lock。构建RUN只执行本地编译与目录创建。
+编译器及开发包不进入运行镜像。ldd检查运行库依赖；没有本机预编译产物交付。当前库大小与哈希见NATIVE_BUILD.json。
+当前修订使用docker build --network=none --no-cache检验构建；FROM镜像由Docker引擎获取，编译RUN步骤断网。
+此前通过apt冷构建下载54.8MB包的记录属于f416b729旧方案，当前已替换。
+构建不再访问Debian或PyPI。Docker引擎需要能获取固定GCC构建镜像和Python运行镜像；正式运行禁止联网。
 基础镜像、编译器版本与源码哈希记录在NATIVE_BUILD.json。libscreen.so不纳入Git。
 
 来源与论文启发
@@ -29,7 +31,7 @@ https://github.com/facebookresearch/faiss/wiki/Implementation-notes
 实际镜像在64MiB限制下的648个筛选检查：16/17/31/32/127/128/129/512/4096维、边界阈值、距离并列、float32极值/次正规值、过滤掩码、非法记录长度和回退。
 本机独立C检查在AddressSanitizer与UndefinedBehaviorSanitizer下通过，包含非对齐记录及非法维度/长度。发布编译器为锁定的GCC12，本机检测使用GCC13。
 公开20例通过；128维、250次混合操作、750次独立查询对照通过；64MiB下约74MB数据的加载、索引、全表更新、外排序、回滚强杀重启通过；该存储用例为2维回退路径，内核另在64MiB下做边界验证。
-最终性能轮次独立运行；120条128维查询，半数过滤，两镜像交替三轮，共720条计时响应核对，8条独立真值。
+以下性能数据属于f416b729原工具链版本；本次构建适配没有重新计时。原性能轮次独立运行；120条128维查询，半数过滤，两镜像交替三轮，共720条计时响应核对，8条独立真值。
 相对存储迁移基线，中位总耗时3.902秒→0.847秒，无过滤3.247秒→0.378秒，过滤0.654秒→0.470秒。
 首次带过滤查询尚未建立候选缓存，继续使用原流式路径；本阶段主要加速索引块扫描。
 详细数据见NATIVE_BENCHMARK.json。该本地耗时不等于正式性能分，未模拟平台cgroup综合指标。

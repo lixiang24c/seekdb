@@ -1,6 +1,6 @@
 {
   "official_protocol_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
-  "baseline_commit": "7cb0c2865075f2a6b8bcb3a1a5b64aaf7d7de56b",
+  "baseline_commit": "f416b729eb5e360ce6066c73f1264c7454a290a5",
   "source_sha256": {
     "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
     "minidb/engine.py": "3f31306330ebef61fd095e7aa0c7a7bd0a0ed78d600dc83aa4a3db5907d6ddc8",
@@ -9,12 +9,11 @@
     "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
     "minidb/storage.py": "751f01ef9904c1939a44b62d6796d2f163148e7bbd606feca99b7bfb9124c37f",
     "native/screen.c": "60c05e0381c91007c4c590ff9f0e014db76981c59143e8d8637f77a56f4e0bc2",
-    "Dockerfile": "4de944ec850156a1471537a89253e1494b5cfaece28ccccec31df869a8f9cc13",
-    "debian-packages.lock": "f9745e3a9145f7697e4d2a87b66083591a2001477bf9d0dcdc92103df6c86557",
-    "requirements.lock": "c46f7eb25df84fe5cd9aa6e87c03dd7b62998bafc4beeef19ef339b656d01f73",
-    ".dockerignore": "db694d3438dedc54428288ba2f8650fa43cd1df3cf729a9125c7a0aca81af704"
+    "Dockerfile": "61a838d09aa42cdf993d7628ca17fbf27ca0993ae9eeb8507dad8db9e8f5b2a6",
+    ".dockerignore": "d04e7a34f971bcf973caa86450cc1f243cb6bb9cf31bc25c37c4327a3e7388bf",
+    "requirements.lock": "5e1d72d066dd643601e7ed6ca3b8de91953960514013f896eef27f8655ff2ffe"
   },
-  "image_id": "sha256:3fd952bc8a59b6d6f7d1e5ac570dc69761e8652b0c53706719ea5b50389e0100",
+  "image_id": "sha256:b990e936c64db851f6513e5067a43fb2fced06521b340b0bde13d2a64b98d95a",
   "public": {
     "scope": "public-protocol-check",
     "passed": true,
@@ -23,121 +22,121 @@
         "id": "sql_crud",
         "status": "PASS",
         "message": "",
-        "duration_ms": 568
+        "duration_ms": 600
       },
       {
         "id": "sql_comparisons",
         "status": "PASS",
         "message": "",
-        "duration_ms": 585
+        "duration_ms": 535
       },
       {
         "id": "sql_ordering",
         "status": "PASS",
         "message": "",
-        "duration_ms": 536
+        "duration_ms": 541
       },
       {
         "id": "sql_empty",
         "status": "PASS",
         "message": "",
-        "duration_ms": 536
+        "duration_ms": 580
       },
       {
         "id": "sql_primary_key",
         "status": "PASS",
         "message": "",
-        "duration_ms": 567
+        "duration_ms": 541
       },
       {
         "id": "sql_unicode",
         "status": "PASS",
         "message": "",
-        "duration_ms": 524
+        "duration_ms": 548
       },
       {
         "id": "sql_bigint",
         "status": "PASS",
         "message": "",
-        "duration_ms": 537
+        "duration_ms": 549
       },
       {
         "id": "sql_unsupported",
         "status": "PASS",
         "message": "",
-        "duration_ms": 562
+        "duration_ms": 517
       },
       {
         "id": "storage_restart",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1054
+        "duration_ms": 1020
       },
       {
         "id": "vector_euclidean",
         "status": "PASS",
         "message": "",
-        "duration_ms": 532
+        "duration_ms": 542
       },
       {
         "id": "transaction_commit",
         "status": "PASS",
         "message": "",
-        "duration_ms": 585
+        "duration_ms": 542
       },
       {
         "id": "transaction_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 548
+        "duration_ms": 596
       },
       {
         "id": "storage_mutations",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1077
+        "duration_ms": 1163
       },
       {
         "id": "storage_multiple_tables",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1062
+        "duration_ms": 1014
       },
       {
         "id": "vector_ties_and_filter",
         "status": "PASS",
         "message": "",
-        "duration_ms": 538
+        "duration_ms": 544
       },
       {
         "id": "vector_float32",
         "status": "PASS",
         "message": "",
-        "duration_ms": 545
+        "duration_ms": 565
       },
       {
         "id": "vector_index_maintenance",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1115
+        "duration_ms": 1136
       },
       {
         "id": "transaction_failed_insert",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1043
+        "duration_ms": 1063
       },
       {
         "id": "transaction_autocommit_atomic",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1077
+        "duration_ms": 1011
       },
       {
         "id": "transaction_shutdown_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1085
+        "duration_ms": 1026
       }
     ],
     "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
@@ -468,7 +467,7 @@
     "correctness": "All 80 candidate responses equal baseline; 8 baseline queries independently checked",
     "baseline_commit": "fc2567d9cea6b361bdf566216cc2f5c7da507412"
   },
-  "scope": "Current image: public 20, 128D state machine 250 operations/750 independent queries, 64MiB external-data test, 648 screening boundary checks, three independent alternating timing rounds. Host sanitizer and uncached compiler-stage build separately checked. No storage-format change in this stage.",
+  "scope": "Build-only adaptation: uncached linux/amd64 build with RUN network=none, actual-image native load/dependency inspection, public20 and 648 screen checks under64MiB. Prior model/resource/performance measurements belong to f416b729 and preceding stages; no new timing claims.",
   "previous_stages": [
     {
       "commit": "77808f7c2053f394c354f9cbc249fe9f86f48835",
@@ -1315,6 +1314,152 @@
         "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
       },
       "scope": "Storage candidate: final-image public 20 and seed 20261116 model; earlier candidate seed 20261115 and 64MiB test preceded explicit generator-finalization cleanup. Native focused overlay/recovery checks cover final source. Three performance pairs, final two using final image. Common version remains separately locked at 1791c006."
+    },
+    {
+      "commit": "f416b729eb5e360ce6066c73f1264c7454a290a5",
+      "baseline_commit": "7cb0c2865075f2a6b8bcb3a1a5b64aaf7d7de56b",
+      "source_sha256": {
+        "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+        "minidb/engine.py": "3f31306330ebef61fd095e7aa0c7a7bd0a0ed78d600dc83aa4a3db5907d6ddc8",
+        "minidb/native.py": "a93214e2a1aed800738de2de3efea8391559c3e84df37c686b49203fb956bea9",
+        "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+        "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
+        "minidb/storage.py": "751f01ef9904c1939a44b62d6796d2f163148e7bbd606feca99b7bfb9124c37f",
+        "native/screen.c": "60c05e0381c91007c4c590ff9f0e014db76981c59143e8d8637f77a56f4e0bc2",
+        "Dockerfile": "4de944ec850156a1471537a89253e1494b5cfaece28ccccec31df869a8f9cc13",
+        "debian-packages.lock": "f9745e3a9145f7697e4d2a87b66083591a2001477bf9d0dcdc92103df6c86557",
+        "requirements.lock": "c46f7eb25df84fe5cd9aa6e87c03dd7b62998bafc4beeef19ef339b656d01f73",
+        ".dockerignore": "db694d3438dedc54428288ba2f8650fa43cd1df3cf729a9125c7a0aca81af704"
+      },
+      "image_id": "sha256:3fd952bc8a59b6d6f7d1e5ac570dc69761e8652b0c53706719ea5b50389e0100",
+      "public": {
+        "scope": "public-protocol-check",
+        "passed": true,
+        "cases": [
+          {
+            "id": "sql_crud",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 568
+          },
+          {
+            "id": "sql_comparisons",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 585
+          },
+          {
+            "id": "sql_ordering",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 536
+          },
+          {
+            "id": "sql_empty",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 536
+          },
+          {
+            "id": "sql_primary_key",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 567
+          },
+          {
+            "id": "sql_unicode",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 524
+          },
+          {
+            "id": "sql_bigint",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 537
+          },
+          {
+            "id": "sql_unsupported",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 562
+          },
+          {
+            "id": "storage_restart",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1054
+          },
+          {
+            "id": "vector_euclidean",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 532
+          },
+          {
+            "id": "transaction_commit",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 585
+          },
+          {
+            "id": "transaction_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 548
+          },
+          {
+            "id": "storage_mutations",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1077
+          },
+          {
+            "id": "storage_multiple_tables",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1062
+          },
+          {
+            "id": "vector_ties_and_filter",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 538
+          },
+          {
+            "id": "vector_float32",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 545
+          },
+          {
+            "id": "vector_index_maintenance",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1115
+          },
+          {
+            "id": "transaction_failed_insert",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1043
+          },
+          {
+            "id": "transaction_autocommit_atomic",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1077
+          },
+          {
+            "id": "transaction_shutdown_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1085
+          }
+        ],
+        "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
+      },
+      "scope": "Current image: public 20, 128D state machine 250 operations/750 independent queries, 64MiB external-data test, 648 screening boundary checks, three independent alternating timing rounds. Host sanitizer and uncached compiler-stage build separately checked. No storage-format change in this stage."
     }
   ],
   "general_benchmark": {
@@ -1754,8 +1899,16 @@
     "legacy_upgrade": true
   },
   "native_build": {
+    "previous_build_commit": "f416b729eb5e360ce6066c73f1264c7454a290a5",
+    "builder_image": "gcc:12-bookworm@sha256:44482187aa3865ad1e2477dc8c56bae4fd8e071e7d99c5f44956effc7f7cc846",
+    "builder_platform": "linux/amd64",
+    "compiler": "GCC 12.5.0",
     "runtime_base": "python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0",
-    "compiler": "GCC 12.2.0-14+deb12u1, package versions in debian-packages.lock",
+    "command": "docker build --platform linux/amd64 --network=none --no-cache -t minivectordb:offline-native .",
+    "build_status": "PASS",
+    "RUN_network": "none",
+    "RUN_package_downloads": false,
+    "image_acquisition": "FROM images fetched by Docker engine; not blocked by RUN network=none",
     "flags": [
       "-std=c11",
       "-O3",
@@ -1765,13 +1918,13 @@
       "-fno-fast-math",
       "-lm"
     ],
-    "cold_build": "PASS: docker build --no-cache-filter native-build",
-    "cold_build_package_download_bytes_approx": 54800000,
-    "cold_build_install_seconds": 23.2,
-    "library_bytes": 15136,
-    "library_sha256": "93481f1eac8aa02c92d918fae3f5eac102019823e29d5e98cc635bc92eea073c",
-    "warm_and_cold_library_hash_equal": true,
-    "ldd": "statically linked (no extra DT_NEEDED library listed)",
+    "library_bytes": 15264,
+    "library_sha256": "21abd8123a7045685e95ce375120a97023333260e51694d030a1c2c168ae5633",
+    "runtime_libraries": [
+      "libc.so.6",
+      "libm.so.6"
+    ],
+    "runtime_native_load": "PASS",
     "runtime_compiler_present": false,
     "source_sha256": {
       "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
@@ -1781,11 +1934,11 @@
       "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
       "minidb/storage.py": "751f01ef9904c1939a44b62d6796d2f163148e7bbd606feca99b7bfb9124c37f",
       "native/screen.c": "60c05e0381c91007c4c590ff9f0e014db76981c59143e8d8637f77a56f4e0bc2",
-      "Dockerfile": "4de944ec850156a1471537a89253e1494b5cfaece28ccccec31df869a8f9cc13",
-      "debian-packages.lock": "f9745e3a9145f7697e4d2a87b66083591a2001477bf9d0dcdc92103df6c86557",
-      "requirements.lock": "c46f7eb25df84fe5cd9aa6e87c03dd7b62998bafc4beeef19ef339b656d01f73",
-      ".dockerignore": "db694d3438dedc54428288ba2f8650fa43cd1df3cf729a9125c7a0aca81af704"
+      "Dockerfile": "61a838d09aa42cdf993d7628ca17fbf27ca0993ae9eeb8507dad8db9e8f5b2a6",
+      ".dockerignore": "d04e7a34f971bcf973caa86450cc1f243cb6bb9cf31bc25c37c4327a3e7388bf",
+      "requirements.lock": "5e1d72d066dd643601e7ed6ca3b8de91953960514013f896eef27f8655ff2ffe"
     },
+    "offline_build_log_sha256": "cadb468b7ae60d0dd714661727a52755951fcf0cb6ed34747f4bb59a205ce2e2",
     "screen_probe": {
       "status": "PASS",
       "screen_checks": 648,
@@ -1813,15 +1966,11 @@
         "dimension fallback"
       ]
     },
-    "sanitizer": {
-      "status": "PASS",
-      "compiler": "host GCC 13.3.0",
-      "flags": [
-        "-fsanitize=address,undefined"
-      ],
-      "script": "checks/native_sanitizer.c"
-    },
-    "screen_probe_memory_limit": "64MiB"
+    "screen_probe_memory_limit": "64MiB",
+    "public": {
+      "passed": true,
+      "cases": 20
+    }
   },
   "native_benchmark": {
     "rows": 10000,
@@ -1918,6 +2067,8 @@
     "speedup": 4.60499690342806,
     "correctness": "All 720 measured responses checked; first 8 independently checked",
     "baseline_commit": "7cb0c2865075f2a6b8bcb3a1a5b64aaf7d7de56b",
-    "notes": "Final three rounds ran separately from cold build and correctness jobs. Earlier concurrent-build timing was discarded."
+    "notes": "Final three rounds ran separately from cold build and correctness jobs. Earlier concurrent-build timing was discarded.",
+    "candidate_commit": "f416b729eb5e360ce6066c73f1264c7454a290a5",
+    "compiler": "Original GCC 12.2.0-14+deb12u1 toolchain; not retimed after build-only change"
   }
 }

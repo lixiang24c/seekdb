@@ -1,6 +1,14 @@
 {
+  "previous_build_commit": "f416b729eb5e360ce6066c73f1264c7454a290a5",
+  "builder_image": "gcc:12-bookworm@sha256:44482187aa3865ad1e2477dc8c56bae4fd8e071e7d99c5f44956effc7f7cc846",
+  "builder_platform": "linux/amd64",
+  "compiler": "GCC 12.5.0",
   "runtime_base": "python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0",
-  "compiler": "GCC 12.2.0-14+deb12u1, package versions in debian-packages.lock",
+  "command": "docker build --platform linux/amd64 --network=none --no-cache -t minivectordb:offline-native .",
+  "build_status": "PASS",
+  "RUN_network": "none",
+  "RUN_package_downloads": false,
+  "image_acquisition": "FROM images fetched by Docker engine; not blocked by RUN network=none",
   "flags": [
     "-std=c11",
     "-O3",
@@ -10,13 +18,13 @@
     "-fno-fast-math",
     "-lm"
   ],
-  "cold_build": "PASS: docker build --no-cache-filter native-build",
-  "cold_build_package_download_bytes_approx": 54800000,
-  "cold_build_install_seconds": 23.2,
-  "library_bytes": 15136,
-  "library_sha256": "93481f1eac8aa02c92d918fae3f5eac102019823e29d5e98cc635bc92eea073c",
-  "warm_and_cold_library_hash_equal": true,
-  "ldd": "statically linked (no extra DT_NEEDED library listed)",
+  "library_bytes": 15264,
+  "library_sha256": "21abd8123a7045685e95ce375120a97023333260e51694d030a1c2c168ae5633",
+  "runtime_libraries": [
+    "libc.so.6",
+    "libm.so.6"
+  ],
+  "runtime_native_load": "PASS",
   "runtime_compiler_present": false,
   "source_sha256": {
     "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
@@ -26,11 +34,11 @@
     "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
     "minidb/storage.py": "751f01ef9904c1939a44b62d6796d2f163148e7bbd606feca99b7bfb9124c37f",
     "native/screen.c": "60c05e0381c91007c4c590ff9f0e014db76981c59143e8d8637f77a56f4e0bc2",
-    "Dockerfile": "4de944ec850156a1471537a89253e1494b5cfaece28ccccec31df869a8f9cc13",
-    "debian-packages.lock": "f9745e3a9145f7697e4d2a87b66083591a2001477bf9d0dcdc92103df6c86557",
-    "requirements.lock": "c46f7eb25df84fe5cd9aa6e87c03dd7b62998bafc4beeef19ef339b656d01f73",
-    ".dockerignore": "db694d3438dedc54428288ba2f8650fa43cd1df3cf729a9125c7a0aca81af704"
+    "Dockerfile": "61a838d09aa42cdf993d7628ca17fbf27ca0993ae9eeb8507dad8db9e8f5b2a6",
+    ".dockerignore": "d04e7a34f971bcf973caa86450cc1f243cb6bb9cf31bc25c37c4327a3e7388bf",
+    "requirements.lock": "5e1d72d066dd643601e7ed6ca3b8de91953960514013f896eef27f8655ff2ffe"
   },
+  "offline_build_log_sha256": "cadb468b7ae60d0dd714661727a52755951fcf0cb6ed34747f4bb59a205ce2e2",
   "screen_probe": {
     "status": "PASS",
     "screen_checks": 648,
@@ -58,13 +66,9 @@
       "dimension fallback"
     ]
   },
-  "sanitizer": {
-    "status": "PASS",
-    "compiler": "host GCC 13.3.0",
-    "flags": [
-      "-fsanitize=address,undefined"
-    ],
-    "script": "checks/native_sanitizer.c"
-  },
-  "screen_probe_memory_limit": "64MiB"
+  "screen_probe_memory_limit": "64MiB",
+  "public": {
+    "passed": true,
+    "cases": 20
+  }
 }

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Independent float32 boundary probe against the actual image's compiled screen."""
 import json
+import argparse
 from pathlib import Path
 import subprocess
 PROBE=r'''
@@ -42,8 +43,12 @@ assert not available() and Screen([0.]*128).query is None
 print(json.dumps({'status':'PASS','screen_checks':checks,'distributions':['uniform','mixed float32 exponents'],'dimensions':[16,17,31,32,127,128,129,512,4096],'coverage':['near threshold','zero/ties','finite extrema/subnormals','mask/empty mask','malformed record length','dimension fallback']}))
 '''
 if __name__=='__main__':
-    result=subprocess.run(['docker','run','--rm','--interactive','--network=none','--memory=64m','--memory-swap=64m','--read-only','--entrypoint','python3','minivectordb:native-candidate','-B','-'],input=PROBE,text=True,capture_output=True,timeout=60)
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--image',default='minivectordb:native-candidate')
+    parser.add_argument('--output',default='protocol-results/native-screen')
+    args=parser.parse_args()
+    result=subprocess.run(['docker','run','--rm','--interactive','--network=none','--memory=64m','--memory-swap=64m','--read-only','--entrypoint','python3',args.image,'-B','-'],input=PROBE,text=True,capture_output=True,timeout=60)
     assert result.returncode==0,(result.stdout,result.stderr)
-    out=Path(__file__).resolve().parents[1]/'protocol-results/native-screen'
+    out=Path(__file__).resolve().parents[1]/args.output
     out.mkdir(parents=True,exist_ok=True);(out/'result.json').write_text(result.stdout)
     print(result.stdout,end='')
