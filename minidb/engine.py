@@ -357,18 +357,23 @@ class Database:
                                 else: chunks.append(mask)
                         position += count
                     positions = screen.select(data, -heap[0][0] if len(heap) == k else math.inf, mask, k=None if filtering else k)
-                    values_iter = ((fmt.unpack_from(data, pos * fmt.size) for pos in positions) if positions is not None else
-                                   (fmt.unpack_from(data, pos * fmt.size) for pos in range(len(mask)) if mask[pos]) if mask is not None else
-                                   fmt.iter_unpack(data) if allowed is None else
-                                   (fmt.unpack_from(data, pos) for pos in range(0, len(data), fmt.size)
-                                    if key_format.unpack_from(data, pos)[0] in allowed))
-                    for values in values_iter:
-                        if values[0] in excluded: continue
-                        # A conservative rejection bound only; accepted candidates are
-                        # ranked with the original fsum squared distance, including ties.
-                        if math.dist(query, values[1:]) > radius: continue
-                        key = (squared(query, values[1:]), values[0])
-                        item = (-key[0], -key[1], values[0])
+                    if positions is not None:
+                        candidates = ((key_format.unpack_from(data, pos * fmt.size)[0], pos, None) for pos in positions)
+                    else:
+                        values_iter = ((fmt.unpack_from(data, pos * fmt.size) for pos in range(len(mask)) if mask[pos]) if mask is not None else
+                                       fmt.iter_unpack(data) if allowed is None else
+                                       (fmt.unpack_from(data, pos) for pos in range(0, len(data), fmt.size)
+                                        if key_format.unpack_from(data, pos)[0] in allowed))
+                        candidates = ((values[0], None, values[1:]) for values in values_iter)
+                    for ident, pos, vec in candidates:
+                        if ident in excluded: continue
+                        distance = screen.squared(data, pos) if pos is not None else None
+                        if distance is None:
+                            if vec is None: vec = fmt.unpack_from(data, pos * fmt.size)[1:]
+                            if math.dist(query, vec) > radius: continue
+                            distance = squared(query, vec)
+                        key = (distance, ident)
+                        item = (-key[0], -key[1], ident)
                         if len(heap) < k:
                             heapq.heappush(heap, item)
                         elif item > heap[0]:

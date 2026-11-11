@@ -227,6 +227,16 @@
       "id": "a-vector-text",
       "role": "assistant",
       "content": "将原NUMBER语法组合成一次向量正文校验，再用标准库map批量strip和float转换；超过4096个元素或64KiB文本回到原路径。数字语法、维度和有限float32检查不改，避免引入JSON数字语法差异。"
+    },
+    {
+      "id": "u-continue-exact-terms",
+      "role": "user",
+      "content": "继续"
+    },
+    {
+      "id": "a-exact-terms",
+      "role": "assistant",
+      "content": "查询采样中精确距离约占三成。将逐项差值/平方移至C生成复用乘积数组，仍由原math.fsum按原坐标顺序求和，最终主键排序不变；原生候选避免整段Python浮点解包和重复距离遍历。ABI升级5，旧/缺失库回到Python。"
     }
   ],
   "experiments": [
@@ -409,26 +419,32 @@
       "role": "tool",
       "output": "{\"public20_passed\": true, \"vector_text\": {\"status\": \"PASS\", \"cases\": 1530, \"reference_commit\": \"3c34679e\", \"coverage\": [\"bitwise float32 outcomes\", \"negative zero\", \"SQL signs/leading zeros/dot forms\", \"Unicode decimal digits and whitespace\", \"invalid number syntax\", \"finite overflow\", \"error precedence\", \"4096-element fast-path boundary\", \"64KiB-text boundary\", \"empty vectors\", \"seeded malformed literals\"]}, \"float32\": {\"status\": \"PASS\", \"cases\": 102, \"dimensions\": [1, 2, 3, 16, 31, 32, 127, 128, 129, 512, 4096], \"coverage\": [\"bitwise scalar oracle\", \"list and text inputs\", \"negative zero\", \"subnormal rounding\", \"finite extrema\", \"mixed signed integers\", \"NaN/Infinity\", \"overflow\", \"invalid types\", \"dimension precedence\", \"malformed text\"]}, \"workload_medians\": {\"baseline\": {\"write_seconds\": 2.880893003952224, \"query_seconds\": 4.615074741013814, \"write_memory_peak_bytes\": 26820608, \"query_memory_peak_bytes\": 32378880, \"write_device_bytes\": 40857600, \"query_device_bytes\": 46067712}, \"candidate\": {\"write_seconds\": 2.5707295250031166, \"query_seconds\": 4.591082656988874, \"write_memory_peak_bytes\": 26832896, \"query_memory_peak_bytes\": 32112640, \"write_device_bytes\": 40857600, \"query_device_bytes\": 46067712}}, \"correctness\": \"6000 timed responses compared; first8 per run match independent exact oracle; committed rows checked after each restart.\", \"write_time_reduction\": 0.10766226948505264}",
       "interpretation": "三轮写入中位2.880893→2.570730秒，减少约10.77%；1000查询基本持平，I/O与内存没有稳定改善。Unicode空白/数字与错误优先级均同旧实现；该设计、运行和解释来自Agent，不作为学生自身理解证据。"
+    },
+    {
+      "id": "exact-terms-stage",
+      "role": "tool",
+      "output": "{\"public20_passed\": true, \"native_auto\": {\"status\": \"PASS\", \"backend\": \"avx2\", \"screen_checks\": 648, \"topk_checks\": 828, \"reference_terms_checks\": 891, \"distributions\": [\"uniform\", \"mixed float32 exponents\"], \"dimensions\": [16, 17, 31, 32, 127, 128, 129, 512, 4096], \"coverage\": [\"bitwise reference terms plus fsum\", \"near threshold\", \"zero/ties\", \"finite extrema/subnormals\", \"mask/empty mask\", \"malformed record length\", \"dimension fallback\"]}, \"native_scalar\": {\"status\": \"PASS\", \"backend\": \"scalar\", \"screen_checks\": 648, \"topk_checks\": 828, \"reference_terms_checks\": 891, \"distributions\": [\"uniform\", \"mixed float32 exponents\"], \"dimensions\": [16, 17, 31, 32, 127, 128, 129, 512, 4096], \"coverage\": [\"bitwise reference terms plus fsum\", \"near threshold\", \"zero/ties\", \"finite extrema/subnormals\", \"mask/empty mask\", \"malformed record length\", \"dimension fallback\"]}, \"sanitizer\": \"PASS\", \"sql\": {\"status\": \"PASS\", \"oracle_queries\": 24, \"transaction_visibility\": \"PASS\", \"dimensions\": 128, \"rows\": 200, \"K\": [1, 10, 127, 128, 512, 1024], \"extreme_bigint_keys\": true}, \"missing_library_sql\": {\"status\": \"PASS\", \"oracle_queries\": 24, \"transaction_visibility\": \"PASS\", \"dimensions\": 128, \"rows\": 200, \"K\": [1, 10, 127, 128, 512, 1024], \"extreme_bigint_keys\": true}, \"graph\": {\"status\": \"PASS\", \"oracle_queries\": 43, \"ann_mean_recall\": 1.0, \"graph_hits_before_mutation\": 12, \"rows\": 2048, \"dimensions\": 32, \"coverage\": [\"negative IDs\", \"graph actually used\", \"exact unchanged\", \"filtered exact\", \"transaction update visibility\", \"rollback\", \"committed delete invalidation\", \"rebuild with excluded rows\", \"restart rebuild\"]}, \"workload_medians\": {\"baseline\": {\"write_seconds\": 2.6315922749927267, \"query_seconds\": 4.638880807964597, \"write_memory_peak_bytes\": 26746880, \"query_memory_peak_bytes\": 32210944, \"write_device_bytes\": 40857600, \"query_device_bytes\": 46067712}, \"candidate\": {\"write_seconds\": 2.6287646120181307, \"query_seconds\": 3.9021420539938845, \"write_memory_peak_bytes\": 27021312, \"query_memory_peak_bytes\": 32272384, \"write_device_bytes\": 40857600, \"query_device_bytes\": 46067712}}, \"query_time_reduction\": 0.1588182116483332}",
+      "interpretation": "1000查询三轮中位4.638881→3.902142秒，减少15.88%；写入、I/O和峰值内存基本持平。乘积后仍使用math.fsum，不以普通double累加近似替换。测试和解释来自Agent，不冒充学生贡献；本地资源不推算正式E。"
     }
   ],
   "implementation": {
-    "language": "Python 3.12.8 standard library plus self-written C shared library, ABI4",
+    "language": "Python 3.12.8 standard library plus self-written C shared library, ABI5",
     "official_protocol_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
     "source_sha256": {
       "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
       "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-      "minidb/engine.py": "73dacbc288b93bd0aea091b0fa55f3b3cd652c035b37303ba240185fd01397f6",
+      "minidb/engine.py": "193757b1257782ed574030bba8d922ee89f4a8b920852b28cbd023afcfaaa8c9",
       "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
       "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
-      "minidb/native.py": "97b66b0e47977884bc0a3b414cd5deb2d8a28db3a13a550adca211acb06f9a40",
+      "minidb/native.py": "a7211c7a40ba581cad3596be74d63985da1e1d8cec7d49f825a5d410f68ed7d0",
       "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
       "minidb/sql.py": "87a41384e63776025b973b92b43ed4a8e135def7dce180f56c56a3ac8ee830a1",
       "minidb/storage.py": "dd7d744775b2fbe85ed7cf5e4b901b0e15317d929e26ca738cc51f3fac313dc4",
       "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
-      "native/screen.c": "0bb4998bc99a0a597c72861859a055916a6019ced614633707b3eccbc7b87796"
+      "native/screen.c": "0fdb28a9619aa00c7a33a6cd3b49fec6206fbba3b2bcbc46a1fe33f9b54dca89"
     },
     "storage": "Immutable segments, bounded point overlays, preplanned <=16-old-run INSERT fusion with original wide-cascade fallback; atomic fsynced manifest retained.",
-    "query": "Exact native scan, batched TopK row lookup, bounded per-predicate masks and on-demand same-column value groups; ANN remains opt-in.",
+    "query": "Exact native screening and native binary64 products with original Python fsum, batched TopK row lookup and bounded predicate caches; graph stays opt-in.",
     "vector_input": "Original numeric grammar validated per bounded vector body, standard-library maps convert elements; large inputs retain scalar validation; finite/type/dimension semantics preserved.",
     "sql_lexer": "Quote-delimited chunk extraction via str.find, with existing doubled-quote/backtick and malformed-input semantics."
   },
@@ -492,6 +508,10 @@
     {
       "commit": "3c34679e232a1209dc8d8424d5de88b85f624529",
       "note": "Quoted SQL chunk scanning retained; no storage/native changes in numeric stage."
+    },
+    {
+      "commit": "d12d6e8f17aa74473467696419940f9a7a7551f2",
+      "note": "Bounded vector-text batching retained; native kernel now ABI5."
     }
   ]
 }

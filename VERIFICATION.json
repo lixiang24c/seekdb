@@ -1,20 +1,20 @@
 {
   "official_protocol_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
-  "baseline_commit": "3c34679e232a1209dc8d8424d5de88b85f624529",
+  "baseline_commit": "d12d6e8f17aa74473467696419940f9a7a7551f2",
   "source_sha256": {
     "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
     "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-    "minidb/engine.py": "73dacbc288b93bd0aea091b0fa55f3b3cd652c035b37303ba240185fd01397f6",
+    "minidb/engine.py": "193757b1257782ed574030bba8d922ee89f4a8b920852b28cbd023afcfaaa8c9",
     "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
     "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
-    "minidb/native.py": "97b66b0e47977884bc0a3b414cd5deb2d8a28db3a13a550adca211acb06f9a40",
+    "minidb/native.py": "a7211c7a40ba581cad3596be74d63985da1e1d8cec7d49f825a5d410f68ed7d0",
     "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
     "minidb/sql.py": "87a41384e63776025b973b92b43ed4a8e135def7dce180f56c56a3ac8ee830a1",
     "minidb/storage.py": "dd7d744775b2fbe85ed7cf5e4b901b0e15317d929e26ca738cc51f3fac313dc4",
     "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
-    "native/screen.c": "0bb4998bc99a0a597c72861859a055916a6019ced614633707b3eccbc7b87796"
+    "native/screen.c": "0fdb28a9619aa00c7a33a6cd3b49fec6206fbba3b2bcbc46a1fe33f9b54dca89"
   },
-  "image_id": "sha256:d2dfbcb2a3c8b7208d485f1c6bbea6733afbcdcf8bd31e65cf56f619679c1da6",
+  "image_id": "sha256:b37372d9e7cc6716b3c6329be58b831f690fc0d278510c047b4f01c352121e06",
   "public": {
     "scope": "public-protocol-check",
     "passed": true,
@@ -23,7 +23,7 @@
         "id": "sql_crud",
         "status": "PASS",
         "message": "",
-        "duration_ms": 627
+        "duration_ms": 811
       },
       {
         "id": "sql_comparisons",
@@ -35,79 +35,79 @@
         "id": "sql_ordering",
         "status": "PASS",
         "message": "",
-        "duration_ms": 596
+        "duration_ms": 590
       },
       {
         "id": "sql_empty",
         "status": "PASS",
         "message": "",
-        "duration_ms": 563
+        "duration_ms": 626
       },
       {
         "id": "sql_primary_key",
         "status": "PASS",
         "message": "",
-        "duration_ms": 594
+        "duration_ms": 598
       },
       {
         "id": "sql_unicode",
         "status": "PASS",
         "message": "",
-        "duration_ms": 580
+        "duration_ms": 590
       },
       {
         "id": "sql_bigint",
         "status": "PASS",
         "message": "",
-        "duration_ms": 562
+        "duration_ms": 605
       },
       {
         "id": "sql_unsupported",
         "status": "PASS",
         "message": "",
-        "duration_ms": 573
+        "duration_ms": 608
       },
       {
         "id": "storage_restart",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1150
+        "duration_ms": 1149
       },
       {
         "id": "vector_euclidean",
         "status": "PASS",
         "message": "",
-        "duration_ms": 590
+        "duration_ms": 586
       },
       {
         "id": "transaction_commit",
         "status": "PASS",
         "message": "",
-        "duration_ms": 582
+        "duration_ms": 596
       },
       {
         "id": "transaction_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 581
+        "duration_ms": 576
       },
       {
         "id": "storage_mutations",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1089
+        "duration_ms": 1186
       },
       {
         "id": "storage_multiple_tables",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1138
+        "duration_ms": 1143
       },
       {
         "id": "vector_ties_and_filter",
         "status": "PASS",
         "message": "",
-        "duration_ms": 589
+        "duration_ms": 683
       },
       {
         "id": "vector_float32",
@@ -119,25 +119,25 @@
         "id": "vector_index_maintenance",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1127
+        "duration_ms": 1182
       },
       {
         "id": "transaction_failed_insert",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1100
+        "duration_ms": 1181
       },
       {
         "id": "transaction_autocommit_atomic",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1080
+        "duration_ms": 1074
       },
       {
         "id": "transaction_shutdown_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1117
+        "duration_ms": 1159
       }
     ],
     "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
@@ -468,7 +468,7 @@
     "correctness": "All 80 candidate responses equal baseline; 8 baseline queries independently checked",
     "baseline_commit": "fc2567d9cea6b361bdf566216cc2f5c7da507412"
   },
-  "scope": "Current image: public20,1530 bitwise/error vector-text differential cases,102 independent scalar float32 boundary cases under64MiB;three alternating independent-volume full10000x128 inserts and1000queries,6000 timed responses compared,first8 independent exact truths per run and committed restart checks. Local cgroup full-load/preparation snapshots,not formal E. RUN-offline build passed. Other lexer/native/graph/cache/storage/crash tests describe recorded prior stages. Graph disabled.",
+  "scope": "Current image: public20;auto/scalar native probes each891 bitwise reference sums,648 screening and828 TopK checks under64MiB;ASan/UBSan;SQL24 with library and24 after library removal including transactions;opt-in graph43.Three alternating independent-volume10000x128 inserts and1000queries,6000 responses checked with first8 independent truths per run and restart checks.Local full-scope cgroup snapshots,not formal E.RUN-offline build,ABI5.Other cache/codec/storage/crash checks describe recorded prior stages.Graph disabled.",
   "previous_stages": [
     {
       "commit": "77808f7c2053f394c354f9cbc249fe9f86f48835",
@@ -2025,6 +2025,23 @@
         "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
         "native/screen.c": "0bb4998bc99a0a597c72861859a055916a6019ced614633707b3eccbc7b87796"
       }
+    },
+    {
+      "commit": "d12d6e8f17aa74473467696419940f9a7a7551f2",
+      "scope": "Current image: public20,1530 bitwise/error vector-text differential cases,102 independent scalar float32 boundary cases under64MiB;three alternating independent-volume full10000x128 inserts and1000queries,6000 timed responses compared,first8 independent exact truths per run and committed restart checks. Local cgroup full-load/preparation snapshots,not formal E. RUN-offline build passed. Other lexer/native/graph/cache/storage/crash tests describe recorded prior stages. Graph disabled.",
+      "source_sha256": {
+        "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
+        "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+        "minidb/engine.py": "73dacbc288b93bd0aea091b0fa55f3b3cd652c035b37303ba240185fd01397f6",
+        "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
+        "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+        "minidb/native.py": "97b66b0e47977884bc0a3b414cd5deb2d8a28db3a13a550adca211acb06f9a40",
+        "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+        "minidb/sql.py": "87a41384e63776025b973b92b43ed4a8e135def7dce180f56c56a3ac8ee830a1",
+        "minidb/storage.py": "dd7d744775b2fbe85ed7cf5e4b901b0e15317d929e26ca738cc51f3fac313dc4",
+        "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
+        "native/screen.c": "0bb4998bc99a0a597c72861859a055916a6019ced614633707b3eccbc7b87796"
+      }
     }
   ],
   "general_benchmark": {
@@ -2464,12 +2481,12 @@
     "legacy_upgrade": true
   },
   "native_build": {
-    "previous_build_commit": "ad592573d90d0ffb9efe5f323bfef43e7335ba7f",
+    "previous_build_commit": "d12d6e8f17aa74473467696419940f9a7a7551f2",
     "builder_image": "gcc:12-bookworm@sha256:44482187aa3865ad1e2477dc8c56bae4fd8e071e7d99c5f44956effc7f7cc846",
     "builder_platform": "linux/amd64",
     "compiler": "GCC 12.5.0",
     "runtime_base": "python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0",
-    "command": "docker build --platform linux/amd64 --network=none --no-cache -t minivectordb:graph-candidate .",
+    "command": "docker build --platform linux/amd64 --network=none -t minivectordb:terms-candidate .",
     "build_status": "PASS",
     "RUN_network": "none",
     "RUN_package_downloads": false,
@@ -2483,8 +2500,8 @@
       "-fno-fast-math",
       "-lm"
     ],
-    "library_bytes": 89384,
-    "library_sha256": "1195f41b5ecd7827b2ea5f0b0a349e5c10d0cc0eacc06ec8567723f4e0c01d54",
+    "library_bytes": 89424,
+    "library_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
     "runtime_libraries": [
       "libc.so.6",
       "libm.so.6"
@@ -2494,14 +2511,15 @@
     "source_sha256": {
       "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
       "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-      "minidb/engine.py": "491f18e2857d9dc9a4eb56ad6f848a9d460e9238c98dcf864ebca4ebd071d0bd",
+      "minidb/engine.py": "193757b1257782ed574030bba8d922ee89f4a8b920852b28cbd023afcfaaa8c9",
+      "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
       "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
-      "minidb/native.py": "97b66b0e47977884bc0a3b414cd5deb2d8a28db3a13a550adca211acb06f9a40",
+      "minidb/native.py": "a7211c7a40ba581cad3596be74d63985da1e1d8cec7d49f825a5d410f68ed7d0",
       "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
-      "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
-      "minidb/storage.py": "751f01ef9904c1939a44b62d6796d2f163148e7bbd606feca99b7bfb9124c37f",
+      "minidb/sql.py": "87a41384e63776025b973b92b43ed4a8e135def7dce180f56c56a3ac8ee830a1",
+      "minidb/storage.py": "dd7d744775b2fbe85ed7cf5e4b901b0e15317d929e26ca738cc51f3fac313dc4",
       "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
-      "native/screen.c": "0bb4998bc99a0a597c72861859a055916a6019ced614633707b3eccbc7b87796"
+      "native/screen.c": "0fdb28a9619aa00c7a33a6cd3b49fec6206fbba3b2bcbc46a1fe33f9b54dca89"
     },
     "screen_probe_memory_limit": "64MiB",
     "public": {
@@ -2512,139 +2530,137 @@
           "id": "sql_crud",
           "status": "PASS",
           "message": "",
-          "duration_ms": 730
+          "duration_ms": 811
         },
         {
           "id": "sql_comparisons",
           "status": "PASS",
           "message": "",
-          "duration_ms": 614
+          "duration_ms": 589
         },
         {
           "id": "sql_ordering",
           "status": "PASS",
           "message": "",
-          "duration_ms": 579
+          "duration_ms": 590
         },
         {
           "id": "sql_empty",
           "status": "PASS",
           "message": "",
-          "duration_ms": 554
+          "duration_ms": 626
         },
         {
           "id": "sql_primary_key",
           "status": "PASS",
           "message": "",
-          "duration_ms": 572
+          "duration_ms": 598
         },
         {
           "id": "sql_unicode",
           "status": "PASS",
           "message": "",
-          "duration_ms": 556
+          "duration_ms": 590
         },
         {
           "id": "sql_bigint",
           "status": "PASS",
           "message": "",
-          "duration_ms": 589
+          "duration_ms": 605
         },
         {
           "id": "sql_unsupported",
           "status": "PASS",
           "message": "",
-          "duration_ms": 563
+          "duration_ms": 608
         },
         {
           "id": "storage_restart",
           "status": "PASS",
           "message": "",
-          "duration_ms": 1039
+          "duration_ms": 1149
         },
         {
           "id": "vector_euclidean",
           "status": "PASS",
           "message": "",
-          "duration_ms": 553
+          "duration_ms": 586
         },
         {
           "id": "transaction_commit",
           "status": "PASS",
           "message": "",
-          "duration_ms": 626
+          "duration_ms": 596
         },
         {
           "id": "transaction_rollback",
           "status": "PASS",
           "message": "",
-          "duration_ms": 578
+          "duration_ms": 576
         },
         {
           "id": "storage_mutations",
           "status": "PASS",
           "message": "",
-          "duration_ms": 1149
+          "duration_ms": 1186
         },
         {
           "id": "storage_multiple_tables",
           "status": "PASS",
           "message": "",
-          "duration_ms": 1047
+          "duration_ms": 1143
         },
         {
           "id": "vector_ties_and_filter",
           "status": "PASS",
           "message": "",
-          "duration_ms": 608
+          "duration_ms": 683
         },
         {
           "id": "vector_float32",
           "status": "PASS",
           "message": "",
-          "duration_ms": 542
+          "duration_ms": 577
         },
         {
           "id": "vector_index_maintenance",
           "status": "PASS",
           "message": "",
-          "duration_ms": 1082
+          "duration_ms": 1182
         },
         {
           "id": "transaction_failed_insert",
           "status": "PASS",
           "message": "",
-          "duration_ms": 1050
+          "duration_ms": 1181
         },
         {
           "id": "transaction_autocommit_atomic",
           "status": "PASS",
           "message": "",
-          "duration_ms": 1065
+          "duration_ms": 1074
         },
         {
           "id": "transaction_shutdown_rollback",
           "status": "PASS",
           "message": "",
-          "duration_ms": 1065
+          "duration_ms": 1159
         }
       ],
       "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
     },
-    "native_stage_also_rebuilt_without_cache": true,
-    "abi": 4,
+    "native_stage_also_rebuilt_without_cache": false,
+    "abi": 5,
     "sanitizer": {
       "status": "PASS",
-      "command": "gcc -std=c11 -O1 -g -fsanitize=address,undefined -ffp-contract=off checks/graph_sanitizer.c -lm -o /tmp/minidb-graph-sanitizer && /tmp/minidb-graph-sanitizer",
+      "command": "gcc -std=c11 -O1 -g -fsanitize=address,undefined -ffp-contract=off checks/native_sanitizer.c -lm -o /tmp/minidb-terms-sanitizer; /tmp/minidb-terms-sanitizer",
       "coverage": [
-        "allocation limits",
-        "line graphs 1024x16/32",
-        "nearest ID",
-        "invalid query K/EF",
-        "malformed append",
-        "append overflow",
-        "degenerate vectors exact fallback",
-        "free NULL"
+        "unaligned input",
+        "product buffer write",
+        "record and dimension boundaries",
+        "null data",
+        "nonfinite query",
+        "existing screening and TopK boundaries"
       ]
     },
     "screen_probe_modes": {
@@ -2653,6 +2669,7 @@
         "backend": "avx2",
         "screen_checks": 648,
         "topk_checks": 828,
+        "reference_terms_checks": 891,
         "distributions": [
           "uniform",
           "mixed float32 exponents"
@@ -2669,6 +2686,7 @@
           4096
         ],
         "coverage": [
+          "bitwise reference terms plus fsum",
           "near threshold",
           "zero/ties",
           "finite extrema/subnormals",
@@ -2677,7 +2695,37 @@
           "dimension fallback"
         ]
       },
-      "previous_dual_mode_checks_commit": "04a1982fc8c5b04d45ebbd26de7a95d5f45e95b3"
+      "scalar": {
+        "status": "PASS",
+        "backend": "scalar",
+        "screen_checks": 648,
+        "topk_checks": 828,
+        "reference_terms_checks": 891,
+        "distributions": [
+          "uniform",
+          "mixed float32 exponents"
+        ],
+        "dimensions": [
+          16,
+          17,
+          31,
+          32,
+          127,
+          128,
+          129,
+          512,
+          4096
+        ],
+        "coverage": [
+          "bitwise reference terms plus fsum",
+          "near threshold",
+          "zero/ties",
+          "finite extrema/subnormals",
+          "mask/empty mask",
+          "malformed record length",
+          "dimension fallback"
+        ]
+      }
     },
     "global_target": {
       "march": "x86-64",
@@ -2691,6 +2739,24 @@
       "maximum_graph_bytes": 16777216,
       "resident_tables": 1,
       "ef": 512
+    },
+    "native_recompiled_from_changed_source": true,
+    "runtime_ldd_output": "\tlinux-vdso.so.1 (0x00007ffe523f0000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x000072f609fd3000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x000072f609df2000)\n\t/lib64/ld-linux-x86-64.so.2 (0x000072f60a0be000)\n",
+    "library_missing_sql": {
+      "status": "PASS",
+      "oracle_queries": 24,
+      "transaction_visibility": "PASS",
+      "dimensions": 128,
+      "rows": 200,
+      "K": [
+        1,
+        10,
+        127,
+        128,
+        512,
+        1024
+      ],
+      "extreme_bigint_keys": true
     }
   },
   "native_benchmark": {
@@ -5212,5 +5278,258 @@
       "empty vectors",
       "seeded malformed literals"
     ]
+  },
+  "exact_terms_benchmark": {
+    "rows": 10000,
+    "dimensions": 128,
+    "batch_size": 100,
+    "queries": 1000,
+    "filtered_queries": 500,
+    "k": 10,
+    "rounds": 3,
+    "seed": 20261207,
+    "samples": {
+      "baseline": [
+        {
+          "write_seconds": 2.6315922749927267,
+          "write_resources": {
+            "memory_peak_bytes": 26746880,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 40857600,
+                "rios": 0,
+                "wios": 315,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 40857600
+          },
+          "index_prepare_seconds": 0.062181138957384974,
+          "query_seconds": 4.638880807964597,
+          "query_resources": {
+            "memory_peak_bytes": 32210944,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 46067712,
+                "rios": 0,
+                "wios": 322,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 46067712
+          }
+        },
+        {
+          "write_seconds": 2.606136971968226,
+          "write_resources": {
+            "memory_peak_bytes": 26697728,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 40857600,
+                "rios": 0,
+                "wios": 315,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 40857600
+          },
+          "index_prepare_seconds": 0.06317427498288453,
+          "query_seconds": 4.5722460899851285,
+          "query_resources": {
+            "memory_peak_bytes": 31866880,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 46067712,
+                "rios": 0,
+                "wios": 322,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 46067712
+          }
+        },
+        {
+          "write_seconds": 2.695593773969449,
+          "write_resources": {
+            "memory_peak_bytes": 27009024,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 40857600,
+                "rios": 0,
+                "wios": 315,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 40857600
+          },
+          "index_prepare_seconds": 0.06293272698530927,
+          "query_seconds": 4.641794102964923,
+          "query_resources": {
+            "memory_peak_bytes": 32444416,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 46067712,
+                "rios": 0,
+                "wios": 324,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 46067712
+          }
+        }
+      ],
+      "candidate": [
+        {
+          "write_seconds": 2.635001153976191,
+          "write_resources": {
+            "memory_peak_bytes": 26947584,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 4096,
+                "wbytes": 40857600,
+                "rios": 1,
+                "wios": 316,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 40861696
+          },
+          "index_prepare_seconds": 0.06199590797768906,
+          "query_seconds": 3.9436604190268554,
+          "query_resources": {
+            "memory_peak_bytes": 32079872,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 4096,
+                "wbytes": 46067712,
+                "rios": 1,
+                "wios": 324,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 46071808
+          }
+        },
+        {
+          "write_seconds": 2.6114153030212037,
+          "write_resources": {
+            "memory_peak_bytes": 27213824,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 40857600,
+                "rios": 0,
+                "wios": 314,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 40857600
+          },
+          "index_prepare_seconds": 0.05762229801621288,
+          "query_seconds": 3.7953772799810395,
+          "query_resources": {
+            "memory_peak_bytes": 32272384,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 46067712,
+                "rios": 0,
+                "wios": 321,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 46067712
+          }
+        },
+        {
+          "write_seconds": 2.6287646120181307,
+          "write_resources": {
+            "memory_peak_bytes": 27021312,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 40857600,
+                "rios": 0,
+                "wios": 315,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 40857600
+          },
+          "index_prepare_seconds": 0.059118625009432435,
+          "query_seconds": 3.9021420539938845,
+          "query_resources": {
+            "memory_peak_bytes": 32288768,
+            "io_by_device": {
+              "8:48": {
+                "rbytes": 0,
+                "wbytes": 46067712,
+                "rios": 0,
+                "wios": 325,
+                "dbytes": 0,
+                "dios": 0
+              }
+            },
+            "all_reported_device_bytes": 46067712
+          }
+        }
+      ]
+    },
+    "scope": "Independent volumes and alternating image order. Query preparation outside query T but inside query B/M. Local per-device cgroup IO, filesystem sync before snapshots. No platform cache-reset procedure or fixed baseline; no formal E. Small in-container cat/sync diagnostic processes included in resource snapshots.",
+    "medians": {
+      "baseline": {
+        "write_seconds": 2.6315922749927267,
+        "query_seconds": 4.638880807964597,
+        "write_memory_peak_bytes": 26746880,
+        "query_memory_peak_bytes": 32210944,
+        "write_device_bytes": 40857600,
+        "query_device_bytes": 46067712
+      },
+      "candidate": {
+        "write_seconds": 2.6287646120181307,
+        "query_seconds": 3.9021420539938845,
+        "write_memory_peak_bytes": 27021312,
+        "query_memory_peak_bytes": 32272384,
+        "write_device_bytes": 40857600,
+        "query_device_bytes": 46067712
+      }
+    },
+    "correctness": "6000 timed responses compared; first8 per run match independent exact oracle; committed rows checked after each restart.",
+    "status": "PASS",
+    "baseline_commit": "d12d6e8f17aa74473467696419940f9a7a7551f2",
+    "query_time_reduction": 0.1588182116483332
+  },
+  "exact_terms_sql": {
+    "status": "PASS",
+    "oracle_queries": 24,
+    "transaction_visibility": "PASS",
+    "dimensions": 128,
+    "rows": 200,
+    "K": [
+      1,
+      10,
+      127,
+      128,
+      512,
+      1024
+    ],
+    "extreme_bigint_keys": true
   }
 }

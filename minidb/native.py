@@ -1,6 +1,8 @@
 """Optional bounded C screen; all retained distances use the Python reference."""
 import ctypes
 import os
+import math
+from array import array
 from pathlib import Path
 
 _library = None
@@ -15,7 +17,10 @@ def available():
         try:
             lib = ctypes.CDLL(str(Path(__file__).with_name('libscreen.so')))
             lib.mv_screen_abi.restype = ctypes.c_uint
-            if lib.mv_screen_abi() != 4: return False
+            if lib.mv_screen_abi() != 5: return False
+            lib.mv_squared_terms.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_double), ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)]
+            lib.mv_squared_terms.restype = ctypes.c_int
             lib.mv_screen.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_double), ctypes.c_double, ctypes.c_char_p,
                 ctypes.POINTER(ctypes.c_uint32)]
@@ -39,6 +44,16 @@ class Screen:
         self.query = (ctypes.c_double * len(query))(*query) if 16 <= len(query) <= 4096 and available() else None
         self.capacity = 0
         self.output = None
+        self.terms = self.terms_pointer = None
+
+    def squared(self, data, position):
+        if self.query is None: return None
+        if self.terms is None:
+            self.terms = array('d', [0.]) * self.dimension
+            self.terms_pointer = (ctypes.c_double * self.dimension).from_buffer(self.terms)
+        if not _library.mv_squared_terms(data, len(data), self.dimension, self.query, position, self.terms_pointer):
+            return None
+        return math.fsum(self.terms)
 
     def select(self, data, bound, mask=None, k=None):
         if self.query is None: return None

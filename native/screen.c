@@ -6,7 +6,26 @@
 #include <math.h>
 #include <immintrin.h>
 
-unsigned mv_screen_abi(void) { return 4; }
+unsigned mv_screen_abi(void) { return 5; }
+
+/* Emit the same binary64 products as Python (x-y)*(x-y); Python fsum
+   remains the authoritative summation, including its final rounding. */
+int mv_squared_terms(const unsigned char *data, size_t bytes, size_t dim,
+                     const double *query, size_t position, double *terms) {
+    if (!data || !query || !terms || !dim || dim > 4096) return 0;
+    size_t stride = 8 + dim * 4;
+    if (bytes % stride || position >= bytes / stride) return 0;
+    const unsigned char *vector = data + position * stride + 8;
+    for (size_t j = 0; j < dim; ++j) {
+        float value; memcpy(&value, vector + j * 4, 4);
+        if (!isfinite(value) || !isfinite(query[j])) return 0;
+        double delta = (double)value - query[j];
+        double product = delta * delta;
+        if (!isfinite(product)) return 0;
+        terms[j] = product;
+    }
+    return 1;
+}
 
 static int simd_enabled = 1;
 void mv_screen_set_simd(int enabled) { simd_enabled = enabled != 0; }

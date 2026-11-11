@@ -14,6 +14,7 @@ rng=random.Random(20261117)
 pool=[0.,-0.,2.**-149,-2.**-149,2.**-126,1.,-1.,2.**30,struct.unpack('<f',bytes.fromhex('ffff7f7f'))[0]]
 checks=0
 topk_checks=0
+terms_checks=0
 for dim in [16,17,31,32,127,128,129,512,4096]:
     for distribution in range(3):
         def value():
@@ -28,6 +29,14 @@ for dim in [16,17,31,32,127,128,129,512,4096]:
         bounds += [math.nextafter(b,0.) for b in bounds[2:]]
         screen=Screen(query)
         assert screen.query is not None
+        for i,expected in enumerate(distances):
+            actual=screen.squared(data,i)
+            assert actual is not None
+            assert struct.pack('<d',actual)==struct.pack('<d',expected),(dim,distribution,i,actual,expected)
+            terms_checks+=1
+        assert screen.squared(data,-1) is None
+        assert screen.squared(data,len(rows)) is None
+        assert screen.squared(data[:-1],0) is None
         for mask in [None,bytes([i%2 for i in range(len(rows))]),bytes(len(rows))]:
             for bound in bounds:
                 got=screen.select(data,bound,mask)
@@ -71,7 +80,7 @@ assert Screen([0.]*4097).query is None
 import os
 os.environ['MINIDB_NATIVE']='0'
 assert not available() and Screen([0.]*128).query is None
-print(json.dumps({'status':'PASS','backend':backend,'screen_checks':checks,'topk_checks':topk_checks,'distributions':['uniform','mixed float32 exponents'],'dimensions':[16,17,31,32,127,128,129,512,4096],'coverage':['near threshold','zero/ties','finite extrema/subnormals','mask/empty mask','malformed record length','dimension fallback']}))
+print(json.dumps({'status':'PASS','backend':backend,'screen_checks':checks,'topk_checks':topk_checks,'reference_terms_checks':terms_checks,'distributions':['uniform','mixed float32 exponents'],'dimensions':[16,17,31,32,127,128,129,512,4096],'coverage':['bitwise reference terms plus fsum','near threshold','zero/ties','finite extrema/subnormals','mask/empty mask','malformed record length','dimension fallback']}))
 '''
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
