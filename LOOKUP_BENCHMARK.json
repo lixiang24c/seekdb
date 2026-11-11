@@ -1,0 +1,97 @@
+{
+  "rows": 10000,
+  "dimensions": 128,
+  "queries": 120,
+  "filtered_queries": 60,
+  "filter_categories": 1,
+  "projected_distance": true,
+  "content_bytes_per_row": 512,
+  "cpus": "2",
+  "memory": "2g",
+  "seed": 20261112,
+  "scope": "Alternating image order across rounds; local comparison, not formal score",
+  "rounds": 3,
+  "samples": {
+    "baseline": [
+      {
+        "cold_unfiltered_seconds": 0.005147705029230565,
+        "cold_filtered_seconds": 0.054811310954391956,
+        "total_seconds": 0.5256397713092156,
+        "unfiltered_seconds": 0.2606706962105818,
+        "filtered_seconds": 0.26496907509863377,
+        "median_ms": 4.263380484189838,
+        "max_ms": 8.235523011535406
+      },
+      {
+        "cold_unfiltered_seconds": 0.005980871035717428,
+        "cold_filtered_seconds": 0.055142769997473806,
+        "total_seconds": 0.5392729746527039,
+        "unfiltered_seconds": 0.26854424190241843,
+        "filtered_seconds": 0.2707287327502854,
+        "median_ms": 4.396516509586945,
+        "max_ms": 8.160896017216146
+      },
+      {
+        "cold_unfiltered_seconds": 0.005211091018281877,
+        "cold_filtered_seconds": 0.05562581401318312,
+        "total_seconds": 0.5493385377340019,
+        "unfiltered_seconds": 0.2762623607413843,
+        "filtered_seconds": 0.27307617699261755,
+        "median_ms": 4.509917489485815,
+        "max_ms": 8.205925987567753
+      }
+    ],
+    "candidate": [
+      {
+        "cold_unfiltered_seconds": 0.004845137009397149,
+        "cold_filtered_seconds": 0.05394635698758066,
+        "total_seconds": 0.5100455688079819,
+        "unfiltered_seconds": 0.25240935588954017,
+        "filtered_seconds": 0.25763621291844174,
+        "median_ms": 3.966112999478355,
+        "max_ms": 9.417615015991032
+      },
+      {
+        "cold_unfiltered_seconds": 0.004936345969326794,
+        "cold_filtered_seconds": 0.05194497498450801,
+        "total_seconds": 0.4871174809522927,
+        "unfiltered_seconds": 0.24216036702273414,
+        "filtered_seconds": 0.24495711392955855,
+        "median_ms": 3.97785849054344,
+        "max_ms": 7.3622779455035925
+      },
+      {
+        "cold_unfiltered_seconds": 0.004915698023978621,
+        "cold_filtered_seconds": 0.05458832503063604,
+        "total_seconds": 0.5372014545137063,
+        "unfiltered_seconds": 0.2645463536027819,
+        "filtered_seconds": 0.2726551009109244,
+        "median_ms": 4.284066992113367,
+        "max_ms": 12.312611972447485
+      }
+    ]
+  },
+  "runs": {
+    "baseline": {
+      "cold_unfiltered_seconds": 0.005211091018281877,
+      "cold_filtered_seconds": 0.055142769997473806,
+      "total_seconds": 0.5392729746527039,
+      "unfiltered_seconds": 0.26854424190241843,
+      "filtered_seconds": 0.2707287327502854,
+      "median_ms": 4.396516509586945,
+      "max_ms": 8.205925987567753
+    },
+    "candidate": {
+      "cold_unfiltered_seconds": 0.004915698023978621,
+      "cold_filtered_seconds": 0.05394635698758066,
+      "total_seconds": 0.5100455688079819,
+      "unfiltered_seconds": 0.25240935588954017,
+      "filtered_seconds": 0.25763621291844174,
+      "median_ms": 3.97785849054344,
+      "max_ms": 9.417615015991032
+    }
+  },
+  "speedup": 1.0573035188072093,
+  "correctness": "All 720 measured responses checked; first 8 independently checked",
+  "baseline_commit": "7c6ab1e9ea8ae1fee1e36cc310f429dc5a730ce0"
+}

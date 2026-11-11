@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Actual-image graph use, exact oracle, view invalidation and restart."""
 import json
+import argparse
 import subprocess
 from pathlib import Path
 
@@ -61,7 +62,11 @@ db.close()
 print(json.dumps({'status':'PASS','oracle_queries':checks,'ann_mean_recall':sum(recalls)/len(recalls),'graph_hits_before_mutation':hits,'rows':2048,'dimensions':32,'coverage':['negative IDs','graph actually used','exact unchanged','filtered exact','transaction update visibility','rollback','committed delete invalidation','rebuild with excluded rows','restart rebuild']}))
 '''
 if __name__ == '__main__':
-    r=subprocess.run(['docker','run','--rm','-i','--network=none','--read-only','--memory=64m','--memory-swap=64m','--tmpfs','/data:rw,size=16m','--env','MINIDB_ANN_GRAPH=1','--entrypoint','python3','minivectordb:graph-candidate','-B','-'],input=PROBE,text=True,capture_output=True,timeout=60)
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--image',default='minivectordb:graph-candidate')
+    parser.add_argument('--output',default='protocol-results/graph-boundaries')
+    args=parser.parse_args()
+    r=subprocess.run(['docker','run','--rm','-i','--network=none','--read-only','--memory=64m','--memory-swap=64m','--tmpfs','/data:rw,size=16m','--env','MINIDB_ANN_GRAPH=1','--entrypoint','python3',args.image,'-B','-'],input=PROBE,text=True,capture_output=True,timeout=60)
     assert r.returncode==0,(r.stdout,r.stderr)
-    out=Path(__file__).resolve().parents[1]/'protocol-results/graph-boundaries';out.mkdir(parents=True,exist_ok=True)
+    out=Path(__file__).resolve().parents[1]/args.output;out.mkdir(parents=True,exist_ok=True)
     (out/'result.json').write_text(r.stdout);print(r.stdout,end='')

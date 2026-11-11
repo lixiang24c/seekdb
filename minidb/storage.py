@@ -8,6 +8,7 @@ import math
 import os
 import struct
 import uuid
+from contextlib import ExitStack
 from pathlib import Path
 
 MAGIC = b'MVROW001'
@@ -373,6 +374,60 @@ class Storage:
                 if key == ident: return part, raw
                 if key > ident: break
         return None, None
+
+    def lookup_many(self, table, idents):
+        """Read a bounded TopK ID set with one key/row handle per segment."""
+        pending = set(idents)
+        codec = Codec(table['cols'])
+        for part in self.segments(table):
+            if not pending: return
+            if not part['count']: continue
+            excluded = set(part.get('excluded', ()))
+            wanted = sorted(i for i in pending if i not in excluded and
+                            (part.get('min') is None or part['min'] <= i <= part['max']))
+            if not wanted: continue
+            with ExitStack() as opened:
+                offsets = []
+                if part.get('keys'):
+                    keys = opened.enter_context(open(self.path(part['keys']), 'rb'))
+                    header = keys.read(8)
+                    if header not in (KEY_MAGIC, OFFSET_MAGIC): raise OSError('invalid key index header')
+                    if header == OFFSET_MAGIC:
+                        lower = 0
+                        for ident in wanted:
+                            left, right = lower, part['count']
+                            while left < right:
+                                mid = (left + right) // 2
+                                data = os.pread(keys.fileno(), 16, 8 + mid * 16)
+                                if len(data) != 16: raise OSError('incomplete key index')
+                                key, offset = KEY_OFFSET.unpack(data)
+                                if key == ident:
+                                    offsets.append((ident, offset)); lower = mid + 1
+                                    break
+                                if key < ident: left = mid + 1
+                                else: right = mid
+                            else: lower = left
+                        if offsets:
+                            rows = opened.enter_context(open(self.path(part['file']), 'rb'))
+                            for ident, offset in offsets:
+                                rows.seek(offset)
+                                head = rows.read(4)
+                                if len(head) != 4: raise OSError('incomplete row header')
+                                raw = rows.read(U32.unpack(head)[0])
+                                if len(raw) != U32.unpack(head)[0]: raise OSError('incomplete row')
+                                pending.remove(ident)
+                                yield ident, raw
+                        continue
+                # Legacy key-only or unindexed files have no row offsets.
+                wanted = set(wanted)
+                reader = raw_rows(self.path(part['file']), codec, table['pk'])
+                try:
+                    for ident, raw in reader:
+                        if ident in wanted:
+                            pending.remove(ident); wanted.remove(ident)
+                            yield ident, raw
+                            if not wanted: break
+                finally: reader.close()
 
     def add_index(self, table):
         new, created = copy.deepcopy(table), []

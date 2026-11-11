@@ -107,3 +107,7 @@ SIMD阶段ABI为3（当前为4）；支持AVX2且块足够密集时自动向量�
 可选图索引
 新增自实现分层邻近图，默认关闭。MINIDB_ANN_GRAPH=1且search_mode=ann时，符合范围的无过滤TopK可使用图；exact及带过滤查询保持精确。
 查询宽度默认512；变更使图失效，返回精确路径。构图和重启成本、召回验证及启用方式见GRAPH_MIGRATION.txt。
+
+TopK批量回表
+默认按数据段复用主键/记录文件句柄，排序定位候选，减少逐行重新打开文件。旧主键格式、事务可见性和回退路径保持原规则。详见LOOKUP_MIGRATION.txt。
+后续未完成项见OPTIMIZATION_BACKLOG.txt。

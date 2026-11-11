@@ -388,11 +388,12 @@ class Database:
             ids = self.graphs.search(table, query, k, self.store)
             if ids is not None:
                 ranked = []
-                for ident in ids:
-                    _, raw = self.store.lookup(table, ident)
-                    if raw is None: break
-                    row = codec.decode_fields(raw, columns)
-                    ranked.append((squared(query, row[vc]), ident, row))
+                records = self.store.lookup_many(table, ids)
+                try:
+                    for ident, raw in records:
+                        row = codec.decode_fields(raw, columns)
+                        ranked.append((squared(query, row[vc]), ident, row))
+                finally: records.close()
                 if len(ranked) == k:
                     return [row for _, _, row in sorted(ranked, key=lambda item: item[:2])]
         selected, cost = [], 0
@@ -411,7 +412,7 @@ class Database:
         scores = self.flat_topk(table, expr, k, allowed, mask_key, bool(filter_columns)) if table.get('indexes') and (not filter_columns or allowed is not None or has_masks) else None
         heap, radius = [], math.inf
         records = (self.store.records(table, ordered=False) if scores is None else
-                   ((ident, self.store.lookup(table, ident)[1]) for ident in scores))
+                   self.store.lookup_many(table, scores))
         try:
             for ident, raw in records:
                 if scores is not None:

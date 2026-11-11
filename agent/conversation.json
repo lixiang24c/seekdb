@@ -167,6 +167,16 @@
       "id": "a-graph-decision",
       "role": "assistant",
       "content": "自实现有界图索引作为独立提交的可选实验。EF256均匀数据召回0.965，提高到512后三个种子0.99/0.98/0.98；单轮无过滤查询有收益，但构建需约3.3–3.5秒，峰值内存增加约6MiB。默认继续精确扫描；普通列过滤、变更后的旧图、退化及距离集中场景走精确路径。"
+    },
+    {
+      "id": "u-after-graph",
+      "role": "user",
+      "content": "那你先做其他的吧，还有什么没做完"
+    },
+    {
+      "id": "a-batch-lookup",
+      "role": "assistant",
+      "content": "TopK从逐条打开主键/数据文件改为按段批量读取；不改变数据格式和持久化规则。普通列冷过滤索引、批量写入的写放大以及完整资源统计仍未完成。图索引实验继续关闭。"
     }
   ],
   "experiments": [
@@ -313,6 +323,12 @@
       "role": "tool",
       "output": "{\"graph_boundaries\": {\"status\": \"PASS\", \"oracle_queries\": 43, \"ann_mean_recall\": 1.0, \"graph_hits_before_mutation\": 12, \"rows\": 2048, \"dimensions\": 32, \"coverage\": [\"negative IDs\", \"graph actually used\", \"exact unchanged\", \"filtered exact\", \"transaction update visibility\", \"rollback\", \"committed delete invalidation\", \"rebuild with excluded rows\", \"restart rebuild\"]}, \"uniform_seed2\": {\"rows\": 10000, \"dimensions\": 128, \"queries\": 40, \"distribution\": \"uniform\", \"seed\": 20261201, \"runs\": {\"exact\": {\"prepare_seconds\": 0.054762560001108795, \"total_query_seconds\": 0.24718630890129134, \"unfiltered_seconds\": 0.1003585389116779, \"filtered_seconds\": 0.14682776998961344, \"unfiltered_recall\": 1.0, \"filtered_recall\": 1.0, \"min_recall\": 1.0, \"container_memory_peak_bytes\": 26808320}, \"graph\": {\"prepare_seconds\": 3.340939155954402, \"total_query_seconds\": 0.21212149423081428, \"unfiltered_seconds\": 0.0671600250643678, \"filtered_seconds\": 0.14496146916644648, \"unfiltered_recall\": 0.98, \"filtered_recall\": 1.0, \"min_recall\": 0.8, \"container_memory_peak_bytes\": 32931840}}, \"scope\": \"One initial experimental comparison, not formal score; independent fixtures; graph preparation timed separately\", \"graph_ef\": \"512\", \"status\": \"PASS\"}, \"uniform_seed3\": {\"rows\": 10000, \"dimensions\": 128, \"queries\": 40, \"distribution\": \"uniform\", \"seed\": 20261202, \"runs\": {\"exact\": {\"prepare_seconds\": 0.05082115501863882, \"total_query_seconds\": 0.24333033669972792, \"unfiltered_seconds\": 0.09677339479094371, \"filtered_seconds\": 0.1465569419087842, \"unfiltered_recall\": 1.0, \"filtered_recall\": 1.0, \"min_recall\": 1.0, \"container_memory_peak_bytes\": 26333184}, \"graph\": {\"prepare_seconds\": 3.4889156660065055, \"total_query_seconds\": 0.21900806290796027, \"unfiltered_seconds\": 0.07064857293153182, \"filtered_seconds\": 0.14835948997642845, \"unfiltered_recall\": 0.98, \"filtered_recall\": 1.0, \"min_recall\": 0.9, \"container_memory_peak_bytes\": 32886784}}, \"scope\": \"One initial experimental comparison, not formal score; independent fixtures; graph preparation timed separately\", \"graph_ef\": \"512\", \"status\": \"PASS\"}, \"public20_passed\": true, \"model\": {\"status\": \"PASS\", \"seed\": 20261201, \"dimensions\": 128, \"operations\": 250, \"queries\": 750}, \"sanitizer\": \"PASS\", \"native_boundaries\": {\"status\": \"PASS\", \"backend\": \"avx2\", \"screen_checks\": 648, \"topk_checks\": 828, \"distributions\": [\"uniform\", \"mixed float32 exponents\"], \"dimensions\": [16, 17, 31, 32, 127, 128, 129, 512, 4096], \"coverage\": [\"near threshold\", \"zero/ties\", \"finite extrema/subnormals\", \"mask/empty mask\", \"malformed record length\", \"dimension fallback\"]}}",
       "interpretation": "该结果由Agent执行，用户未提供对这些结果的技术解释；不把Agent判断计为学生理解。未测物理I/O，不推算赛事E。ANN仅在MINIDB_ANN_GRAPH=1且search_mode=ann时启用。"
+    },
+    {
+      "id": "batch-lookup-stage",
+      "role": "tool",
+      "output": "{\"public20_passed\": true, \"lookup_boundaries\": {\"status\": \"PASS\", \"checks\": 42, \"rows\": 803, \"dimensions\": 32, \"coverage\": [\"batch vs single lookup\", \"missing/duplicate/extreme IDs\", \"multiple overlapping segments\", \"non-leading primary key\", \"Unicode rows\", \"distance ties\", \"K1/10/64/1000\", \"transaction update/delete\", \"rollback\", \"committed overlay\", \"early generator close\", \"legacy key-only files\", \"keyless files\", \"restart\"]}, \"graph_boundaries\": {\"status\": \"PASS\", \"oracle_queries\": 43, \"ann_mean_recall\": 1.0, \"graph_hits_before_mutation\": 12, \"rows\": 2048, \"dimensions\": 32, \"coverage\": [\"negative IDs\", \"graph actually used\", \"exact unchanged\", \"filtered exact\", \"transaction update visibility\", \"rollback\", \"committed delete invalidation\", \"rebuild with excluded rows\", \"restart rebuild\"]}, \"timing_medians\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.005211091018281877, \"cold_filtered_seconds\": 0.055142769997473806, \"total_seconds\": 0.5392729746527039, \"unfiltered_seconds\": 0.26854424190241843, \"filtered_seconds\": 0.2707287327502854, \"median_ms\": 4.396516509586945, \"max_ms\": 8.205925987567753}, \"candidate\": {\"cold_unfiltered_seconds\": 0.004915698023978621, \"cold_filtered_seconds\": 0.05394635698758066, \"total_seconds\": 0.5100455688079819, \"unfiltered_seconds\": 0.25240935588954017, \"filtered_seconds\": 0.25763621291844174, \"median_ms\": 3.97785849054344, \"max_ms\": 9.417615015991032}}, \"correctness\": \"All 720 measured responses checked; first 8 independently checked\"}",
+      "interpretation": "三轮整组耗时中位减少5.42%，普通列过滤及无过滤均略有改善。未测正式I/O或赛事E。执行和解释来自Agent，不计为学生自身技术贡献。"
     }
   ],
   "implementation": {
@@ -321,17 +337,17 @@
     "source_sha256": {
       "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
       "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-      "minidb/engine.py": "491f18e2857d9dc9a4eb56ad6f848a9d460e9238c98dcf864ebca4ebd071d0bd",
+      "minidb/engine.py": "eea2443f436844050a428e9ebe456185dbfd9795d9b57baf43daa8f7792adeab",
       "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
       "minidb/native.py": "97b66b0e47977884bc0a3b414cd5deb2d8a28db3a13a550adca211acb06f9a40",
       "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
       "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
-      "minidb/storage.py": "751f01ef9904c1939a44b62d6796d2f163148e7bbd606feca99b7bfb9124c37f",
+      "minidb/storage.py": "1e852e8999ad70a53c3d43989936f8335fbb1b76783e9d948687ced829d34264",
       "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
       "native/screen.c": "0bb4998bc99a0a597c72861859a055916a6019ced614633707b3eccbc7b87796"
     },
     "storage": "Bounded point overlays, immutable segments and atomic manifest retained.",
-    "query": "Default exact native scan and bounded predicate caches; experimental HNSW-style graph opt-in with exact fallback."
+    "query": "Default exact native scan, bounded predicate caches and per-segment batched TopK row lookup; optional graph stays disabled."
   },
   "limitations": [
     "图索引默认关闭，仅对1024–20000行、16–256维、单表、无普通列过滤且K<=64的ann TopK生效；总分配预算16MiB。",
@@ -368,6 +384,10 @@
     {
       "commit": "ad592573d90d0ffb9efe5f323bfef43e7335ba7f",
       "note": "Earlier implementation hashes and stage evidence remain historical."
+    },
+    {
+      "commit": "7c6ab1e9ea8ae1fee1e36cc310f429dc5a730ce0",
+      "note": "Graph-stage implementation hashes retained in previous committed material."
     }
   ]
 }
