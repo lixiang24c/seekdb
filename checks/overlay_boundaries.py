@@ -36,7 +36,7 @@ with tempfile.TemporaryDirectory() as directory:
     for i in range(100):
         q(f"UPDATE t SET v='[{i%3},0]',c=1 WHERE id={i}");state[i]=[1,[float(i%3),0.0]]
         if i%17==0:check()
-    # Deletes cross the 64-exclusion threshold with no replacement segments.
+    # Deletes cross the exclusion threshold with no replacement segments.
     for i in range(120,210):q(f'DELETE FROM t WHERE id={i}');state.pop(i)
     check()
     q('BEGIN');q("UPDATE t SET v='[99,99]' WHERE id=4");q('DELETE FROM t WHERE id=5');q('ROLLBACK');check()

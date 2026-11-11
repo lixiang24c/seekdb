@@ -32,7 +32,9 @@ def check(value=0):
     assert db.index_reader.maps and db.index_reader.bytes<=8<<20 and len(db.index_reader.maps)<=16
     checks+=1
 check()
-for i in range(90):
+updates=storage.MAX_EXCLUDED+storage.MAX_SEGMENTS
+assert updates<999
+for i in range(updates):
     assert q("UPDATE t SET c="+str(1000+i)+",v='"+json.dumps([-1.]*128)+"' WHERE id="+str(i))['affected_rows']==1
     state[i]=(1000+i,-1.)
     assert not db.index_reader.maps
@@ -47,7 +49,7 @@ finally:storage.MAX_SEGMENTS=saved
 before=state[999];q('BEGIN');q("UPDATE t SET c=777,v='"+json.dumps([-3.]*128)+"' WHERE id=999");state[999]=(777,-3.)
 check(-3);q('ROLLBACK');state[999]=before;check(-1)
 db.close();db=Database('/data');check(-1);db.close()
-print(json.dumps({'status':'PASS','rows':1000,'dimensions':128,'sequential_updates':90,'oracle_queries':checks,'events':events,'coverage':['mapped reads after each actual update','base retained at segment threshold','small overlay merge','full excluded-mask compaction','reduced-cap fallback to full rewrite','map invalidation','exact scalar/vector row consistency','transaction rollback','restart']}))
+print(json.dumps({'status':'PASS','rows':1000,'dimensions':128,'sequential_updates':updates,'oracle_queries':checks,'events':events,'coverage':['mapped reads after each actual update','base retained at segment threshold','small overlay merge','full excluded-mask compaction','reduced-cap fallback to full rewrite','map invalidation','exact scalar/vector row consistency','transaction rollback','restart']}))
 '''
 r=subprocess.run(['docker','run','--rm','-i','--network=none','--read-only','--memory=64m','--memory-swap=64m','--tmpfs','/data:rw,size=16m','--entrypoint','python3','minivectordb:mmap-merged','-B','-'],input=PROBE,text=True,capture_output=True,timeout=60)
 assert r.returncode==0,(r.stdout,r.stderr)

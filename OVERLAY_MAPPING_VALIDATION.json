@@ -1,0 +1,586 @@
+{
+  "status": "PASS_WITH_LIMITATIONS",
+  "remote_base": "5252602de60a7bd066378209d2431c58adc70898",
+  "original_local_head": "18d6ea3737b1a0fb64d0ff4ce899647a9b7276ef",
+  "configuration": {
+    "MAX_EXCLUDED": 128,
+    "SMALL_SEGMENT": 64,
+    "MAX_SEGMENTS": 32,
+    "mmap_default": true
+  },
+  "environment": {
+    "python": "Python 3.12.3",
+    "compiler": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "native_build_flags": "-std=c11 -O3 -fPIC -shared -ffp-contract=off -fno-fast-math -lm",
+    "execution": "Local processes and temporary data directories; no Docker, cgroup limit or cold-page-cache reset."
+  },
+  "source_sha256": {
+    "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+    "minidb/engine.py": "32fe2618b49669d98e0598847d0a0876a486ef7e1dbce8e3fc39e9bb3f62c949",
+    "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
+    "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+    "minidb/indexio.py": "d071540d69b9dcde3d3333e96f1a25965be2a3d6ef9fab33513868fa9aeb7223",
+    "minidb/native.py": "4615dd6ed5ff3c2e232754abf0054e118be19e9bc58f50525129b5d32d305cd0",
+    "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+    "minidb/sql.py": "87a41384e63776025b973b92b43ed4a8e135def7dce180f56c56a3ac8ee830a1",
+    "minidb/storage.py": "797f86884ccc481d1e2a3976a104edc55664a8f5bd4212a58b30e16e9fd81a74",
+    "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
+    "native/screen.c": "0fdb28a9619aa00c7a33a6cd3b49fec6206fbba3b2bcbc46a1fe33f9b54dca89",
+    "checks/overlay_boundaries.py": "a6635578b212bbd87557dbcdb765aae20123c89626b9890f74d1c13f0e8b20fe",
+    "checks/overlay_recovery.py": "1c5ed933f0676c0a488a7e6b284cbddbdcd19efefee993545f03d6f51290ef2c",
+    "checks/recovery.py": "93b566e8b603beafc45ef7d239639a7e48bfa6478930bd3f4d115437c8c1d67f",
+    "checks/index_mapping.py": "790cd6d5df15a972aaed0c8816d12cac434f2e82f523897d01242a376e305649",
+    "checks/mapped_views.py": "f1c4a78cc9657e48192d8fefb3114fbc1b3e44c1992ef95be3024536eb004311",
+    "checks/combined_overlays.py": "e9f7f0c34802594030fbc653c36f7b71d7002e4be252f66ac777a6263296b882",
+    "checks/large_vector_scan.py": "ad23bb7ea54c05cf6032804561478bc65031496751463548dc97e8980cf5bd44"
+  },
+  "checks": {
+    "public_native": {
+      "passed": true,
+      "cases": 20
+    },
+    "public_python_fallback": {
+      "passed": true,
+      "cases": 20
+    },
+    "overlay_boundaries": {
+      "status": "PASS",
+      "updates": 101,
+      "point_deletes": 90,
+      "checks": [
+        "base retained",
+        "overlay compaction",
+        "delete threshold compaction",
+        "ordinary/range/reverse/filtered/unfiltered oracle",
+        "rollback",
+        "general mutation",
+        "deleted key reinsertion",
+        "live duplicate rejection",
+        "second index",
+        "restart"
+      ]
+    },
+    "small_overlay_crash_recovery": {
+      "status": "PASS",
+      "scenarios": [
+        {
+          "cut": "before",
+          "compaction": "PASS",
+          "two_restarts": "PASS"
+        },
+        {
+          "cut": "after",
+          "compaction": "PASS",
+          "two_restarts": "PASS"
+        }
+      ]
+    },
+    "full_threshold_crash_recovery": {
+      "setup": "Derived from checks/overlay_recovery.py: 500 initial rows, 128 updates, assert 128 exclusions, then interrupt update of id=128 before/after manifest publication; restart twice per cut.",
+      "result": {
+        "status": "PASS",
+        "scenarios": [
+          {
+            "cut": "before",
+            "compaction": "PASS",
+            "two_restarts": "PASS"
+          },
+          {
+            "cut": "after",
+            "compaction": "PASS",
+            "two_restarts": "PASS"
+          }
+        ]
+      }
+    },
+    "general_recovery": {
+      "status": "PASS",
+      "scenarios": 5
+    },
+    "index_mapping": {
+      "status": "PASS",
+      "reference_distance_checks": 104,
+      "dimensions": [
+        16,
+        128,
+        129,
+        4096
+      ],
+      "coverage": [
+        "mapped/buffered equality",
+        "bitwise exact sums",
+        "tail blocks",
+        "early close",
+        "consumer error cleanup",
+        "cached mapping reuse",
+        "file content unchanged",
+        "readonly buffer copy fallback",
+        "writable buffer borrowing",
+        "mapping denied fallback",
+        "environment opt-out",
+        "budget overflow buffered fallback",
+        "LRU eviction",
+        "empty index"
+      ]
+    },
+    "mapped_views": {
+      "status": "PASS",
+      "mapping_events": {
+        "queries_with_cached_maps": 20,
+        "write_invalidations": 9
+      },
+      "oracle_queries": 23,
+      "rows": 320,
+      "dimensions": 128,
+      "coverage": [
+        "raw scan before index",
+        "no duplicate Python distance computation",
+        "vector decoding omitted when unused",
+        "same/different query vectors",
+        "explicit vector projection",
+        "alias/expression ordering",
+        "filter cache reuse",
+        "native off",
+        "DESC/range/multi-key plans",
+        "LIMIT0",
+        "large-row heap fallback to sort",
+        "transaction mutation/delete",
+        "rollback",
+        "extreme primary keys",
+        "restart"
+      ]
+    },
+    "combined_overlays": {
+      "status": "PASS",
+      "rows": 1000,
+      "dimensions": 128,
+      "sequential_updates": 160,
+      "oracle_queries": 165,
+      "events": {
+        "small_merges": 5,
+        "fallbacks": 1,
+        "full_rewrites": 2
+      },
+      "coverage": [
+        "mapped reads after each actual update",
+        "base retained at segment threshold",
+        "small overlay merge",
+        "full excluded-mask compaction",
+        "reduced-cap fallback to full rewrite",
+        "map invalidation",
+        "exact scalar/vector row consistency",
+        "transaction rollback",
+        "restart"
+      ]
+    },
+    "large_vector_scan": {
+      "status": "PASS",
+      "rows": 70000,
+      "dimensions": 256,
+      "index_bytes": 72240008,
+      "oracle_queries": 7,
+      "elapsed_seconds": 1.7042234799992002,
+      "scope": "Host run without a memory limit; 72,240,008-byte index exceeds the 8 MiB mapping budget and uses the buffered fallback. The original script container configuration was not executed.",
+      "coverage": [
+        "index larger than memory",
+        "bounded exact TopK",
+        "selective filter cache",
+        "large-index buffered fallback",
+        "small overlay mapping",
+        "rollback invalidation",
+        "restart"
+      ]
+    }
+  },
+  "probe_execution": "Existing PROBE bodies executed with only /data paths redirected into temporary directories; Docker wrappers were not run. Supplemental Python 3.11 execution also passed.",
+  "benchmark": {
+    "scope": "Host Python 3.12/GCC 13 native, warm OS cache, no container resource limits; three alternating rounds, identical copied fixtures. Buffered128 disables the new mmap path in the merged code; it is a mechanism control, not the old binary. No formal platform or cold-cache performance claim.",
+    "rows": 10000,
+    "dimensions": 128,
+    "updates": 400,
+    "rounds": 3,
+    "samples": {
+      "remote_mmap64": [
+        {
+          "round": 1,
+          "update_median_ms": 6.806750999203359,
+          "update_mean_ms": 8.62016412993853,
+          "update_p99_ms": 86.15077299873519,
+          "update_max_ms": 90.81346799939638,
+          "full_rewrite_updates": [
+            65,
+            129,
+            193,
+            257,
+            321,
+            385
+          ],
+          "read_ms": {
+            "128": [
+              22.536372000104166,
+              23.630476000107592,
+              3.3454590011388063,
+              3.327555001305882,
+              2.9907780008215923,
+              2.829443999871728
+            ],
+            "400": [
+              22.538871999131516,
+              25.095947999943746,
+              21.80162400145491,
+              23.544884999864735,
+              23.920507001093938,
+              21.61533199978294
+            ]
+          }
+        },
+        {
+          "round": 2,
+          "update_median_ms": 6.521976501062454,
+          "update_mean_ms": 8.065855405052389,
+          "update_p99_ms": 85.94238300065626,
+          "update_max_ms": 93.04116800012707,
+          "full_rewrite_updates": [
+            65,
+            129,
+            193,
+            257,
+            321,
+            385
+          ],
+          "read_ms": {
+            "128": [
+              21.82502100004058,
+              24.580667000918766,
+              3.1668430001445813,
+              2.694574000997818,
+              2.4500710005668225,
+              2.4430039993603714
+            ],
+            "400": [
+              22.2446959996887,
+              24.330971000381396,
+              22.503153000798193,
+              26.35927000119409,
+              22.60467499945662,
+              22.390430998711963
+            ]
+          }
+        },
+        {
+          "round": 3,
+          "update_median_ms": 6.670015999588941,
+          "update_mean_ms": 8.49125381999329,
+          "update_p99_ms": 87.67084700048144,
+          "update_max_ms": 95.94073900007061,
+          "full_rewrite_updates": [
+            65,
+            129,
+            193,
+            257,
+            321,
+            385
+          ],
+          "read_ms": {
+            "128": [
+              23.182124999948428,
+              24.611487999209203,
+              3.0733610001334455,
+              2.6718440003605792,
+              3.4259330004715594,
+              2.6005569998233113
+            ],
+            "400": [
+              25.289375000284053,
+              31.364469999971334,
+              24.568906001150026,
+              23.790287999872817,
+              23.11165799983428,
+              23.86166900032549
+            ]
+          }
+        }
+      ],
+      "local_buffered128": [
+        {
+          "round": 1,
+          "update_median_ms": 6.6912924994539935,
+          "update_mean_ms": 7.6868168875216725,
+          "update_p99_ms": 15.29107100031979,
+          "update_max_ms": 93.8690939983644,
+          "full_rewrite_updates": [
+            129,
+            257,
+            385
+          ],
+          "read_ms": {
+            "128": [
+              22.691526000926387,
+              25.772895000045537,
+              3.646946001026663,
+              3.9045270004862687,
+              3.3966770006372826,
+              3.3040769994840957
+            ],
+            "400": [
+              24.63824400001613,
+              25.692399000035948,
+              22.138025000458583,
+              21.888641000259668,
+              23.204351999083883,
+              21.603208000669838
+            ]
+          }
+        },
+        {
+          "round": 2,
+          "update_median_ms": 6.696216500131413,
+          "update_mean_ms": 7.752597314997729,
+          "update_p99_ms": 18.812861999322195,
+          "update_max_ms": 96.74442600044131,
+          "full_rewrite_updates": [
+            129,
+            257,
+            385
+          ],
+          "read_ms": {
+            "128": [
+              23.096839999197982,
+              24.772081998889917,
+              3.691410000101314,
+              3.7661120004486293,
+              3.5417279996181605,
+              3.361414001119556
+            ],
+            "400": [
+              21.75947899922903,
+              24.5109509996837,
+              22.433288999309298,
+              23.200212999654468,
+              22.448436000559013,
+              22.952190998694277
+            ]
+          }
+        },
+        {
+          "round": 3,
+          "update_median_ms": 6.56158099991444,
+          "update_mean_ms": 7.715137525024147,
+          "update_p99_ms": 28.47973900134093,
+          "update_max_ms": 91.34918099880451,
+          "full_rewrite_updates": [
+            129,
+            257,
+            385
+          ],
+          "read_ms": {
+            "128": [
+              22.914316999958828,
+              24.921113999880617,
+              3.722409999681986,
+              3.512465000312659,
+              3.360942000654177,
+              3.5581379997893237
+            ],
+            "400": [
+              24.239599000793532,
+              24.750477999987197,
+              23.374750000584754,
+              22.336071999234264,
+              22.32094000100915,
+              21.43326899931708
+            ]
+          }
+        }
+      ],
+      "merged_mmap128": [
+        {
+          "round": 1,
+          "update_median_ms": 6.675752000774082,
+          "update_mean_ms": 7.681203499946605,
+          "update_p99_ms": 15.52024200100277,
+          "update_max_ms": 91.5941009989183,
+          "full_rewrite_updates": [
+            129,
+            257,
+            385
+          ],
+          "read_ms": {
+            "128": [
+              23.091929999282,
+              24.49721899938595,
+              3.9607369999430375,
+              5.596434999461053,
+              4.080669999893871,
+              3.875909000271349
+            ],
+            "400": [
+              24.06707199952507,
+              25.289098999564885,
+              22.9589919999853,
+              22.37923699976818,
+              21.836281001014868,
+              21.882197999730124
+            ]
+          }
+        },
+        {
+          "round": 2,
+          "update_median_ms": 6.738627500453731,
+          "update_mean_ms": 7.845606459982264,
+          "update_p99_ms": 19.506889999320265,
+          "update_max_ms": 94.09636200143723,
+          "full_rewrite_updates": [
+            129,
+            257,
+            385
+          ],
+          "read_ms": {
+            "128": [
+              21.97021599931759,
+              24.54029500040633,
+              3.894883000612026,
+              3.84236699937901,
+              3.540855999744963,
+              3.4392350007692585
+            ],
+            "400": [
+              24.881172001187224,
+              25.080521998461336,
+              24.91021800051385,
+              23.595356999067008,
+              24.82016899921291,
+              21.5078880009969
+            ]
+          }
+        },
+        {
+          "round": 3,
+          "update_median_ms": 6.553086499479832,
+          "update_mean_ms": 7.506350409985316,
+          "update_p99_ms": 19.372855000256095,
+          "update_max_ms": 95.15007700065325,
+          "full_rewrite_updates": [
+            129,
+            257,
+            385
+          ],
+          "read_ms": {
+            "128": [
+              22.32404200003657,
+              24.238158999651205,
+              3.9274230002774857,
+              5.70338699981221,
+              3.6333419993752614,
+              3.4028600002784515
+            ],
+            "400": [
+              22.96842400028254,
+              26.676325000153156,
+              22.311684999294812,
+              22.893948000273667,
+              23.752428000079817,
+              22.052805999919656
+            ]
+          }
+        }
+      ]
+    },
+    "medians": {
+      "remote_mmap64": {
+        "update_median_ms": 6.670015999588941,
+        "update_mean_ms": 8.49125381999329,
+        "update_p99_ms": 86.15077299873519,
+        "update_max_ms": 93.04116800012707,
+        "read_ms": {
+          "128": [
+            22.536372000104166,
+            24.580667000918766,
+            3.1668430001445813,
+            2.694574000997818,
+            2.9907780008215923,
+            2.6005569998233113
+          ],
+          "400": [
+            22.538871999131516,
+            25.095947999943746,
+            22.503153000798193,
+            23.790287999872817,
+            23.11165799983428,
+            22.390430998711963
+          ]
+        }
+      },
+      "local_buffered128": {
+        "update_median_ms": 6.6912924994539935,
+        "update_mean_ms": 7.715137525024147,
+        "update_p99_ms": 18.812861999322195,
+        "update_max_ms": 93.8690939983644,
+        "read_ms": {
+          "128": [
+            22.914316999958828,
+            24.921113999880617,
+            3.691410000101314,
+            3.7661120004486293,
+            3.3966770006372826,
+            3.361414001119556
+          ],
+          "400": [
+            24.239599000793532,
+            24.750477999987197,
+            22.433288999309298,
+            22.336071999234264,
+            22.448436000559013,
+            21.603208000669838
+          ]
+        }
+      },
+      "merged_mmap128": {
+        "update_median_ms": 6.675752000774082,
+        "update_mean_ms": 7.681203499946605,
+        "update_p99_ms": 19.372855000256095,
+        "update_max_ms": 94.09636200143723,
+        "read_ms": {
+          "128": [
+            22.32404200003657,
+            24.49721899938595,
+            3.9274230002774857,
+            5.596434999461053,
+            3.6333419993752614,
+            3.4392350007692585
+          ],
+          "400": [
+            24.06707199952507,
+            25.289098999564885,
+            22.9589919999853,
+            22.893948000273667,
+            23.752428000079817,
+            21.882197999730124
+          ]
+        }
+      }
+    },
+    "status": "PASS",
+    "correctness": "All 108 query responses matched independent exact distance/primary-key oracles after restart."
+  },
+  "interpretation": {
+    "update": "Three-round median p99: remote mmap64 86.15 ms; merged mmap128 19.37 ms. Full rewrites at updates 65/129/193/257/321/385 become 129/257/385. Maximum latency remains approximately 94 ms.",
+    "read_risk": "At 128 updates after restart, filtered query 4 median: remote mmap64 2.69 ms, buffered128 control 3.77 ms, merged mmap128 5.60 ms. Merged samples 5.60/3.84/5.70 ms. This observed increase is retained; no claim of universally faster reads or a proven causal explanation.",
+    "limits": "Three local warm-cache rounds; buffered128 disables mmap in the merged code and is not an exact old-binary comparison. No platform score, fresh Docker build, container resource validation, or new GitHub head verification during execution (network unavailable)."
+  },
+  "reproduction": {
+    "public": "/usr/bin/python3 -B protocol_check/run.py --command '[\"/usr/bin/python3\",\"-B\",\"-u\",\"-m\",\"minidb.server\",\"{data_dir}\"]' --output <fresh-output-directory>; repeat with MINIDB_NATIVE=0",
+    "direct_checks": [
+      "checks/overlay_boundaries.py",
+      "checks/overlay_recovery.py",
+      "checks/recovery.py"
+    ],
+    "probe_checks": [
+      "checks/index_mapping.py",
+      "checks/mapped_views.py",
+      "checks/combined_overlays.py",
+      "checks/large_vector_scan.py"
+    ],
+    "benchmark_script_sha256": "a1d613187bae8fe580add26e7674c6f030cda9c4515c5ca5fab9c251372a9073"
+  }
+}

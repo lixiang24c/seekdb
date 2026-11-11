@@ -18,7 +18,7 @@ OFFSET_MAGIC = b'MVKEY002'
 KEY_OFFSET = struct.Struct('<qQ')
 U32 = struct.Struct('<I')
 I64 = struct.Struct('<q')
-SMALL_SEGMENT, MAX_SEGMENTS, MAX_EXCLUDED = 64, 32, 64
+SMALL_SEGMENT, MAX_SEGMENTS, MAX_EXCLUDED = 64, 32, 128
 
 
 def strict_json(text):
