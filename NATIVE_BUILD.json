@@ -1,10 +1,10 @@
 {
-  "previous_build_commit": "f416b729eb5e360ce6066c73f1264c7454a290a5",
+  "previous_build_commit": "69a2386a7acb4c0ef456fe6a63838aef75befa25",
   "builder_image": "gcc:12-bookworm@sha256:44482187aa3865ad1e2477dc8c56bae4fd8e071e7d99c5f44956effc7f7cc846",
   "builder_platform": "linux/amd64",
   "compiler": "GCC 12.5.0",
   "runtime_base": "python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0",
-  "command": "docker build --platform linux/amd64 --network=none --no-cache -t minivectordb:offline-native .",
+  "command": "docker build --platform linux/amd64 --network=none -t minivectordb:topk-candidate .",
   "build_status": "PASS",
   "RUN_network": "none",
   "RUN_package_downloads": false,
@@ -18,8 +18,8 @@
     "-fno-fast-math",
     "-lm"
   ],
-  "library_bytes": 15264,
-  "library_sha256": "21abd8123a7045685e95ce375120a97023333260e51694d030a1c2c168ae5633",
+  "library_bytes": 15384,
+  "library_sha256": "ff5e6d4b9d743cf6b63341b801f1ccaa1e92e6f91615eb323dd445f519db4759",
   "runtime_libraries": [
     "libc.so.6",
     "libm.so.6"
@@ -28,20 +28,20 @@
   "runtime_compiler_present": false,
   "source_sha256": {
     "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-    "minidb/engine.py": "3f31306330ebef61fd095e7aa0c7a7bd0a0ed78d600dc83aa4a3db5907d6ddc8",
-    "minidb/native.py": "a93214e2a1aed800738de2de3efea8391559c3e84df37c686b49203fb956bea9",
+    "minidb/engine.py": "456fe4d6d61f00603c2ca4b49f523317d9405ee1a2a63c43618669fbe41a7815",
+    "minidb/native.py": "2e082375118cbdde3ca506c49c9606b6abb55d136cc65ea28b8f2336cdbe1050",
     "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
     "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
     "minidb/storage.py": "751f01ef9904c1939a44b62d6796d2f163148e7bbd606feca99b7bfb9124c37f",
-    "native/screen.c": "60c05e0381c91007c4c590ff9f0e014db76981c59143e8d8637f77a56f4e0bc2",
+    "native/screen.c": "da9d43fef6d109c8ab8ed71c5f921a58f4ef9114efece31a546e4612f855260b",
     "Dockerfile": "61a838d09aa42cdf993d7628ca17fbf27ca0993ae9eeb8507dad8db9e8f5b2a6",
     ".dockerignore": "d04e7a34f971bcf973caa86450cc1f243cb6bb9cf31bc25c37c4327a3e7388bf",
     "requirements.lock": "5e1d72d066dd643601e7ed6ca3b8de91953960514013f896eef27f8655ff2ffe"
   },
-  "offline_build_log_sha256": "cadb468b7ae60d0dd714661727a52755951fcf0cb6ed34747f4bb59a205ce2e2",
   "screen_probe": {
     "status": "PASS",
     "screen_checks": 648,
+    "topk_checks": 828,
     "distributions": [
       "uniform",
       "mixed float32 exponents"
@@ -70,5 +70,15 @@
   "public": {
     "passed": true,
     "cases": 20
+  },
+  "native_stage_also_rebuilt_without_cache": true,
+  "abi": 2,
+  "sanitizer": {
+    "status": "PASS",
+    "compiler": "host GCC13.3.0",
+    "flags": [
+      "-fsanitize=address,undefined"
+    ],
+    "script": "checks/native_sanitizer.c"
   }
 }

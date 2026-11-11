@@ -304,7 +304,7 @@ class Database:
                     if screen.query is not None and (allowed is not None or excluded):
                         mask = bytes(int((allowed is None or ident in allowed) and ident not in excluded)
                                      for ident in (key_format.unpack_from(data, pos)[0] for pos in range(0, len(data), fmt.size)))
-                    positions = screen.select(data, -heap[0][0] if len(heap) == k else math.inf, mask)
+                    positions = screen.select(data, -heap[0][0] if len(heap) == k else math.inf, mask, k=k if allowed is None else None)
                     values_iter = ((fmt.unpack_from(data, pos * fmt.size) for pos in positions) if positions is not None else
                                    fmt.iter_unpack(data) if allowed is None else
                                    (fmt.unpack_from(data, pos) for pos in range(0, len(data), fmt.size)

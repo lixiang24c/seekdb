@@ -1,19 +1,19 @@
 {
   "official_protocol_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
-  "baseline_commit": "f416b729eb5e360ce6066c73f1264c7454a290a5",
+  "baseline_commit": "69a2386a7acb4c0ef456fe6a63838aef75befa25",
   "source_sha256": {
     "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-    "minidb/engine.py": "3f31306330ebef61fd095e7aa0c7a7bd0a0ed78d600dc83aa4a3db5907d6ddc8",
-    "minidb/native.py": "a93214e2a1aed800738de2de3efea8391559c3e84df37c686b49203fb956bea9",
+    "minidb/engine.py": "456fe4d6d61f00603c2ca4b49f523317d9405ee1a2a63c43618669fbe41a7815",
+    "minidb/native.py": "2e082375118cbdde3ca506c49c9606b6abb55d136cc65ea28b8f2336cdbe1050",
     "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
     "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
     "minidb/storage.py": "751f01ef9904c1939a44b62d6796d2f163148e7bbd606feca99b7bfb9124c37f",
-    "native/screen.c": "60c05e0381c91007c4c590ff9f0e014db76981c59143e8d8637f77a56f4e0bc2",
+    "native/screen.c": "da9d43fef6d109c8ab8ed71c5f921a58f4ef9114efece31a546e4612f855260b",
     "Dockerfile": "61a838d09aa42cdf993d7628ca17fbf27ca0993ae9eeb8507dad8db9e8f5b2a6",
     ".dockerignore": "d04e7a34f971bcf973caa86450cc1f243cb6bb9cf31bc25c37c4327a3e7388bf",
     "requirements.lock": "5e1d72d066dd643601e7ed6ca3b8de91953960514013f896eef27f8655ff2ffe"
   },
-  "image_id": "sha256:b990e936c64db851f6513e5067a43fb2fced06521b340b0bde13d2a64b98d95a",
+  "image_id": "sha256:f4c163d72aa9dbdeab2ac17c630e87d10e5d50f3efbc5b866838dddce773ee29",
   "public": {
     "scope": "public-protocol-check",
     "passed": true,
@@ -22,121 +22,121 @@
         "id": "sql_crud",
         "status": "PASS",
         "message": "",
-        "duration_ms": 600
+        "duration_ms": 637
       },
       {
         "id": "sql_comparisons",
         "status": "PASS",
         "message": "",
-        "duration_ms": 535
+        "duration_ms": 644
       },
       {
         "id": "sql_ordering",
         "status": "PASS",
         "message": "",
-        "duration_ms": 541
+        "duration_ms": 567
       },
       {
         "id": "sql_empty",
         "status": "PASS",
         "message": "",
-        "duration_ms": 580
+        "duration_ms": 589
       },
       {
         "id": "sql_primary_key",
         "status": "PASS",
         "message": "",
-        "duration_ms": 541
+        "duration_ms": 553
       },
       {
         "id": "sql_unicode",
         "status": "PASS",
         "message": "",
-        "duration_ms": 548
+        "duration_ms": 563
       },
       {
         "id": "sql_bigint",
         "status": "PASS",
         "message": "",
-        "duration_ms": 549
+        "duration_ms": 578
       },
       {
         "id": "sql_unsupported",
         "status": "PASS",
         "message": "",
-        "duration_ms": 517
+        "duration_ms": 560
       },
       {
         "id": "storage_restart",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1020
+        "duration_ms": 1115
       },
       {
         "id": "vector_euclidean",
         "status": "PASS",
         "message": "",
-        "duration_ms": 542
+        "duration_ms": 583
       },
       {
         "id": "transaction_commit",
         "status": "PASS",
         "message": "",
-        "duration_ms": 542
+        "duration_ms": 554
       },
       {
         "id": "transaction_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 596
+        "duration_ms": 580
       },
       {
         "id": "storage_mutations",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1163
+        "duration_ms": 1118
       },
       {
         "id": "storage_multiple_tables",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1014
+        "duration_ms": 1147
       },
       {
         "id": "vector_ties_and_filter",
         "status": "PASS",
         "message": "",
-        "duration_ms": 544
+        "duration_ms": 623
       },
       {
         "id": "vector_float32",
         "status": "PASS",
         "message": "",
-        "duration_ms": 565
+        "duration_ms": 559
       },
       {
         "id": "vector_index_maintenance",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1136
+        "duration_ms": 1206
       },
       {
         "id": "transaction_failed_insert",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1063
+        "duration_ms": 1080
       },
       {
         "id": "transaction_autocommit_atomic",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1011
+        "duration_ms": 1156
       },
       {
         "id": "transaction_shutdown_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1026
+        "duration_ms": 1105
       }
     ],
     "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
@@ -467,7 +467,7 @@
     "correctness": "All 80 candidate responses equal baseline; 8 baseline queries independently checked",
     "baseline_commit": "fc2567d9cea6b361bdf566216cc2f5c7da507412"
   },
-  "scope": "Build-only adaptation: uncached linux/amd64 build with RUN network=none, actual-image native load/dependency inspection, public20 and 648 screen checks under64MiB. Prior model/resource/performance measurements belong to f416b729 and preceding stages; no new timing claims.",
+  "scope": "Current image: public20, 648 screen plus828 local-TopK checks under64MiB, 24 actual-image ranking oracles with extreme keys and K<=1024, transaction visibility, three alternating performance rounds. Host ASan/UBSan passed. Storage unchanged; large storage/resource reports remain inherited with their earlier commit scopes.",
   "previous_stages": [
     {
       "commit": "77808f7c2053f394c354f9cbc249fe9f86f48835",
@@ -1460,6 +1460,151 @@
         "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
       },
       "scope": "Current image: public 20, 128D state machine 250 operations/750 independent queries, 64MiB external-data test, 648 screening boundary checks, three independent alternating timing rounds. Host sanitizer and uncached compiler-stage build separately checked. No storage-format change in this stage."
+    },
+    {
+      "commit": "69a2386a7acb4c0ef456fe6a63838aef75befa25",
+      "baseline_commit": "f416b729eb5e360ce6066c73f1264c7454a290a5",
+      "source_sha256": {
+        "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+        "minidb/engine.py": "3f31306330ebef61fd095e7aa0c7a7bd0a0ed78d600dc83aa4a3db5907d6ddc8",
+        "minidb/native.py": "a93214e2a1aed800738de2de3efea8391559c3e84df37c686b49203fb956bea9",
+        "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+        "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
+        "minidb/storage.py": "751f01ef9904c1939a44b62d6796d2f163148e7bbd606feca99b7bfb9124c37f",
+        "native/screen.c": "60c05e0381c91007c4c590ff9f0e014db76981c59143e8d8637f77a56f4e0bc2",
+        "Dockerfile": "61a838d09aa42cdf993d7628ca17fbf27ca0993ae9eeb8507dad8db9e8f5b2a6",
+        ".dockerignore": "d04e7a34f971bcf973caa86450cc1f243cb6bb9cf31bc25c37c4327a3e7388bf",
+        "requirements.lock": "5e1d72d066dd643601e7ed6ca3b8de91953960514013f896eef27f8655ff2ffe"
+      },
+      "image_id": "sha256:b990e936c64db851f6513e5067a43fb2fced06521b340b0bde13d2a64b98d95a",
+      "public": {
+        "scope": "public-protocol-check",
+        "passed": true,
+        "cases": [
+          {
+            "id": "sql_crud",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 600
+          },
+          {
+            "id": "sql_comparisons",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 535
+          },
+          {
+            "id": "sql_ordering",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 541
+          },
+          {
+            "id": "sql_empty",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 580
+          },
+          {
+            "id": "sql_primary_key",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 541
+          },
+          {
+            "id": "sql_unicode",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 548
+          },
+          {
+            "id": "sql_bigint",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 549
+          },
+          {
+            "id": "sql_unsupported",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 517
+          },
+          {
+            "id": "storage_restart",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1020
+          },
+          {
+            "id": "vector_euclidean",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 542
+          },
+          {
+            "id": "transaction_commit",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 542
+          },
+          {
+            "id": "transaction_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 596
+          },
+          {
+            "id": "storage_mutations",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1163
+          },
+          {
+            "id": "storage_multiple_tables",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1014
+          },
+          {
+            "id": "vector_ties_and_filter",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 544
+          },
+          {
+            "id": "vector_float32",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 565
+          },
+          {
+            "id": "vector_index_maintenance",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1136
+          },
+          {
+            "id": "transaction_failed_insert",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1063
+          },
+          {
+            "id": "transaction_autocommit_atomic",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1011
+          },
+          {
+            "id": "transaction_shutdown_rollback",
+            "status": "PASS",
+            "message": "",
+            "duration_ms": 1026
+          }
+        ],
+        "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
+      },
+      "scope": "Build-only adaptation: uncached linux/amd64 build with RUN network=none, actual-image native load/dependency inspection, public20 and 648 screen checks under64MiB. Prior model/resource/performance measurements belong to f416b729 and preceding stages; no new timing claims."
     }
   ],
   "general_benchmark": {
@@ -1679,10 +1824,11 @@
   },
   "model": {
     "status": "PASS",
-    "seed": 20261119,
+    "seed": 20261122,
     "dimensions": 128,
     "operations": 250,
-    "queries": 750
+    "queries": 750,
+    "scope": "Before final filtered dispatch was routed back to original scalar screen; final dispatch checked by public20, 24 high-K/tied SQL oracle queries, transaction visibility and 720 benchmark responses."
   },
   "recovery": {
     "status": "PASS",
@@ -1899,12 +2045,12 @@
     "legacy_upgrade": true
   },
   "native_build": {
-    "previous_build_commit": "f416b729eb5e360ce6066c73f1264c7454a290a5",
+    "previous_build_commit": "69a2386a7acb4c0ef456fe6a63838aef75befa25",
     "builder_image": "gcc:12-bookworm@sha256:44482187aa3865ad1e2477dc8c56bae4fd8e071e7d99c5f44956effc7f7cc846",
     "builder_platform": "linux/amd64",
     "compiler": "GCC 12.5.0",
     "runtime_base": "python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0",
-    "command": "docker build --platform linux/amd64 --network=none --no-cache -t minivectordb:offline-native .",
+    "command": "docker build --platform linux/amd64 --network=none -t minivectordb:topk-candidate .",
     "build_status": "PASS",
     "RUN_network": "none",
     "RUN_package_downloads": false,
@@ -1918,8 +2064,8 @@
       "-fno-fast-math",
       "-lm"
     ],
-    "library_bytes": 15264,
-    "library_sha256": "21abd8123a7045685e95ce375120a97023333260e51694d030a1c2c168ae5633",
+    "library_bytes": 15384,
+    "library_sha256": "ff5e6d4b9d743cf6b63341b801f1ccaa1e92e6f91615eb323dd445f519db4759",
     "runtime_libraries": [
       "libc.so.6",
       "libm.so.6"
@@ -1928,20 +2074,20 @@
     "runtime_compiler_present": false,
     "source_sha256": {
       "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-      "minidb/engine.py": "3f31306330ebef61fd095e7aa0c7a7bd0a0ed78d600dc83aa4a3db5907d6ddc8",
-      "minidb/native.py": "a93214e2a1aed800738de2de3efea8391559c3e84df37c686b49203fb956bea9",
+      "minidb/engine.py": "456fe4d6d61f00603c2ca4b49f523317d9405ee1a2a63c43618669fbe41a7815",
+      "minidb/native.py": "2e082375118cbdde3ca506c49c9606b6abb55d136cc65ea28b8f2336cdbe1050",
       "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
       "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
       "minidb/storage.py": "751f01ef9904c1939a44b62d6796d2f163148e7bbd606feca99b7bfb9124c37f",
-      "native/screen.c": "60c05e0381c91007c4c590ff9f0e014db76981c59143e8d8637f77a56f4e0bc2",
+      "native/screen.c": "da9d43fef6d109c8ab8ed71c5f921a58f4ef9114efece31a546e4612f855260b",
       "Dockerfile": "61a838d09aa42cdf993d7628ca17fbf27ca0993ae9eeb8507dad8db9e8f5b2a6",
       ".dockerignore": "d04e7a34f971bcf973caa86450cc1f243cb6bb9cf31bc25c37c4327a3e7388bf",
       "requirements.lock": "5e1d72d066dd643601e7ed6ca3b8de91953960514013f896eef27f8655ff2ffe"
     },
-    "offline_build_log_sha256": "cadb468b7ae60d0dd714661727a52755951fcf0cb6ed34747f4bb59a205ce2e2",
     "screen_probe": {
       "status": "PASS",
       "screen_checks": 648,
+      "topk_checks": 828,
       "distributions": [
         "uniform",
         "mixed float32 exponents"
@@ -1970,6 +2116,16 @@
     "public": {
       "passed": true,
       "cases": 20
+    },
+    "native_stage_also_rebuilt_without_cache": true,
+    "abi": 2,
+    "sanitizer": {
+      "status": "PASS",
+      "compiler": "host GCC13.3.0",
+      "flags": [
+        "-fsanitize=address,undefined"
+      ],
+      "script": "checks/native_sanitizer.c"
     }
   },
   "native_benchmark": {
@@ -2070,5 +2226,309 @@
     "notes": "Final three rounds ran separately from cold build and correctness jobs. Earlier concurrent-build timing was discarded.",
     "candidate_commit": "f416b729eb5e360ce6066c73f1264c7454a290a5",
     "compiler": "Original GCC 12.2.0-14+deb12u1 toolchain; not retimed after build-only change"
+  },
+  "topk_benchmark": {
+    "rows": 10000,
+    "dimensions": 128,
+    "queries": 120,
+    "filtered_queries": 60,
+    "projected_distance": true,
+    "content_bytes_per_row": 512,
+    "cpus": "2",
+    "memory": "2g",
+    "seed": 20261121,
+    "scope": "Final top-level samples/runs use unfiltered local selection and original filtered screen. Earlier rejected dispatch variants are separate experiments, not final performance.",
+    "rounds": 3,
+    "samples": {
+      "baseline": [
+        {
+          "cold_unfiltered_seconds": 0.006834902975242585,
+          "cold_filtered_seconds": 0.054781362996436656,
+          "total_seconds": 0.8373122828779742,
+          "unfiltered_seconds": 0.36504790000617504,
+          "filtered_seconds": 0.47226438287179917,
+          "median_ms": 6.956969009479508,
+          "max_ms": 10.505418002139777
+        },
+        {
+          "cold_unfiltered_seconds": 0.006499517010524869,
+          "cold_filtered_seconds": 0.05248906003544107,
+          "total_seconds": 0.8255326831131242,
+          "unfiltered_seconds": 0.3634794389945455,
+          "filtered_seconds": 0.46205324411857873,
+          "median_ms": 7.055055495584384,
+          "max_ms": 10.44514001114294
+        },
+        {
+          "cold_unfiltered_seconds": 0.006614991987589747,
+          "cold_filtered_seconds": 0.05325274897040799,
+          "total_seconds": 0.8248621940729208,
+          "unfiltered_seconds": 0.3598850088310428,
+          "filtered_seconds": 0.46497718524187803,
+          "median_ms": 6.872456491691992,
+          "max_ms": 10.282059956807643
+        }
+      ],
+      "candidate": [
+        {
+          "cold_unfiltered_seconds": 0.005919852992519736,
+          "cold_filtered_seconds": 0.052365801006089896,
+          "total_seconds": 0.7709876883309335,
+          "unfiltered_seconds": 0.31746897485572845,
+          "filtered_seconds": 0.453518713475205,
+          "median_ms": 7.058557006530464,
+          "max_ms": 8.987705979961902
+        },
+        {
+          "cold_unfiltered_seconds": 0.0057391729787923396,
+          "cold_filtered_seconds": 0.05320065497653559,
+          "total_seconds": 0.7552733148331754,
+          "unfiltered_seconds": 0.30461608385667205,
+          "filtered_seconds": 0.45065723097650334,
+          "median_ms": 6.926431000465527,
+          "max_ms": 9.52433398924768
+        },
+        {
+          "cold_unfiltered_seconds": 0.0059939679922536016,
+          "cold_filtered_seconds": 0.053967198997270316,
+          "total_seconds": 0.7752717579714954,
+          "unfiltered_seconds": 0.3160926270065829,
+          "filtered_seconds": 0.4591791309649125,
+          "median_ms": 7.097394991433248,
+          "max_ms": 10.732622002251446
+        }
+      ]
+    },
+    "runs": {
+      "baseline": {
+        "cold_unfiltered_seconds": 0.006614991987589747,
+        "cold_filtered_seconds": 0.05325274897040799,
+        "total_seconds": 0.8255326831131242,
+        "unfiltered_seconds": 0.3634794389945455,
+        "filtered_seconds": 0.46497718524187803,
+        "median_ms": 6.956969009479508,
+        "max_ms": 10.44514001114294
+      },
+      "candidate": {
+        "cold_unfiltered_seconds": 0.005919852992519736,
+        "cold_filtered_seconds": 0.05320065497653559,
+        "total_seconds": 0.7709876883309335,
+        "unfiltered_seconds": 0.3160926270065829,
+        "filtered_seconds": 0.453518713475205,
+        "median_ms": 7.058557006530464,
+        "max_ms": 9.52433398924768
+      }
+    },
+    "speedup": 1.070746907645532,
+    "correctness": "All 720 measured responses checked; first 8 independently checked",
+    "baseline_commit": "69a2386a7acb4c0ef456fe6a63838aef75befa25",
+    "experiments": {
+      "always_local_topk": {
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 120,
+        "filtered_queries": 60,
+        "projected_distance": true,
+        "content_bytes_per_row": 512,
+        "cpus": "2",
+        "memory": "2g",
+        "seed": 20261121,
+        "scope": "Alternating image order across rounds; local comparison, not formal score",
+        "rounds": 3,
+        "samples": {
+          "baseline": [
+            {
+              "cold_unfiltered_seconds": 0.007666976016480476,
+              "cold_filtered_seconds": 0.054612692969385535,
+              "total_seconds": 0.8266440246952698,
+              "unfiltered_seconds": 0.36401687876787037,
+              "filtered_seconds": 0.4626271459273994,
+              "median_ms": 7.073253451380879,
+              "max_ms": 9.147229022346437
+            },
+            {
+              "cold_unfiltered_seconds": 0.006580814020708203,
+              "cold_filtered_seconds": 0.05340322299161926,
+              "total_seconds": 0.8024987151729874,
+              "unfiltered_seconds": 0.34999061905546114,
+              "filtered_seconds": 0.4525080961175263,
+              "median_ms": 6.833832507254556,
+              "max_ms": 10.773613990750164
+            },
+            {
+              "cold_unfiltered_seconds": 0.006085145985707641,
+              "cold_filtered_seconds": 0.052308308018837124,
+              "total_seconds": 0.8061211051535793,
+              "unfiltered_seconds": 0.35236012894893065,
+              "filtered_seconds": 0.4537609762046486,
+              "median_ms": 6.826684984844178,
+              "max_ms": 10.226202954072505
+            }
+          ],
+          "candidate": [
+            {
+              "cold_unfiltered_seconds": 0.006311398989055306,
+              "cold_filtered_seconds": 0.056587851024232805,
+              "total_seconds": 0.7827688092947938,
+              "unfiltered_seconds": 0.3139271501568146,
+              "filtered_seconds": 0.46884165913797915,
+              "median_ms": 6.764056510291994,
+              "max_ms": 9.613170986995101
+            },
+            {
+              "cold_unfiltered_seconds": 0.005545308988075703,
+              "cold_filtered_seconds": 0.05420169001445174,
+              "total_seconds": 0.794457636133302,
+              "unfiltered_seconds": 0.3270513750612736,
+              "filtered_seconds": 0.46740626107202843,
+              "median_ms": 7.163301488617435,
+              "max_ms": 9.70659899758175
+            },
+            {
+              "cold_unfiltered_seconds": 0.005785321991425008,
+              "cold_filtered_seconds": 0.0523521049763076,
+              "total_seconds": 0.7958206182229333,
+              "unfiltered_seconds": 0.32747500616824254,
+              "filtered_seconds": 0.4683456120546907,
+              "median_ms": 7.226270012324676,
+              "max_ms": 11.310230998788029
+            }
+          ]
+        },
+        "runs": {
+          "baseline": {
+            "cold_unfiltered_seconds": 0.006580814020708203,
+            "cold_filtered_seconds": 0.05340322299161926,
+            "total_seconds": 0.8061211051535793,
+            "unfiltered_seconds": 0.35236012894893065,
+            "filtered_seconds": 0.4537609762046486,
+            "median_ms": 6.833832507254556,
+            "max_ms": 10.226202954072505
+          },
+          "candidate": {
+            "cold_unfiltered_seconds": 0.005785321991425008,
+            "cold_filtered_seconds": 0.05420169001445174,
+            "total_seconds": 0.794457636133302,
+            "unfiltered_seconds": 0.3270513750612736,
+            "filtered_seconds": 0.4683456120546907,
+            "median_ms": 7.163301488617435,
+            "max_ms": 9.70659899758175
+          }
+        },
+        "speedup": 1.0146810458982363,
+        "correctness": "All 720 measured responses checked; first 8 independently checked"
+      },
+      "sparse_fallback_before_filtered_route": {
+        "rows": 10000,
+        "dimensions": 128,
+        "queries": 120,
+        "filtered_queries": 60,
+        "projected_distance": true,
+        "content_bytes_per_row": 512,
+        "cpus": "2",
+        "memory": "2g",
+        "seed": 20261121,
+        "scope": "Alternating image order across rounds; local comparison, not formal score",
+        "rounds": 3,
+        "samples": {
+          "baseline": [
+            {
+              "cold_unfiltered_seconds": 0.009651216969359666,
+              "cold_filtered_seconds": 0.05426721600815654,
+              "total_seconds": 0.7891684689675458,
+              "unfiltered_seconds": 0.35321402380941436,
+              "filtered_seconds": 0.4359544451581314,
+              "median_ms": 6.794491986511275,
+              "max_ms": 8.45916400430724
+            },
+            {
+              "cold_unfiltered_seconds": 0.008704429026693106,
+              "cold_filtered_seconds": 0.053382410027552396,
+              "total_seconds": 0.7980327850673348,
+              "unfiltered_seconds": 0.3509584930143319,
+              "filtered_seconds": 0.44707429205300286,
+              "median_ms": 6.9032469764351845,
+              "max_ms": 9.114670974668115
+            },
+            {
+              "cold_unfiltered_seconds": 0.006722199032083154,
+              "cold_filtered_seconds": 0.0541371590225026,
+              "total_seconds": 0.8096924900310114,
+              "unfiltered_seconds": 0.35861860582372174,
+              "filtered_seconds": 0.45107388420728967,
+              "median_ms": 6.96538551710546,
+              "max_ms": 10.31078101368621
+            }
+          ],
+          "candidate": [
+            {
+              "cold_unfiltered_seconds": 0.0054132320219650865,
+              "cold_filtered_seconds": 0.054475101991556585,
+              "total_seconds": 0.7646054866490886,
+              "unfiltered_seconds": 0.3019361150218174,
+              "filtered_seconds": 0.4626693716272712,
+              "median_ms": 6.717911979649216,
+              "max_ms": 14.005528995767236
+            },
+            {
+              "cold_unfiltered_seconds": 0.005474280973430723,
+              "cold_filtered_seconds": 0.05375008302507922,
+              "total_seconds": 0.7401384849799797,
+              "unfiltered_seconds": 0.2963012321270071,
+              "filtered_seconds": 0.4438372528529726,
+              "median_ms": 6.694548501400277,
+              "max_ms": 8.79493699176237
+            },
+            {
+              "cold_unfiltered_seconds": 0.005495738994795829,
+              "cold_filtered_seconds": 0.05314750300021842,
+              "total_seconds": 0.7611281322315335,
+              "unfiltered_seconds": 0.30463449185481295,
+              "filtered_seconds": 0.4564936403767206,
+              "median_ms": 6.869622506201267,
+              "max_ms": 9.625787031836808
+            }
+          ]
+        },
+        "runs": {
+          "baseline": {
+            "cold_unfiltered_seconds": 0.008704429026693106,
+            "cold_filtered_seconds": 0.0541371590225026,
+            "total_seconds": 0.7980327850673348,
+            "unfiltered_seconds": 0.35321402380941436,
+            "filtered_seconds": 0.44707429205300286,
+            "median_ms": 6.9032469764351845,
+            "max_ms": 9.114670974668115
+          },
+          "candidate": {
+            "cold_unfiltered_seconds": 0.005474280973430723,
+            "cold_filtered_seconds": 0.05375008302507922,
+            "total_seconds": 0.7611281322315335,
+            "unfiltered_seconds": 0.3019361150218174,
+            "filtered_seconds": 0.4564936403767206,
+            "median_ms": 6.717911979649216,
+            "max_ms": 9.625787031836808
+          }
+        },
+        "speedup": 1.0484867807048484,
+        "correctness": "All 720 measured responses checked; first 8 independently checked"
+      }
+    }
+  },
+  "topk_sql": {
+    "status": "PASS",
+    "oracle_queries": 24,
+    "transaction_visibility": "PASS",
+    "dimensions": 128,
+    "rows": 200,
+    "K": [
+      1,
+      10,
+      127,
+      128,
+      512,
+      1024
+    ],
+    "extreme_bigint_keys": true
   }
 }

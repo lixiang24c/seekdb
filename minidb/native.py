@@ -15,11 +15,13 @@ def available():
         try:
             lib = ctypes.CDLL(str(Path(__file__).with_name('libscreen.so')))
             lib.mv_screen_abi.restype = ctypes.c_uint
-            if lib.mv_screen_abi() != 1: return False
+            if lib.mv_screen_abi() != 2: return False
             lib.mv_screen.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_double), ctypes.c_double, ctypes.c_char_p,
                 ctypes.POINTER(ctypes.c_uint32)]
             lib.mv_screen.restype = ctypes.c_size_t
+            lib.mv_screen_topk.argtypes = lib.mv_screen.argtypes[:-1] + [ctypes.c_size_t, ctypes.POINTER(ctypes.c_uint32)]
+            lib.mv_screen_topk.restype = ctypes.c_size_t
             _library = lib
         except (OSError, AttributeError):
             _library = None
@@ -33,14 +35,17 @@ class Screen:
         self.capacity = 0
         self.output = None
 
-    def select(self, data, bound, mask=None):
+    def select(self, data, bound, mask=None, k=None):
         if self.query is None: return None
         count = len(data) // (8 + self.dimension * 4)
         if mask is not None and len(mask) != count: raise ValueError('invalid native mask')
         if count > self.capacity:
             self.output = (ctypes.c_uint32 * count)()
             self.capacity = count
-        result = _library.mv_screen(data, len(data), self.dimension, self.query, bound, mask, self.output)
+        if k is None:
+            result = _library.mv_screen(data, len(data), self.dimension, self.query, bound, mask, self.output)
+        else:
+            result = _library.mv_screen_topk(data, len(data), self.dimension, self.query, bound, mask, k, self.output)
         if result == ctypes.c_size_t(-1).value: return None
         if result > count: raise RuntimeError('invalid native result count')
         return self.output[:result]

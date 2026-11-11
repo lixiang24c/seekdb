@@ -132,6 +132,16 @@
       "id": "offline-build-assistant",
       "role": "assistant",
       "content": "构建适配摘要：native-build改为固定digest的gcc:12-bookworm镜像，使用预装GCC12.5.0从源码编译，删除apt/Debian快照及包清单。保留原Python运行镜像和入口。验证RUN断网、无缓存构建；FROM镜像获取仍由Docker引擎完成。"
+    },
+    {
+      "id": "topk-user",
+      "role": "user",
+      "content": "继续优化"
+    },
+    {
+      "id": "topk-assistant",
+      "role": "assistant",
+      "content": "阶段摘要：C新增块内k元素最大堆并保留误差带和完整距离并列，最终仍按原Python精确距离/主键排序。实验发现过滤后候选稀疏时局部堆会回退，最终仅无普通列过滤的路径启用局部TopK，其他过滤路径直接使用原筛选；候选不超过4K也使用原筛选。ABI升级2，继续固定GCC镜像断网构建，无新增依赖。"
     }
   ],
   "experiments": [
@@ -254,6 +264,12 @@
       "source": "tool",
       "output": "{\"command\": \"docker build --platform linux/amd64 --network=none --no-cache -t minivectordb:offline-native .\", \"build_status\": \"PASS\", \"compiler\": \"GCC 12.5.0\", \"runtime_native_load\": \"PASS\", \"runtime_compiler_present\": false, \"library_bytes\": 15264, \"library_sha256\": \"21abd8123a7045685e95ce375120a97023333260e51694d030a1c2c168ae5633\", \"runtime_libraries\": [\"libc.so.6\", \"libm.so.6\"], \"screen_probe\": {\"status\": \"PASS\", \"screen_checks\": 648, \"distributions\": [\"uniform\", \"mixed float32 exponents\"], \"dimensions\": [16, 17, 31, 32, 127, 128, 129, 512, 4096], \"coverage\": [\"near threshold\", \"zero/ties\", \"finite extrema/subnormals\", \"mask/empty mask\", \"malformed record length\", \"dimension fallback\"]}, \"screen_probe_memory_limit\": \"64MiB\", \"public\": {\"passed\": true, \"cases\": 20}}",
       "interpretation": "实际--network=none --no-cache构建通过，证明本实现的RUN步骤无需联网。该检查不等于确认平台此前失败根因，也不代表Docker引擎无需获取FROM镜像。新编译器产物已通过648项筛选检查和公开20例，本轮不重报旧性能数据为新测量。"
+    },
+    {
+      "id": "topk-results",
+      "source": "tool",
+      "output": "{\"screen_probe\": {\"status\": \"PASS\", \"screen_checks\": 648, \"topk_checks\": 828, \"distributions\": [\"uniform\", \"mixed float32 exponents\"], \"dimensions\": [16, 17, 31, 32, 127, 128, 129, 512, 4096], \"coverage\": [\"near threshold\", \"zero/ties\", \"finite extrema/subnormals\", \"mask/empty mask\", \"malformed record length\", \"dimension fallback\"]}, \"public\": \"20/20 PASS\", \"sql_oracles\": {\"status\": \"PASS\", \"oracle_queries\": 24, \"transaction_visibility\": \"PASS\", \"dimensions\": 128, \"rows\": 200, \"K\": [1, 10, 127, 128, 512, 1024], \"extreme_bigint_keys\": true}, \"model\": {\"status\": \"PASS\", \"seed\": 20261122, \"dimensions\": 128, \"operations\": 250, \"queries\": 750, \"scope\": \"Before final filtered dispatch was routed back to original scalar screen; final dispatch checked by public20, 24 high-K/tied SQL oracle queries, transaction visibility and 720 benchmark responses.\"}, \"sanitizer\": {\"status\": \"PASS\", \"compiler\": \"host GCC13.3.0\", \"flags\": [\"-fsanitize=address,undefined\"], \"script\": \"checks/native_sanitizer.c\"}, \"final_three_rounds\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.006614991987589747, \"cold_filtered_seconds\": 0.05325274897040799, \"total_seconds\": 0.8255326831131242, \"unfiltered_seconds\": 0.3634794389945455, \"filtered_seconds\": 0.46497718524187803, \"median_ms\": 6.956969009479508, \"max_ms\": 10.44514001114294}, \"candidate\": {\"cold_unfiltered_seconds\": 0.005919852992519736, \"cold_filtered_seconds\": 0.05320065497653559, \"total_seconds\": 0.7709876883309335, \"unfiltered_seconds\": 0.3160926270065829, \"filtered_seconds\": 0.453518713475205, \"median_ms\": 7.058557006530464, \"max_ms\": 9.52433398924768}}, \"initial_experiment\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.006580814020708203, \"cold_filtered_seconds\": 0.05340322299161926, \"total_seconds\": 0.8061211051535793, \"unfiltered_seconds\": 0.35236012894893065, \"filtered_seconds\": 0.4537609762046486, \"median_ms\": 6.833832507254556, \"max_ms\": 10.226202954072505}, \"candidate\": {\"cold_unfiltered_seconds\": 0.005785321991425008, \"cold_filtered_seconds\": 0.05420169001445174, \"total_seconds\": 0.794457636133302, \"unfiltered_seconds\": 0.3270513750612736, \"filtered_seconds\": 0.4683456120546907, \"median_ms\": 7.163301488617435, \"max_ms\": 9.70659899758175}}}",
+      "interpretation": "首版带过滤组回退约3.2%，最终路由保留原过滤筛选；新局部TopK主要改善无过滤组。最终120条128维查询三轮总体中位0.826秒→0.771秒，无过滤0.363秒→0.316秒。检查按保守候选包含真TopK和完整并列来断言；没有要求C必须仅返回K个候选，因为Python仍负责最终排名。"
     }
   ],
   "implementation": {

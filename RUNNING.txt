@@ -91,3 +91,7 @@ INSERT采用分段写入及分层归并；UPDATE/DELETE重写受影响的分段�
 RUN断网构建复现
 docker build --platform linux/amd64 --network=none --no-cache -t minivectordb:rewrite-complete .
 --network=none限制构建RUN步骤；FROM镜像仍由Docker引擎拉取，或由平台预置。
+
+块内原生TopK
+无普通列过滤的向量TopK可在C内收紧块级候选范围，保留误差带/距离并列，最终仍用Python精确排序；过滤查询沿用原筛选。
+ABI为2，构建继续RUN断网，细节见TOPK_MIGRATION.txt，实验与最终对比见TOPK_BENCHMARK.json。
