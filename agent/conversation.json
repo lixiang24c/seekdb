@@ -197,6 +197,16 @@
       "id": "a-groups-change",
       "role": "assistant",
       "content": "跨条件列值分组只在出现同列第二种未命中条件时建立，避免单一条件付出构建成本。缓存估算预算256KiB，按不可变记录文件和失效主键隔离；超限或匹配超过4096个主键时回到原路径。"
+    },
+    {
+      "id": "u-continue-migration-inventory",
+      "role": "user",
+      "content": "继续，还有多少可以迁移"
+    },
+    {
+      "id": "a-migration-inventory",
+      "role": "assistant",
+      "content": "按机制仍有六类较大方向可评估：持久化普通列索引、页式WAL/检查点、IVF、过滤/动态图、PQ/OPQ及更广泛原生执行。主键页缓存试验慢约2.3%，已撤回。批量float32转换用标准库落地，不增加扩展依赖。"
     }
   ],
   "experiments": [
@@ -361,6 +371,12 @@
       "role": "tool",
       "output": "{\"public20_passed\": true, \"boundaries\": {\"status\": \"PASS\", \"oracle_queries\": 24, \"rows\": 5000, \"dimensions\": 128, \"cache_budget\": 262144, \"coverage\": [\"new predicate without row scan\", \"missing value\", \"Unicode codepoint ranges\", \"same-column AND\", \"numeric comparisons\", \"dense match fallback\", \"multiple-column fallback\", \"native disabled\", \"transaction mutation\", \"failed statement\", \"rollback\", \"committed delete\", \"second index\", \"high cardinality overflow\", \"preflight budget fallback\", \"LRU eviction\", \"restart rebuild on demand\"]}, \"final_ten_medians\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.00585853197844699, \"cold_filtered_seconds\": 0.05643393599893898, \"total_seconds\": 1.0497307446785271, \"unfiltered_seconds\": 0.2771288170479238, \"filtered_seconds\": 0.7726019276306033, \"median_ms\": 4.492687497986481, \"max_ms\": 59.2562910169363}, \"candidate\": {\"cold_unfiltered_seconds\": 0.005211057956330478, \"cold_filtered_seconds\": 0.05656615400221199, \"total_seconds\": 0.6246543018496595, \"unfiltered_seconds\": 0.2638026931672357, \"filtered_seconds\": 0.36085160868242383, \"median_ms\": 4.369306494481862, \"max_ms\": 59.37295395415276}}, \"final_single_medians\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.0052279939991422, \"cold_filtered_seconds\": 0.05609761900268495, \"total_seconds\": 0.5381284298491664, \"unfiltered_seconds\": 0.26765319891273975, \"filtered_seconds\": 0.27034778182860464, \"median_ms\": 4.367699526483193, \"max_ms\": 8.007104974240065}, \"candidate\": {\"cold_unfiltered_seconds\": 0.005516114993952215, \"cold_filtered_seconds\": 0.05847146100131795, \"total_seconds\": 0.5356459939503111, \"unfiltered_seconds\": 0.2677796950447373, \"filtered_seconds\": 0.2675264088320546, \"median_ms\": 4.309269017539918, \"max_ms\": 7.690605998504907}}, \"final_responses_checked\": 1440, \"discarded_eager_first_filter_seconds\": {\"baseline\": 0.05643014400266111, \"candidate\": 0.06094789697090164}}",
       "interpretation": "提前构建方案首次过滤中位0.05643秒→0.06095秒，遂改为第二种条件触发。最终十类轮换1.04973秒→0.62465秒；单类0.53813秒→0.53565秒，按基本持平解释。没有新功能的容器内存/I/O完整测量，不把预算当测量。Agent设计、运行和解释不冒充学生自身贡献。"
+    },
+    {
+      "id": "codec-and-rejected-cache",
+      "role": "tool",
+      "output": "{\"public20_passed\": true, \"codec_boundaries\": {\"status\": \"PASS\", \"cases\": 102, \"dimensions\": [1, 2, 3, 16, 31, 32, 127, 128, 129, 512, 4096], \"coverage\": [\"bitwise scalar oracle\", \"list and text inputs\", \"negative zero\", \"subnormal rounding\", \"finite extrema\", \"mixed signed integers\", \"NaN/Infinity\", \"overflow\", \"invalid types\", \"dimension precedence\", \"malformed text\"]}, \"write_medians\": {\"baseline\": {\"seconds\": 4.828132464026567, \"memory_peak_bytes\": 27004928}, \"candidate\": {\"seconds\": 4.646532849990763, \"memory_peak_bytes\": 26845184}}, \"rejected_key_cache_query_medians\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.005301107012201101, \"cold_filtered_seconds\": 0.05550703901099041, \"total_seconds\": 0.652050887409132, \"unfiltered_seconds\": 0.2812624787329696, \"filtered_seconds\": 0.3709803891251795, \"median_ms\": 4.613515513483435, \"max_ms\": 59.45262900786474}, \"candidate\": {\"cold_unfiltered_seconds\": 0.005230677023064345, \"cold_filtered_seconds\": 0.058027338003739715, \"total_seconds\": 0.667356061458122, \"unfiltered_seconds\": 0.2881937299389392, \"filtered_seconds\": 0.3747629873105325, \"median_ms\": 4.72692001494579, \"max_ms\": 59.2988149728626}}}",
+      "interpretation": "页缓存三轮查询中位0.652051→0.667356秒，未保留该代码。批量转换写入中位4.828132→4.646533秒，三对均改善，I/O字节不变。102项独立标量float32位级参考与异常输入检查通过；不把Agent对代码与测量的解释计为学生理解。"
     }
   ],
   "implementation": {
@@ -374,13 +390,14 @@
       "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
       "minidb/native.py": "97b66b0e47977884bc0a3b414cd5deb2d8a28db3a13a550adca211acb06f9a40",
       "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
-      "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
+      "minidb/sql.py": "0bd87057383d04dcb0312729f14aac9ed743ecd27c2585c3c11b4163d32b2c7f",
       "minidb/storage.py": "dd7d744775b2fbe85ed7cf5e4b901b0e15317d929e26ca738cc51f3fac313dc4",
       "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
       "native/screen.c": "0bb4998bc99a0a597c72861859a055916a6019ced614633707b3eccbc7b87796"
     },
     "storage": "Immutable segments, bounded point overlays, preplanned <=16-old-run INSERT fusion with original wide-cascade fallback; atomic fsynced manifest retained.",
-    "query": "Exact native scan, batched TopK row lookup, bounded per-predicate masks and on-demand same-column value groups; ANN remains opt-in."
+    "query": "Exact native scan, batched TopK row lookup, bounded per-predicate masks and on-demand same-column value groups; ANN remains opt-in.",
+    "vector_input": "Whole-vector standard-library float32 packing/unpacking with original type, finite and dimension validation."
   },
   "limitations": [
     "图索引默认关闭，仅对1024–20000行、16–256维、单表、无普通列过滤且K<=64的ann TopK生效；总分配预算16MiB。",
@@ -430,6 +447,10 @@
     {
       "commit": "c4dc9fbce63f317775c933ef4b48fae567757c9e",
       "note": "Preplanned insert merge stage retained."
+    },
+    {
+      "commit": "647f87f3fbf5a2727ca51cac39738c454c919bc2",
+      "note": "Value-group stage preserved; key cache discarded, not shipped."
     }
   ]
 }

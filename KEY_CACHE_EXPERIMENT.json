@@ -1,0 +1,100 @@
+{
+  "rows": 10000,
+  "dimensions": 128,
+  "queries": 120,
+  "filtered_queries": 60,
+  "filter_categories": 10,
+  "projected_distance": true,
+  "content_bytes_per_row": 512,
+  "cpus": "2",
+  "memory": "2g",
+  "seed": 20261112,
+  "scope": "Alternating image order across rounds; local comparison, not formal score",
+  "rounds": 3,
+  "samples": {
+    "baseline": [
+      {
+        "cold_unfiltered_seconds": 0.005252238013781607,
+        "cold_filtered_seconds": 0.05660920700756833,
+        "total_seconds": 0.6534818591899239,
+        "unfiltered_seconds": 0.282319953024853,
+        "filtered_seconds": 0.37116190616507083,
+        "median_ms": 4.502388008404523,
+        "max_ms": 58.54006204754114
+      },
+      {
+        "cold_unfiltered_seconds": 0.008038578962441534,
+        "cold_filtered_seconds": 0.05550703901099041,
+        "total_seconds": 0.652050887409132,
+        "unfiltered_seconds": 0.2812624787329696,
+        "filtered_seconds": 0.37078840867616236,
+        "median_ms": 4.679334495449439,
+        "max_ms": 59.45262900786474
+      },
+      {
+        "cold_unfiltered_seconds": 0.005301107012201101,
+        "cold_filtered_seconds": 0.054970140976365656,
+        "total_seconds": 0.64781315298751,
+        "unfiltered_seconds": 0.27683276386233047,
+        "filtered_seconds": 0.3709803891251795,
+        "median_ms": 4.613515513483435,
+        "max_ms": 60.5945210554637
+      }
+    ],
+    "candidate": [
+      {
+        "cold_unfiltered_seconds": 0.007927693019155413,
+        "cold_filtered_seconds": 0.058027338003739715,
+        "total_seconds": 0.667356061458122,
+        "unfiltered_seconds": 0.2925930741475895,
+        "filtered_seconds": 0.3747629873105325,
+        "median_ms": 4.72692001494579,
+        "max_ms": 58.689904981292784
+      },
+      {
+        "cold_unfiltered_seconds": 0.005230677023064345,
+        "cold_filtered_seconds": 0.05747027700999752,
+        "total_seconds": 0.6735648902249523,
+        "unfiltered_seconds": 0.2881937299389392,
+        "filtered_seconds": 0.38537116028601304,
+        "median_ms": 4.735929018352181,
+        "max_ms": 59.2988149728626
+      },
+      {
+        "cold_unfiltered_seconds": 0.005181291024200618,
+        "cold_filtered_seconds": 0.060994063038378954,
+        "total_seconds": 0.6491220823372714,
+        "unfiltered_seconds": 0.28387180622667074,
+        "filtered_seconds": 0.3652502761106007,
+        "median_ms": 4.597682011080906,
+        "max_ms": 60.11988699901849
+      }
+    ]
+  },
+  "runs": {
+    "baseline": {
+      "cold_unfiltered_seconds": 0.005301107012201101,
+      "cold_filtered_seconds": 0.05550703901099041,
+      "total_seconds": 0.652050887409132,
+      "unfiltered_seconds": 0.2812624787329696,
+      "filtered_seconds": 0.3709803891251795,
+      "median_ms": 4.613515513483435,
+      "max_ms": 59.45262900786474
+    },
+    "candidate": {
+      "cold_unfiltered_seconds": 0.005230677023064345,
+      "cold_filtered_seconds": 0.058027338003739715,
+      "total_seconds": 0.667356061458122,
+      "unfiltered_seconds": 0.2881937299389392,
+      "filtered_seconds": 0.3747629873105325,
+      "median_ms": 4.72692001494579,
+      "max_ms": 59.2988149728626
+    }
+  },
+  "speedup": 0.9770659548434318,
+  "correctness": "All 720 measured responses checked; first 8 independently checked",
+  "baseline_commit": "647f87f3fbf5a2727ca51cac39738c454c919bc2",
+  "decision": "REJECTED; default implementation restored. Three-round median query time regressed about2.3%.",
+  "experimental_source_sha256": "89eb5a4ebecfe004c51c46ad6200c630d06e641be9d2b027c4bdb42c3c05a25f",
+  "experimental_diff": "diff --git a/minidb/storage.py b/minidb/storage.py\nindex 111448f5..ed896ba8 100644\n--- a/minidb/storage.py\n+++ b/minidb/storage.py\n@@ -9,6 +9,7 @@ import os\n import struct\n import uuid\n from contextlib import ExitStack\n+from collections import OrderedDict\n from pathlib import Path\n \n MAGIC = b'MVROW001'\n@@ -18,6 +19,8 @@ OFFSET_MAGIC = b'MVKEY002'\n KEY_OFFSET = struct.Struct('<qQ')\n U32 = struct.Struct('<I')\n I64 = struct.Struct('<q')\n+KEY_BLOCK = 4096\n+KEY_PAGES = 16\n \n \n def strict_json(text):\n@@ -141,6 +144,7 @@ class Storage:\n         self.dirfd = os.open(self.root, os.O_RDONLY | os.O_DIRECTORY)\n         self.manifest = self.root / 'manifest.json'\n         self.in_txn = False\n+        self.key_cache = OrderedDict()\n         try:\n             with open(self.manifest, encoding='utf-8') as f:\n                 doc = strict_json(f.read())\n@@ -188,6 +192,25 @@ class Storage:\n         for path in self.root.iterdir():\n             if path.name.startswith('mv-') and path.is_file() and path.name not in keep:\n                 path.unlink()\n+        for key in list(self.key_cache):\n+            if key[0] not in keep: del self.key_cache[key]\n+\n+    def key_entry(self, stream, name, stride, index):\n+        \"\"\"Immutable key pages; 64KiB payload plus bounded LRU metadata.\"\"\"\n+        slots = KEY_BLOCK // stride\n+        key = (name, stride, index // slots)\n+        data = self.key_cache.get(key)\n+        if data is None:\n+            data = os.pread(stream.fileno(), KEY_BLOCK, 8 + key[2] * KEY_BLOCK)\n+            offset = (index % slots) * stride\n+            if len(data) < offset + stride: raise OSError('incomplete key index')\n+            if len(self.key_cache) == KEY_PAGES: self.key_cache.popitem(last=False)\n+            self.key_cache[key] = data\n+        else:\n+            self.key_cache.move_to_end(key)\n+            offset = (index % slots) * stride\n+            if len(data) < offset + stride: raise OSError('incomplete key index')\n+        return data[offset:offset + stride]\n \n     def begin(self):\n         self.in_txn = True\n@@ -314,9 +337,8 @@ class Storage:\n                         left, right = 0, part['count']\n                         while left < right:\n                             mid = (left + right) // 2\n-                            raw = os.pread(f.fileno(), 8, 8 + mid * stride)\n-                            if len(raw) != 8: raise OSError('incomplete key index')\n-                            found = I64.unpack(raw)[0]\n+                            raw = self.key_entry(f, part['keys'], stride, mid)\n+                            found = I64.unpack_from(raw)[0]\n                             if found == ident: fail('duplicate primary key', 'duplicate_key')\n                             if found < ident: left = mid + 1\n                             else: right = mid\n@@ -366,8 +388,7 @@ class Storage:\n                     found = None\n                     while left < right:\n                         mid = (left + right) // 2\n-                        data = os.pread(f.fileno(), stride, 8 + mid * stride)\n-                        if len(data) != stride: raise OSError('incomplete key index')\n+                        data = self.key_entry(f, part['keys'], stride, mid)\n                         key = I64.unpack_from(data)[0]\n                         if key == ident:\n                             found = data; break\n@@ -411,8 +432,7 @@ class Storage:\n                             left, right = lower, part['count']\n                             while left < right:\n                                 mid = (left + right) // 2\n-                                data = os.pread(keys.fileno(), 16, 8 + mid * 16)\n-                                if len(data) != 16: raise OSError('incomplete key index')\n+                                data = self.key_entry(keys, part['keys'], 16, mid)\n                                 key, offset = KEY_OFFSET.unpack(data)\n                                 if key == ident:\n                                     offsets.append((ident, offset)); lower = mid + 1\n@@ -548,8 +568,7 @@ class Storage:\n                     header = keys.read(8)\n                     if header == OFFSET_MAGIC:\n                         def entry(i):\n-                            data = os.pread(keys.fileno(), 16, 8 + i * 16)\n-                            if len(data) != 16: raise OSError('incomplete key index')\n+                            data = self.key_entry(keys, part['keys'], 16, i)\n                             return KEY_OFFSET.unpack(data)\n                         def lower_bound(value):\n                             lo, hi = 0, part['count']\n@@ -609,4 +628,5 @@ class Storage:\n         try:\n             self.rollback()\n         finally:\n+            self.key_cache.clear()\n             os.close(self.dirfd)\n"
+}
