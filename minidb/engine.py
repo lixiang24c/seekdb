@@ -146,19 +146,7 @@ class Database:
             incoming.sort(key=lambda row: row[pk])
             if any(a[pk] == b[pk] for a, b in zip(incoming, incoming[1:])):
                 fail('duplicate primary key', 'duplicate_key')
-            def merge():
-                added = iter(incoming)
-                nxt = next(added, None)
-                for old in self.store.rows(table):
-                    while nxt is not None and nxt[pk] < old[pk]:
-                        yield nxt; nxt = next(added, None)
-                    if nxt is not None and nxt[pk] == old[pk]:
-                        fail('duplicate primary key', 'duplicate_key')
-                    yield old
-                if nxt is not None:
-                    yield nxt
-                yield from added
-            new = self.store.rewrite(table, merge())
+            new = self.store.insert(table, incoming)
             self.store.install(name, new)
             return {'affected_rows': len(incoming)}
         match = self.conditions(table, st['where'])
@@ -242,17 +230,18 @@ class Database:
         vc, query = expr[1], expr[2]
         fmt = struct.Struct('<q' + str(len(query)) + 'f')
         heap = []
-        with open(self.store.path(table['index_file']), 'rb') as f:
-            if f.read(8) != INDEX_MAGIC: raise OSError('invalid index header')
-            while data := f.read(fmt.size):
-                if len(data) != fmt.size: raise OSError('incomplete index record')
-                values = fmt.unpack(data)
-                key = (squared(query, values[1:]), values[0])
-                item = (-key[0], -key[1], values[0])
-                if len(heap) < k:
-                    heapq.heappush(heap, item)
-                elif item > heap[0]:
-                    heapq.heapreplace(heap, item)
+        for path in self.store.index_paths(table):
+            with open(path, 'rb') as f:
+                if f.read(8) != INDEX_MAGIC: raise OSError('invalid index header')
+                while data := f.read(fmt.size):
+                    if len(data) != fmt.size: raise OSError('incomplete index record')
+                    values = fmt.unpack(data)
+                    key = (squared(query, values[1:]), values[0])
+                    item = (-key[0], -key[1], values[0])
+                    if len(heap) < k:
+                        heapq.heappush(heap, item)
+                    elif item > heap[0]:
+                        heapq.heapreplace(heap, item)
         return {item[2] for item in heap}
 
     def select(self, table, st):
@@ -292,7 +281,7 @@ class Database:
             else:
                 if limit is not None and limit <= 1024:
                     selected = source()
-                    if not st['where'] and len(keys) == 1 and keys[0][0][0] == 'distance' and not keys[0][1] and table.get('index_file'):
+                    if not st['where'] and len(keys) == 1 and keys[0][0][0] == 'distance' and not keys[0][1] and table.get('indexes'):
                         ids = self.flat_topk(table, keys[0][0], limit)
                         selected = (row for row in self.store.rows(table) if row[table['pk']] in ids)
                     try:

@@ -32,6 +32,21 @@
       "id": "a2",
       "role": "assistant",
       "content": "保留官方JSONL握手与执行/关闭协议，使用Python标准库从头实现SQL、变长记录、磁盘平面向量索引、事务和恢复。修改流式写入新文件，通过原子替换manifest发布多表提交；TopK使用有界堆，大排序落盘归并。"
+    },
+    {
+      "id": "u5",
+      "role": "user",
+      "content": "继续吧，但是记住也不要过分小心，写一堆没用的测试"
+    },
+    {
+      "id": "u6",
+      "role": "user",
+      "content": "然后你记住现在需要的是尽快的性能优化和阶段性的提交，不用过度在本地跑测试"
+    },
+    {
+      "id": "a3",
+      "role": "assistant",
+      "content": "本阶段只修改批量写入：每批写独立有序段，分层合并时复制二进制记录并同步索引；保留原提交发布机制、启动入口和依赖。"
     }
   ],
   "experiments": [
@@ -40,42 +55,62 @@
       "source": "tool",
       "command": "docker build --platform linux/amd64 -t minivectordb:rewrite-complete .",
       "output": "{\"result\": \"success\", \"image_id\": \"sha256:20ac422696bbb20bd344e8d3636cec3766aa40f3f002be194bc929f73e7b34fc\"}",
-      "status": "executed"
+      "status": "executed",
+      "version": "c965e86e9da81a089057aa944db078b1014fd3f0"
     },
     {
       "id": "tool2",
       "source": "tool",
       "command": "python3 protocol_check/run.py --image minivectordb:rewrite-complete --output protocol-results/final-public",
       "output": "{\"passed\": true, \"cases\": [{\"id\": \"sql_crud\", \"status\": \"PASS\"}, {\"id\": \"sql_comparisons\", \"status\": \"PASS\"}, {\"id\": \"sql_ordering\", \"status\": \"PASS\"}, {\"id\": \"sql_empty\", \"status\": \"PASS\"}, {\"id\": \"sql_primary_key\", \"status\": \"PASS\"}, {\"id\": \"sql_unicode\", \"status\": \"PASS\"}, {\"id\": \"sql_bigint\", \"status\": \"PASS\"}, {\"id\": \"sql_unsupported\", \"status\": \"PASS\"}, {\"id\": \"storage_restart\", \"status\": \"PASS\"}, {\"id\": \"vector_euclidean\", \"status\": \"PASS\"}, {\"id\": \"transaction_commit\", \"status\": \"PASS\"}, {\"id\": \"transaction_rollback\", \"status\": \"PASS\"}, {\"id\": \"storage_mutations\", \"status\": \"PASS\"}, {\"id\": \"storage_multiple_tables\", \"status\": \"PASS\"}, {\"id\": \"vector_ties_and_filter\", \"status\": \"PASS\"}, {\"id\": \"vector_float32\", \"status\": \"PASS\"}, {\"id\": \"vector_index_maintenance\", \"status\": \"PASS\"}, {\"id\": \"transaction_failed_insert\", \"status\": \"PASS\"}, {\"id\": \"transaction_autocommit_atomic\", \"status\": \"PASS\"}, {\"id\": \"transaction_shutdown_rollback\", \"status\": \"PASS\"}]}",
-      "status": "executed"
+      "status": "executed",
+      "version": "c965e86e9da81a089057aa944db078b1014fd3f0"
     },
     {
       "id": "tool3",
       "source": "tool",
       "command": "python3 checks/contract.py --image minivectordb:rewrite-complete --output protocol-results/final-contract",
       "output": "{\"status\": \"PASS\", \"checks\": 78}",
-      "status": "executed"
+      "status": "executed",
+      "version": "c965e86e9da81a089057aa944db078b1014fd3f0"
     },
     {
       "id": "tool4",
       "source": "tool",
       "command": "python3 checks/model.py",
       "output": "{\"status\": \"PASS\", \"operations\": 250, \"queries_checked\": 750, \"seed\": 20261111}",
-      "status": "executed"
+      "status": "executed",
+      "version": "c965e86e9da81a089057aa944db078b1014fd3f0"
     },
     {
       "id": "tool5",
       "source": "tool",
       "command": "python3 checks/recovery.py",
       "output": "[{\"cut\": \"before\", \"explicit_multitable\": false, \"two_restarts\": \"PASS\"}, {\"cut\": \"before\", \"explicit_multitable\": true, \"two_restarts\": \"PASS\"}, {\"cut\": \"after\", \"explicit_multitable\": false, \"two_restarts\": \"PASS\"}, {\"cut\": \"after\", \"explicit_multitable\": true, \"two_restarts\": \"PASS\"}, {\"kill_without_commit\": \"PASS\"}]",
-      "status": "executed"
+      "status": "executed",
+      "version": "c965e86e9da81a089057aa944db078b1014fd3f0"
     },
     {
       "id": "tool6",
       "source": "tool",
       "command": "python3 checks/resource.py",
       "output": "{\"memory\": \"64m\", \"limit_source\": \"local stress condition; official public config is 2g\", \"stages\": [{\"stage\": \"load_beyond_memory\", \"elapsed\": 19.251, \"details\": {\"rows\": 9000, \"data_bytes\": 73948424}}, {\"stage\": \"index_and_exact_ann_distance_projection\", \"elapsed\": 19.898, \"details\": \"PASS\"}, {\"stage\": \"full_table_update\", \"elapsed\": 20.26, \"details\": \"PASS\"}, {\"stage\": \"external_sort\", \"elapsed\": 21.411, \"details\": \"PASS\"}, {\"stage\": \"rollback_crash_restart\", \"elapsed\": 22.857, \"details\": {\"status\": \"PASS\", \"restart_memory_peak_bytes\": 67108864}}, {\"stage\": \"complete\", \"elapsed\": 22.964, \"details\": null}], \"status\": \"PASS\"}",
-      "status": "executed"
+      "status": "executed",
+      "version": "c965e86e9da81a089057aa944db078b1014fd3f0"
+    },
+    {
+      "id": "tool7",
+      "source": "tool",
+      "status": "executed",
+      "command": "actual Docker image, 200 batches of 100 rows with 128-dimensional vectors, index before loading",
+      "output": "{\"scope\": \"Local single-run write comparison, not official performance score or hidden timeout reproduction\", \"rows\": 20000, \"dimension\": 128, \"batch_rows\": 100, \"index_created_before_loading\": true, \"cpus\": 2, \"memory\": \"2g\", \"baseline_commit\": \"c965e86e9da81a089057aa944db078b1014fd3f0\", \"baseline_seconds\": 43.06494199601002, \"optimized_seconds\": 6.79940787301166, \"speedup\": 6.33363122205747, \"baseline_last_batch_seconds\": 0.40391581202857196, \"optimized_last_batch_seconds\": 0.04761942505137995, \"content_filter_and_restart\": \"PASS\"}"
+    },
+    {
+      "id": "tool8",
+      "source": "tool",
+      "status": "executed",
+      "command": "protocol_check/run.py and checks/recovery.py; focused segment and old-format migration checks",
+      "output": "{\"public_cases_passed\": 20, \"recovery_scenarios_passed\": 5, \"targeted_checks\": [\"unordered negative primary keys and non-first primary-key column: PASS\", \"duplicate statement inside transaction retains prior successful insert: PASS\", \"rollback and restart of segmented tables: PASS\", \"read MVP data, migrate primary key metadata, insert, reject duplicate and restart indexed query: PASS\"]}"
     }
   ],
   "implementation": {
@@ -83,16 +118,31 @@
     "official_protocol_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
     "source_sha256": {
       "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
-      "minidb/engine.py": "fb385ef97ef459939bcca5d6a31b1f6e36352534fc1740066dbfb5f950d1b02b",
+      "minidb/engine.py": "41175fecf4d0e5c11c602ed21d7ec0062effbcb13ec6ea3ee47bdcfe503cf740",
       "minidb/server.py": "731d19710fc385de5433f74344e6f8ab9aa44b3899a9083f030d5ce977795e27",
       "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
-      "minidb/storage.py": "3310cc562ef0b07f0bda8a5e4485778e827798e7a41e66b330f3fb8a579784e1",
+      "minidb/storage.py": "a2d527a906bf0a3d2544756d3b8c94d7155b8461f996bff5fbc9d7ac50210bcd",
       "Dockerfile": "49f332ee4d77c71516b0e71b9dea9cee5fcdb18e7c085c716c13e6772c4c15d2"
-    }
+    },
+    "storage": "Immutable sorted segments, disk primary-key binary search and geometric merges; atomic manifest publication retained."
   },
   "limitations": [
-    "修改语句顺序生成整表新版本，写放大高于增量页存储。",
+    "INSERT使用分段写入与分层归并；UPDATE/DELETE仍顺序生成整表新版本。",
     "向量索引是自实现磁盘平面索引，ann返回精确结果。",
     "本地验证记录与正式隐藏用例结果分开；此材料不包含平台正式评测结果。"
+  ],
+  "implementation_history": [
+    {
+      "language": "Python 3.12.8 standard library",
+      "official_protocol_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
+      "source_sha256": {
+        "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+        "minidb/engine.py": "fb385ef97ef459939bcca5d6a31b1f6e36352534fc1740066dbfb5f950d1b02b",
+        "minidb/server.py": "731d19710fc385de5433f74344e6f8ab9aa44b3899a9083f030d5ce977795e27",
+        "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
+        "minidb/storage.py": "3310cc562ef0b07f0bda8a5e4485778e827798e7a41e66b330f3fb8a579784e1",
+        "Dockerfile": "49f332ee4d77c71516b0e71b9dea9cee5fcdb18e7c085c716c13e6772c4c15d2"
+      }
+    }
   ]
 }

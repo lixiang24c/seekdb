@@ -1,5 +1,7 @@
 """Variable-sized immutable row files, atomically published by one manifest."""
 import copy
+import bisect
+import heapq
 import json
 import math
 import os
@@ -9,6 +11,7 @@ from pathlib import Path
 
 MAGIC = b'MVROW001'
 INDEX_MAGIC = b'MVFLT001'
+KEY_MAGIC = b'MVKEY001'
 U32 = struct.Struct('<I')
 I64 = struct.Struct('<q')
 
@@ -62,6 +65,31 @@ class Codec:
             raise OSError('invalid row length')
         return row
 
+    def field(self, data, target):
+        """Locate a binary field without decoding vectors or copying strings."""
+        pos = 0
+        for i, (col, fmt) in enumerate(zip(self.cols, self.formats)):
+            size = 8 if col['type'] == 'BIGINT' else fmt.size if fmt else 4 + U32.unpack_from(data, pos)[0]
+            if i == target:
+                return pos, size
+            pos += size
+        raise OSError('invalid field position')
+
+
+def raw_rows(path, codec, pk):
+    with open(path, 'rb') as f:
+        if f.read(8) != MAGIC:
+            raise OSError('invalid row file header')
+        while head := f.read(4):
+            if len(head) != 4:
+                raise OSError('incomplete row header')
+            size = U32.unpack(head)[0]
+            raw = f.read(size)
+            if len(raw) != size:
+                raise OSError('incomplete row')
+            offset, _ = codec.field(raw, pk)
+            yield I64.unpack_from(raw, offset)[0], raw
+
 
 def read_rows(path, codec):
     with open(path, 'rb') as f:
@@ -103,11 +131,12 @@ class Storage:
                 raise OSError('unsupported or invalid manifest')
             self.tables = doc['tables']
             for t in self.tables.values():
-                for key, magic in [('file', MAGIC), ('index_file', INDEX_MAGIC)]:
-                    if t.get(key):
-                        with open(self.path(t[key]), 'rb') as f:
-                            if f.read(8) != magic:
-                                raise OSError('invalid committed file header')
+                for part in self.segments(t):
+                    for key, magic in [('file', MAGIC), ('index_file', INDEX_MAGIC), ('keys', KEY_MAGIC)]:
+                        if part.get(key):
+                            with open(self.path(part[key]), 'rb') as f:
+                                if f.read(8) != magic:
+                                    raise OSError('invalid committed file header')
         except FileNotFoundError:
             # A missing committed data file is an error; only an absent manifest means new DB.
             if self.manifest.exists():
@@ -137,8 +166,8 @@ class Storage:
         self.committed = copy.deepcopy(self.tables)
 
     def collect(self):
-        keep = {t[k] for state in (self.tables, self.committed) for t in state.values()
-                for k in ('file', 'index_file') if t.get(k)}
+        keep = {part[k] for state in (self.tables, self.committed) for t in state.values()
+                for part in self.segments(t) for k in ('file', 'index_file', 'keys') if part.get(k)}
         for path in self.root.iterdir():
             if path.name.startswith('mv-') and path.is_file() and path.name not in keep:
                 path.unlink()
@@ -162,34 +191,127 @@ class Storage:
             self.publish()
         self.collect()
 
-    def rewrite(self, table, rows):
-        new = copy.deepcopy(table)
+    @staticmethod
+    def segments(table):
+        if 'segments' in table:
+            return table['segments']
+        # Read the original single-file format without changing its committed files.
+        return [{k: table[k] for k in ('file', 'index_file', 'count') if k in table}] if table.get('file') else []
+
+    def index_paths(self, table):
+        return [self.path(part['index_file']) for part in self.segments(table) if part.get('index_file')]
+
+    def write_segment(self, table, records, created):
         path = self.fresh()
+        keys = self.fresh('keys')
         idx = self.fresh('index') if table.get('indexes') else None
         codec = Codec(table['cols'])
+        vc = next((i for i, c in enumerate(table['cols']) if c['type'] == 'VECTOR'), None)
+        part = {'file': path.name, 'keys': keys.name, 'index_file': idx.name if idx else None,
+                'count': 0, 'min': None, 'max': None, 'level': 0}
+        opened = []
         try:
-            new['count'] = write_rows(path, codec, rows, durable=True)
-            new['file'] = path.name
-            new['index_file'] = None
+            f = open(path, 'xb'); opened.append(f); f.write(MAGIC)
+            k = open(keys, 'xb'); opened.append(k); k.write(KEY_MAGIC)
+            v = None
             if idx:
-                vc = next(i for i, c in enumerate(table['cols']) if c['type'] == 'VECTOR')
-                fmt = codec.formats[vc]
-                with open(idx, 'xb') as f:
-                    f.write(INDEX_MAGIC)
-                    for row in read_rows(path, codec):
-                        f.write(I64.pack(row[table['pk']]))
-                        f.write(fmt.pack(*row[vc]))
-                    f.flush(); os.fsync(f.fileno())
-                new['index_file'] = idx.name
-            return new
+                v = open(idx, 'xb'); opened.append(v); v.write(INDEX_MAGIC)
+            for ident, raw in records:
+                if part['count'] and ident <= part['max']:
+                    raise OSError('records must have unique ascending primary keys')
+                f.write(U32.pack(len(raw))); f.write(raw)
+                packed_key = I64.pack(ident)
+                k.write(packed_key)
+                if v:
+                    offset, size = codec.field(raw, vc)
+                    v.write(packed_key); v.write(memoryview(raw)[offset:offset + size])
+                if not part['count']: part['min'] = ident
+                part['max'] = ident
+                part['count'] += 1
+            for stream in opened:
+                stream.flush(); os.fsync(stream.fileno())
+            created.extend([path, keys] + ([idx] if idx else []))
+            return part
         except BaseException:
             path.unlink(missing_ok=True)
-            if idx:
-                idx.unlink(missing_ok=True)
+            keys.unlink(missing_ok=True)
+            if idx: idx.unlink(missing_ok=True)
+            raise
+        finally:
+            for stream in opened: stream.close()
+
+    def rewrite(self, table, rows):
+        new, created = copy.deepcopy(table), []
+        codec = Codec(table['cols'])
+        part = self.write_segment(table, ((row[table['pk']], codec.encode(row)) for row in rows), created)
+        part['level'] = max(0, (part['count'] // 100).bit_length() - 1)
+        new.update(segments=[part], count=part['count'])
+        new.pop('file', None); new.pop('index_file', None)
+        return new
+
+    def insert(self, table, incoming):
+        """Append one immutable run; merge runs geometrically, not on every insert."""
+        from .sql import fail
+        new, created = copy.deepcopy(table), []
+        parts = copy.deepcopy([p for p in self.segments(table) if p['count']])
+        codec, pk = Codec(table['cols']), table['pk']
+        ids = [row[pk] for row in incoming]
+        try:
+            for part in parts:
+                if not part.get('keys'):
+                    # One-time primary key metadata upgrade for existing MVP databases.
+                    path = self.fresh('keys'); created.append(path)
+                    with open(path, 'xb') as f:
+                        f.write(KEY_MAGIC)
+                        first = last = None
+                        for ident, _ in raw_rows(self.path(part['file']), codec, pk):
+                            if first is None: first = ident
+                            last = ident; f.write(I64.pack(ident))
+                        f.flush(); os.fsync(f.fileno())
+                    part.update(keys=path.name, min=first, max=last,
+                                level=max(0, (part['count'] // 100).bit_length() - 1))
+                lo = bisect.bisect_left(ids, part['min'])
+                hi = bisect.bisect_right(ids, part['max'])
+                if lo == hi:
+                    continue
+                with open(self.path(part['keys']), 'rb') as f:
+                    if f.read(8) != KEY_MAGIC: raise OSError('invalid key index header')
+                    for ident in ids[lo:hi]:
+                        left, right = 0, part['count']
+                        while left < right:
+                            mid = (left + right) // 2
+                            raw = os.pread(f.fileno(), 8, 8 + mid * 8)
+                            if len(raw) != 8: raise OSError('incomplete key index')
+                            found = I64.unpack(raw)[0]
+                            if found == ident: fail('duplicate primary key', 'duplicate_key')
+                            if found < ident: left = mid + 1
+                            else: right = mid
+            part = self.write_segment(table, ((row[pk], codec.encode(row)) for row in incoming), created)
+            part['level'] = max(0, (part['count'] // 100).bit_length() - 1)
+            while parts and parts[-1]['level'] <= part['level']:
+                old = parts.pop()
+                level = max(old['level'], part['level']) + 1
+                readers = [raw_rows(self.path(p['file']), codec, pk) for p in (old, part)]
+                try:
+                    part = self.write_segment(table, heapq.merge(*readers, key=lambda item: item[0]), created)
+                finally:
+                    for reader in readers: reader.close()
+                part['level'] = level
+            new.update(segments=parts + [part], count=table['count'] + len(incoming))
+            new.pop('file', None); new.pop('index_file', None)
+            return new
+        except BaseException:
+            for path in created: path.unlink(missing_ok=True)
             raise
 
     def rows(self, table):
-        return read_rows(self.path(table['file']), Codec(table['cols']))
+        codec = Codec(table['cols'])
+        readers = [raw_rows(self.path(part['file']), codec, table['pk']) for part in self.segments(table)]
+        try:
+            for _, raw in heapq.merge(*readers, key=lambda item: item[0]):
+                yield codec.decode(raw)
+        finally:
+            for reader in readers: reader.close()
 
     def close(self):
         try:
