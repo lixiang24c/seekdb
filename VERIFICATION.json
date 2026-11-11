@@ -1,0 +1,268 @@
+{
+  "official_protocol_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
+  "image_id": "sha256:20ac422696bbb20bd344e8d3636cec3766aa40f3f002be194bc929f73e7b34fc",
+  "source_sha256": {
+    "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+    "minidb/engine.py": "fb385ef97ef459939bcca5d6a31b1f6e36352534fc1740066dbfb5f950d1b02b",
+    "minidb/server.py": "731d19710fc385de5433f74344e6f8ab9aa44b3899a9083f030d5ce977795e27",
+    "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
+    "minidb/storage.py": "3310cc562ef0b07f0bda8a5e4485778e827798e7a41e66b330f3fb8a579784e1",
+    "Dockerfile": "49f332ee4d77c71516b0e71b9dea9cee5fcdb18e7c085c716c13e6772c4c15d2"
+  },
+  "public": {
+    "scope": "public-protocol-check",
+    "passed": true,
+    "cases": [
+      {
+        "id": "sql_crud",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 678
+      },
+      {
+        "id": "sql_comparisons",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 565
+      },
+      {
+        "id": "sql_ordering",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 543
+      },
+      {
+        "id": "sql_empty",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 575
+      },
+      {
+        "id": "sql_primary_key",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 545
+      },
+      {
+        "id": "sql_unicode",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 527
+      },
+      {
+        "id": "sql_bigint",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 537
+      },
+      {
+        "id": "sql_unsupported",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 524
+      },
+      {
+        "id": "storage_restart",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1014
+      },
+      {
+        "id": "vector_euclidean",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 515
+      },
+      {
+        "id": "transaction_commit",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 556
+      },
+      {
+        "id": "transaction_rollback",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 598
+      },
+      {
+        "id": "storage_mutations",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1040
+      },
+      {
+        "id": "storage_multiple_tables",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1031
+      },
+      {
+        "id": "vector_ties_and_filter",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 526
+      },
+      {
+        "id": "vector_float32",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 529
+      },
+      {
+        "id": "vector_index_maintenance",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1050
+      },
+      {
+        "id": "transaction_failed_insert",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1092
+      },
+      {
+        "id": "transaction_autocommit_atomic",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1127
+      },
+      {
+        "id": "transaction_shutdown_rollback",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1013
+      }
+    ],
+    "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
+  },
+  "contract": {
+    "status": "PASS",
+    "checks": 78
+  },
+  "model": {
+    "status": "PASS",
+    "operations": 250,
+    "queries_checked": 750,
+    "seed": 20261111
+  },
+  "recovery": [
+    {
+      "cut": "before",
+      "explicit_multitable": false,
+      "two_restarts": "PASS"
+    },
+    {
+      "cut": "before",
+      "explicit_multitable": true,
+      "two_restarts": "PASS"
+    },
+    {
+      "cut": "after",
+      "explicit_multitable": false,
+      "two_restarts": "PASS"
+    },
+    {
+      "cut": "after",
+      "explicit_multitable": true,
+      "two_restarts": "PASS"
+    },
+    {
+      "kill_without_commit": "PASS"
+    }
+  ],
+  "resource": {
+    "memory": "64m",
+    "limit_source": "local stress condition; official public config is 2g",
+    "stages": [
+      {
+        "stage": "load_beyond_memory",
+        "elapsed": 19.251,
+        "details": {
+          "rows": 9000,
+          "data_bytes": 73948424
+        }
+      },
+      {
+        "stage": "index_and_exact_ann_distance_projection",
+        "elapsed": 19.898,
+        "details": "PASS"
+      },
+      {
+        "stage": "full_table_update",
+        "elapsed": 20.26,
+        "details": "PASS"
+      },
+      {
+        "stage": "external_sort",
+        "elapsed": 21.411,
+        "details": "PASS"
+      },
+      {
+        "stage": "rollback_crash_restart",
+        "elapsed": 22.857,
+        "details": {
+          "status": "PASS",
+          "restart_memory_peak_bytes": 67108864
+        }
+      },
+      {
+        "stage": "complete",
+        "elapsed": 22.964,
+        "details": null
+      }
+    ],
+    "status": "PASS"
+  },
+  "boundaries": [
+    {
+      "type": "ready"
+    },
+    {
+      "id": null,
+      "ok": false,
+      "error": {
+        "code": "invalid_request",
+        "message": "nonfinite JSON value: 1e999"
+      }
+    },
+    {
+      "id": 2,
+      "ok": false,
+      "error": {
+        "code": "invalid_value",
+        "message": "column size out of range"
+      }
+    },
+    {
+      "id": 3,
+      "ok": true
+    },
+    {
+      "id": 4,
+      "ok": false,
+      "error": {
+        "code": "invalid_vector",
+        "message": "invalid vector element"
+      }
+    },
+    {
+      "affected_rows": 1,
+      "id": 5,
+      "ok": true
+    },
+    {
+      "id": 6,
+      "ok": false,
+      "error": {
+        "code": "unsupported_sql",
+        "message": "cannot ORDER BY VECTOR"
+      }
+    },
+    {
+      "id": 7,
+      "ok": true
+    }
+  ],
+  "scope": "Local verification of the actual Docker image and native recovery boundary tests. No formal platform result or benchmark ranking is claimed."
+}

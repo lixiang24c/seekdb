@@ -1,24 +1,64 @@
-官方启动协议基线
+MiniVectorDB 完整重写版本
 
-分支：minivectordb-rewrite
-官方基点：f4d4e26653af823a7601668802f80e374ad6643c
+开发分支：minivectordb-rewrite
+官方协议基点：f4d4e26653af823a7601668802f80e374ad6643c
+协议与检查器：STDIO_PROTOCOL.md、protocol_check/、mysqltest/ 保留官方原文件。
+语言：Python 3.12.8；仅标准库。基础镜像按Dockerfile中的digest锁定。
+构建不运行apt/pip，不依赖本地二进制，运行时不联网。
 
-直接运行官方 protocol_check/example_stdio.py，原文件未修改。
-采用其配套 _transport.py 的 strict_json，全部依赖来自 Python 标准库。
-Python 3.12.8 基础镜像按 digest 固定；构建不执行 apt 或 pip。
+构建与正式入口
+docker build --platform linux/amd64 -t minivectordb:rewrite-complete .
+docker run --rm -i --network=none --cpus=2 --memory=2g --memory-swap=2g --pids-limit=128 --read-only --cap-drop=ALL --security-opt=no-new-privileges -v minivectordb-rewrite-data:/data minivectordb:rewrite-complete
 
-构建：docker build --platform linux/amd64 -t minivectordb:startup-baseline .
-检查：python3 protocol_check/run.py --image minivectordb:startup-baseline --handshake-only --output protocol-results/handshake
+默认前台入口为 python3 -B -u -m minidb.server /data，不需要补充启动参数。
+启动先读取并校验已提交目录和数据文件，然后主动输出 {"type":"ready"}。
+stdin/stdout为UTF-8 JSONL；每次响应立即flush；诊断只写stderr。
+shutdown回滚未提交事务，返回原id和ok:true，以退出码0结束。EOF同样回滚并正常退出。
+所有数据、目录、索引、事务暂存及查询临时文件都在/data。
+默认以root运行。官方绑定目录示例要求宿主数据目录chmod777；命名卷使用镜像/data权限。
 
-默认入口直接前台运行，无额外参数，无网络监听。
-启动输出 {"type":"ready"} 并立即 flush。
-shutdown 返回原 id 和 ok:true，随后退出码0。
-EOF正常退出。stdout仅输出JSONL报文。
-容器提供/data；官方默认使用命名卷，绑定目录示例要求宿主目录chmod777。
+SQL与检索
+支持CREATE TABLE、BIGINT主键、VARCHAR(n)、每表最多一个VECTOR(n)，INSERT多行及列清单、SELECT投影、UPDATE、DELETE。
+支持比较=、<、<=、>、>=，AND、ORDER BY多键与ASC/DESC、LIMIT，以及L2_DISTANCE和过滤后精确TopK。
+VARCHAR按Unicode码点计数和排序；BIGINT保留有符号64位精度；向量入库及查询参数均转为有限float32。
+并列排序按主键升序；不支持的语句在执行前拒绝。UPDATE affected_rows按匹配行数返回。
+CREATE VECTOR INDEX建立自实现磁盘平面索引，保存主键与float32向量；exact和ann均可得到精确结果。
+无过滤的距离TopK可以使用平面索引；有过滤时先过滤再检索。索引和记录由同一提交发布，回滚及重启状态一致。
+错误返回ok:false及非空error.code；语法/类型/主键错误后继续接收请求。持久化I/O失败记录stderr并退出，重启重新读取提交状态。
 
-当前范围仅为启动协议。execute按官方骨架返回NOT_IMPLEMENTED。
-没有SQL、存储或事务实现；握手通过不等于MySQL功能准入通过。
+从空目录使用
+启动后发送以下每行一个JSON对象：
+{"id":1,"op":"execute","sql":"CREATE TABLE docs(id BIGINT PRIMARY KEY,content VARCHAR(1024),embedding VECTOR(4))"}
+{"id":2,"op":"execute","sql":"INSERT INTO docs VALUES(1,'事务与恢复','[1,0,0,0]'),(2,'向量索引','[0,1,0,0]')"}
+{"id":3,"op":"execute","sql":"SELECT id,content FROM docs ORDER BY id"}
+{"id":4,"op":"execute","sql":"CREATE VECTOR INDEX ix ON docs(embedding)"}
+{"id":5,"op":"execute","sql":"SELECT id,L2_DISTANCE(embedding,'[1,0,0,0]') AS d FROM docs ORDER BY d LIMIT 2","search_mode":"ann"}
+{"id":6,"op":"execute","sql":"BEGIN"}
+{"id":7,"op":"execute","sql":"UPDATE docs SET content='已提交' WHERE id=1"}
+{"id":8,"op":"execute","sql":"COMMIT"}
+{"id":9,"op":"execute","sql":"BEGIN"}
+{"id":10,"op":"execute","sql":"DELETE FROM docs WHERE id=2"}
+{"id":11,"op":"execute","sql":"ROLLBACK"}
+{"id":12,"op":"shutdown"}
+再次运行同一docker run命令复用命名卷，然后SELECT应保留两行，id=1的content为“已提交”。
 
-本地验证结果：Docker镜像构建成功；官方handshake-only为PASS。
-官方绑定目录示例的限制组合下，shutdown和EOF均退出0，stderr为空。
-握手结果保存在protocol-results/handshake/result.json，绑定目录结果为protocol-results/bind-startup.json。
+存储与提交设计
+记录文件按主键排序，使用长度前缀和变长二进制字段；无单页行长度限制。向量保存为小端float32。
+每条修改语句流式生成新记录文件，失败时删除该语句的新文件，保留事务此前成功语句。
+显式事务使用私有目录视图，读取自己的记录和索引版本；ROLLBACK恢复已提交视图。
+COMMIT先fsync全部新文件及文件名，再fsync新manifest，原子替换manifest.json并fsync目录，然后回复成功。
+多表修改一次发布。自动提交使用相同机制。进程强杀后只需读取完整旧manifest或完整新manifest，未引用的文件回收；回收中再次退出可以重做。
+查询使用流式扫描、受内存预算约束的TopK堆；普通排序或大K使用/data分段归并。响应先完成查询，再流式输出JSON，避免错误后输出半份成功结果。
+
+本地复现
+python3 protocol_check/run.py --image minivectordb:rewrite-complete --output protocol-results/public
+python3 checks/contract.py --image minivectordb:rewrite-complete --output protocol-results/contract
+python3 checks/recovery.py
+python3 checks/resource.py
+python3 checks/model.py
+输出目录按脚本要求保持未使用；官方检查器拒绝覆盖已有结果目录。
+
+当前取舍
+修改采用整表顺序生成新版本，内存有界，但写入I/O随表大小增长，磁盘需容纳提交前后版本。
+索引采用精确线性扫描，不作近似剪枝。本版本以协议、功能和恢复验证为交付重点，尚未做性能排名优化。
+本地64MiB压力条件与官方公开2GiB配置分开记录。正式成绩由平台对指定提交评测产生。

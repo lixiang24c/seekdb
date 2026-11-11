@@ -1,5 +1,4 @@
 *
 !Dockerfile
-!protocol_check/
-!protocol_check/example_stdio.py
-!protocol_check/_transport.py
+!minidb/
+!minidb/*.py

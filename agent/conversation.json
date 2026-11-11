@@ -1,0 +1,98 @@
+{
+  "material_version": "authentic-development-records-1",
+  "synthetic": false,
+  "scope": "仅收录本次完整重写的真实用户指令、Agent说明和实际工具验证。较早完整对话未纳入；assistant的解释为明确标注的摘要，user字段为原文。未把Agent的设计和验证记为学生技术理解，也未生成学生反思或评分。",
+  "conversations": [
+    {
+      "id": "u1",
+      "role": "user",
+      "content": "还是启动失败，到底是什么情况，你现在开个分支严格按照官方的要求重头开始重新写一个"
+    },
+    {
+      "id": "u2",
+      "role": "user",
+      "content": "所有一切都严格按照官方的标准来，不要做任何多余的设计，只要求启动能过"
+    },
+    {
+      "id": "u3",
+      "role": "user",
+      "content": "不是，我要提交测评的啊，你这个版本确定能通过吗"
+    },
+    {
+      "id": "a1",
+      "role": "assistant",
+      "content": "不能。这个版本只通过启动握手，SQL 全部返回 NOT_IMPLEMENTED，提交正式测评无法通过 MySQL 功能准入。此前把需求误解为仅做通信骨架。"
+    },
+    {
+      "id": "u4",
+      "role": "user",
+      "content": "补齐"
+    },
+    {
+      "id": "a2",
+      "role": "assistant",
+      "content": "保留官方JSONL握手与执行/关闭协议，使用Python标准库从头实现SQL、变长记录、磁盘平面向量索引、事务和恢复。修改流式写入新文件，通过原子替换manifest发布多表提交；TopK使用有界堆，大排序落盘归并。"
+    }
+  ],
+  "experiments": [
+    {
+      "id": "tool1",
+      "source": "tool",
+      "command": "docker build --platform linux/amd64 -t minivectordb:rewrite-complete .",
+      "output": "{\"result\": \"success\", \"image_id\": \"sha256:20ac422696bbb20bd344e8d3636cec3766aa40f3f002be194bc929f73e7b34fc\"}",
+      "status": "executed"
+    },
+    {
+      "id": "tool2",
+      "source": "tool",
+      "command": "python3 protocol_check/run.py --image minivectordb:rewrite-complete --output protocol-results/final-public",
+      "output": "{\"passed\": true, \"cases\": [{\"id\": \"sql_crud\", \"status\": \"PASS\"}, {\"id\": \"sql_comparisons\", \"status\": \"PASS\"}, {\"id\": \"sql_ordering\", \"status\": \"PASS\"}, {\"id\": \"sql_empty\", \"status\": \"PASS\"}, {\"id\": \"sql_primary_key\", \"status\": \"PASS\"}, {\"id\": \"sql_unicode\", \"status\": \"PASS\"}, {\"id\": \"sql_bigint\", \"status\": \"PASS\"}, {\"id\": \"sql_unsupported\", \"status\": \"PASS\"}, {\"id\": \"storage_restart\", \"status\": \"PASS\"}, {\"id\": \"vector_euclidean\", \"status\": \"PASS\"}, {\"id\": \"transaction_commit\", \"status\": \"PASS\"}, {\"id\": \"transaction_rollback\", \"status\": \"PASS\"}, {\"id\": \"storage_mutations\", \"status\": \"PASS\"}, {\"id\": \"storage_multiple_tables\", \"status\": \"PASS\"}, {\"id\": \"vector_ties_and_filter\", \"status\": \"PASS\"}, {\"id\": \"vector_float32\", \"status\": \"PASS\"}, {\"id\": \"vector_index_maintenance\", \"status\": \"PASS\"}, {\"id\": \"transaction_failed_insert\", \"status\": \"PASS\"}, {\"id\": \"transaction_autocommit_atomic\", \"status\": \"PASS\"}, {\"id\": \"transaction_shutdown_rollback\", \"status\": \"PASS\"}]}",
+      "status": "executed"
+    },
+    {
+      "id": "tool3",
+      "source": "tool",
+      "command": "python3 checks/contract.py --image minivectordb:rewrite-complete --output protocol-results/final-contract",
+      "output": "{\"status\": \"PASS\", \"checks\": 78}",
+      "status": "executed"
+    },
+    {
+      "id": "tool4",
+      "source": "tool",
+      "command": "python3 checks/model.py",
+      "output": "{\"status\": \"PASS\", \"operations\": 250, \"queries_checked\": 750, \"seed\": 20261111}",
+      "status": "executed"
+    },
+    {
+      "id": "tool5",
+      "source": "tool",
+      "command": "python3 checks/recovery.py",
+      "output": "[{\"cut\": \"before\", \"explicit_multitable\": false, \"two_restarts\": \"PASS\"}, {\"cut\": \"before\", \"explicit_multitable\": true, \"two_restarts\": \"PASS\"}, {\"cut\": \"after\", \"explicit_multitable\": false, \"two_restarts\": \"PASS\"}, {\"cut\": \"after\", \"explicit_multitable\": true, \"two_restarts\": \"PASS\"}, {\"kill_without_commit\": \"PASS\"}]",
+      "status": "executed"
+    },
+    {
+      "id": "tool6",
+      "source": "tool",
+      "command": "python3 checks/resource.py",
+      "output": "{\"memory\": \"64m\", \"limit_source\": \"local stress condition; official public config is 2g\", \"stages\": [{\"stage\": \"load_beyond_memory\", \"elapsed\": 19.251, \"details\": {\"rows\": 9000, \"data_bytes\": 73948424}}, {\"stage\": \"index_and_exact_ann_distance_projection\", \"elapsed\": 19.898, \"details\": \"PASS\"}, {\"stage\": \"full_table_update\", \"elapsed\": 20.26, \"details\": \"PASS\"}, {\"stage\": \"external_sort\", \"elapsed\": 21.411, \"details\": \"PASS\"}, {\"stage\": \"rollback_crash_restart\", \"elapsed\": 22.857, \"details\": {\"status\": \"PASS\", \"restart_memory_peak_bytes\": 67108864}}, {\"stage\": \"complete\", \"elapsed\": 22.964, \"details\": null}], \"status\": \"PASS\"}",
+      "status": "executed"
+    }
+  ],
+  "implementation": {
+    "language": "Python 3.12.8 standard library",
+    "official_protocol_commit": "f4d4e26653af823a7601668802f80e374ad6643c",
+    "source_sha256": {
+      "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+      "minidb/engine.py": "fb385ef97ef459939bcca5d6a31b1f6e36352534fc1740066dbfb5f950d1b02b",
+      "minidb/server.py": "731d19710fc385de5433f74344e6f8ab9aa44b3899a9083f030d5ce977795e27",
+      "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
+      "minidb/storage.py": "3310cc562ef0b07f0bda8a5e4485778e827798e7a41e66b330f3fb8a579784e1",
+      "Dockerfile": "49f332ee4d77c71516b0e71b9dea9cee5fcdb18e7c085c716c13e6772c4c15d2"
+    }
+  },
+  "limitations": [
+    "修改语句顺序生成整表新版本，写放大高于增量页存储。",
+    "向量索引是自实现磁盘平面索引，ann返回精确结果。",
+    "本地验证记录与正式隐藏用例结果分开；此材料不包含平台正式评测结果。"
+  ]
+}
