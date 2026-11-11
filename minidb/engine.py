@@ -9,6 +9,7 @@ import operator
 import struct
 from dataclasses import dataclass
 
+from .native import Screen
 from .sql import DBError, Parser, convert, fail, vector
 from .storage import Codec, INDEX_MAGIC, Storage, read_rows, write_rows
 
@@ -292,13 +293,20 @@ class Database:
         heap, radius = [], math.inf
         if allowed is not None and not allowed: return {}
         key_format = struct.Struct('<q')
+        screen = Screen(query)
         for path, excluded in self.store.index_segments(table):
             with open(path, 'rb') as f:
                 if f.read(8) != INDEX_MAGIC: raise OSError('invalid index header')
                 block_bytes = fmt.size * max(1, 65536 // fmt.size)
                 while data := f.read(block_bytes):
                     if len(data) % fmt.size: raise OSError('incomplete index record')
-                    values_iter = (fmt.iter_unpack(data) if allowed is None else
+                    mask = None
+                    if screen.query is not None and (allowed is not None or excluded):
+                        mask = bytes(int((allowed is None or ident in allowed) and ident not in excluded)
+                                     for ident in (key_format.unpack_from(data, pos)[0] for pos in range(0, len(data), fmt.size)))
+                    positions = screen.select(data, -heap[0][0] if len(heap) == k else math.inf, mask)
+                    values_iter = ((fmt.unpack_from(data, pos * fmt.size) for pos in positions) if positions is not None else
+                                   fmt.iter_unpack(data) if allowed is None else
                                    (fmt.unpack_from(data, pos) for pos in range(0, len(data), fmt.size)
                                     if key_format.unpack_from(data, pos)[0] in allowed))
                     for values in values_iter:

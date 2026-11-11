@@ -1,0 +1,97 @@
+{
+  "rows": 10000,
+  "dimensions": 128,
+  "queries": 120,
+  "filtered_queries": 60,
+  "projected_distance": true,
+  "content_bytes_per_row": 512,
+  "cpus": "2",
+  "memory": "2g",
+  "seed": 20261118,
+  "scope": "Alternating image order across rounds; local comparison, not formal score",
+  "rounds": 3,
+  "samples": {
+    "baseline": [
+      {
+        "cold_unfiltered_seconds": 0.054999120999127626,
+        "cold_filtered_seconds": 0.05319475900614634,
+        "total_seconds": 3.9018974759383127,
+        "unfiltered_seconds": 3.247432488773484,
+        "filtered_seconds": 0.6544649871648289,
+        "median_ms": 32.01017147512175,
+        "max_ms": 63.94568702671677
+      },
+      {
+        "cold_unfiltered_seconds": 0.053408603998832405,
+        "cold_filtered_seconds": 0.05549563799286261,
+        "total_seconds": 3.7943636084673926,
+        "unfiltered_seconds": 3.1533917945344,
+        "filtered_seconds": 0.6409718139329925,
+        "median_ms": 32.03091199975461,
+        "max_ms": 54.73008000990376
+      },
+      {
+        "cold_unfiltered_seconds": 0.05638512095902115,
+        "cold_filtered_seconds": 0.053191574988886714,
+        "total_seconds": 3.9318969580344856,
+        "unfiltered_seconds": 3.263049783068709,
+        "filtered_seconds": 0.6688471749657765,
+        "median_ms": 34.464571508578956,
+        "max_ms": 82.2140320087783
+      }
+    ],
+    "candidate": [
+      {
+        "cold_unfiltered_seconds": 0.00672336301067844,
+        "cold_filtered_seconds": 0.052798638003878295,
+        "total_seconds": 0.8265090700588189,
+        "unfiltered_seconds": 0.36208682029973716,
+        "filtered_seconds": 0.46442224975908175,
+        "median_ms": 7.1089440025389194,
+        "max_ms": 10.097079968545586
+      },
+      {
+        "cold_unfiltered_seconds": 0.007726517040282488,
+        "cold_filtered_seconds": 0.053822644986212254,
+        "total_seconds": 0.8685982170864008,
+        "unfiltered_seconds": 0.3923199209966697,
+        "filtered_seconds": 0.47627829608973116,
+        "median_ms": 7.275341515196487,
+        "max_ms": 9.791501972358674
+      },
+      {
+        "cold_unfiltered_seconds": 0.006661254970822483,
+        "cold_filtered_seconds": 0.054833840986248106,
+        "total_seconds": 0.8473181541194208,
+        "unfiltered_seconds": 0.37756993307266384,
+        "filtered_seconds": 0.46974822104675695,
+        "median_ms": 7.188495015725493,
+        "max_ms": 17.781406990252435
+      }
+    ]
+  },
+  "runs": {
+    "baseline": {
+      "cold_unfiltered_seconds": 0.054999120999127626,
+      "cold_filtered_seconds": 0.05319475900614634,
+      "total_seconds": 3.9018974759383127,
+      "unfiltered_seconds": 3.247432488773484,
+      "filtered_seconds": 0.6544649871648289,
+      "median_ms": 32.03091199975461,
+      "max_ms": 63.94568702671677
+    },
+    "candidate": {
+      "cold_unfiltered_seconds": 0.00672336301067844,
+      "cold_filtered_seconds": 0.053822644986212254,
+      "total_seconds": 0.8473181541194208,
+      "unfiltered_seconds": 0.37756993307266384,
+      "filtered_seconds": 0.46974822104675695,
+      "median_ms": 7.188495015725493,
+      "max_ms": 10.097079968545586
+    }
+  },
+  "speedup": 4.60499690342806,
+  "correctness": "All 720 measured responses checked; first 8 independently checked",
+  "baseline_commit": "7cb0c2865075f2a6b8bcb3a1a5b64aaf7d7de56b",
+  "notes": "Final three rounds ran separately from cold build and correctness jobs. Earlier concurrent-build timing was discarded."
+}

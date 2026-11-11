@@ -3,8 +3,8 @@ MiniVectorDB 完整重写版本
 开发分支：minivectordb-rewrite
 官方协议基点：f4d4e26653af823a7601668802f80e374ad6643c
 协议与检查器：STDIO_PROTOCOL.md、protocol_check/、mysqltest/ 保留官方原文件。
-语言：Python 3.12.8；仅标准库。基础镜像按Dockerfile中的digest锁定。
-构建不运行apt/pip，不依赖本地二进制，运行时不联网。
+语言：Python 3.12.8 + 自编译C筛选内核；Python仅使用标准库。基础镜像按Dockerfile中的digest锁定。
+构建阶段从固定Debian快照安装锁定版本GCC并从源码编译，不运行pip，不依赖本地二进制；运行时不联网。
 
 构建与正式入口
 docker build --platform linux/amd64 -t minivectordb:rewrite-complete .
@@ -83,3 +83,7 @@ INSERT采用分段写入及分层归并；UPDATE/DELETE重写受影响的分段�
 本提交启用有界增量覆盖：主键修改追加替代段，删除记录失效主键，达到32段或64失效主键后归并。
 所有扫描和向量索引屏蔽旧版本，过滤缓存键包含失效主键。设计与代价见STORAGE_MIGRATION.txt。
 可读取旧format=1；新写入manifest为format=2，旧程序不能读取升级目录。需要回退程序时，应使用旧版本数据目录副本。
+
+向量计算内核
+16至4096维索引块可使用自编译C筛选，保留候选仍按原精确距离/主键规则排名。默认自动加载；MINIDB_NATIVE=0可关闭对照。
+运行镜像只增加约15KiB的libscreen.so；GCC仅在构建阶段存在。依赖、冷构建与数值验证见NATIVE_MIGRATION.txt。

@@ -112,6 +112,16 @@
       "id": "migration-assistant",
       "role": "assistant",
       "content": "阶段摘要：当前分支独立提交迁移有界增量覆盖机制；单行更新追加替代段并屏蔽旧记录，删除仅记录失效主键。段数达到32或失效主键达到64时在下一次主键修改前归并。所有读取与索引路径统一处理可见性，过滤缓存键包含失效记录。manifest升级format=2以防旧程序忽略失效标记；不增加运行依赖。借鉴动态索引维护的问题拆解，未实现FreshDiskANN或HNSW算法。"
+    },
+    {
+      "id": "native-user",
+      "role": "user",
+      "content": "继续"
+    },
+    {
+      "id": "native-assistant",
+      "role": "assistant",
+      "content": "阶段摘要：迁移自编译C距离筛选内核，按块读取原索引并使用保守误差余量排除不可能入选的记录；最终距离和排序仍由原Python参考计算。只对16至4096维启用，其他维度或库不可用时回退。构建阶段锁定GCC和Debian快照，不增加pip依赖；运行镜像仅复制约15KiB自编译库，启动握手不依赖内核预加载。"
     }
   ],
   "experiments": [
@@ -222,6 +232,12 @@
       "source": "tool",
       "output": "{\"public\": \"20/20 PASS\", \"model\": {\"status\": \"PASS\", \"seeds\": [20261115, 20261116], \"operations\": 500, \"queries\": 1500}, \"recovery\": {\"status\": \"PASS\", \"original_scenarios\": 5, \"overlay_compaction_publish_scenarios\": 2, \"two_restarts_per_compaction_cut\": true}, \"overlay_boundaries\": {\"status\": \"PASS\", \"updates\": 101, \"point_deletes\": 90, \"legacy_upgrade\": true}, \"resource\": {\"memory\": \"64m\", \"limit_source\": \"local stress condition; official public config is 2g\", \"stages\": [{\"stage\": \"load_beyond_memory\", \"elapsed\": 11.953, \"details\": {\"rows\": 9000, \"data_bytes\": 74093133}}, {\"stage\": \"index_and_exact_ann_distance_projection\", \"elapsed\": 12.13, \"details\": \"PASS\"}, {\"stage\": \"full_table_update\", \"elapsed\": 12.423, \"details\": \"PASS\"}, {\"stage\": \"external_sort\", \"elapsed\": 13.482, \"details\": \"PASS\"}, {\"stage\": \"rollback_crash_restart\", \"elapsed\": 14.411, \"details\": {\"status\": \"PASS\", \"restart_memory_peak_bytes\": 53043200}}, {\"stage\": \"complete\", \"elapsed\": 14.521, \"details\": null}], \"status\": \"PASS\"}, \"performance\": {\"baseline\": {\"load_s\": 4.896048062015325, \"index_s\": 0.05644835199927911, \"point_select_s\": 0.07432561297900975, \"point_update_s\": 1.0075506920111366, \"point_update_process_write_bytes\": 172556288, \"topk_s\": 1.3470776799949817, \"conditional_mutations_s\": 0.26278584002284333}, \"candidate\": {\"load_s\": 4.865504866000265, \"index_s\": 0.05654241802403703, \"point_select_s\": 0.07240562204970047, \"point_update_s\": 0.15473737701540813, \"point_update_process_write_bytes\": 315392, \"topk_s\": 1.371053333976306, \"conditional_mutations_s\": 0.2627147019957192}}, \"io_scope\": \"Linux /proc/1/io write_bytes for the DB process, not the official cgroup I/O metric\"}",
       "interpretation": "三轮1万行128维分散更新测试，20次更新中位1.008秒→0.155秒；进程write_bytes增量172556288→315392字节。更新后TopK中位耗时增加约1.8%，保留为存储迁移候选，通用冻结版本仍独立可用；小段表尾修改收益较小。"
+    },
+    {
+      "id": "native-results",
+      "source": "tool",
+      "output": "{\"public\": \"20/20 PASS\", \"model\": {\"status\": \"PASS\", \"seed\": 20261119, \"dimensions\": 128, \"operations\": 250, \"queries\": 750}, \"resource\": {\"memory\": \"64m\", \"limit_source\": \"local stress condition; official public config is 2g\", \"stages\": [{\"stage\": \"load_beyond_memory\", \"elapsed\": 12.203, \"details\": {\"rows\": 9000, \"data_bytes\": 74093133}}, {\"stage\": \"index_and_exact_ann_distance_projection\", \"elapsed\": 12.385, \"details\": \"PASS\"}, {\"stage\": \"full_table_update\", \"elapsed\": 12.685, \"details\": \"PASS\"}, {\"stage\": \"external_sort\", \"elapsed\": 13.821, \"details\": \"PASS\"}, {\"stage\": \"rollback_crash_restart\", \"elapsed\": 14.853, \"details\": {\"status\": \"PASS\", \"restart_memory_peak_bytes\": 53383168}}, {\"stage\": \"complete\", \"elapsed\": 14.956, \"details\": null}], \"status\": \"PASS\"}, \"screen_probe\": {\"status\": \"PASS\", \"screen_checks\": 648, \"distributions\": [\"uniform\", \"mixed float32 exponents\"], \"dimensions\": [16, 17, 31, 32, 127, 128, 129, 512, 4096], \"coverage\": [\"near threshold\", \"zero/ties\", \"finite extrema/subnormals\", \"mask/empty mask\", \"malformed record length\", \"dimension fallback\"]}, \"sanitizer\": {\"status\": \"PASS\", \"compiler\": \"host GCC 13.3.0\", \"flags\": [\"-fsanitize=address,undefined\"], \"script\": \"checks/native_sanitizer.c\"}, \"cold_build\": {\"cold_build\": \"PASS: docker build --no-cache-filter native-build\", \"cold_build_package_download_bytes_approx\": 54800000, \"cold_build_install_seconds\": 23.2, \"warm_and_cold_library_hash_equal\": true}, \"three_round_performance\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.054999120999127626, \"cold_filtered_seconds\": 0.05319475900614634, \"total_seconds\": 3.9018974759383127, \"unfiltered_seconds\": 3.247432488773484, \"filtered_seconds\": 0.6544649871648289, \"median_ms\": 32.03091199975461, \"max_ms\": 63.94568702671677}, \"candidate\": {\"cold_unfiltered_seconds\": 0.00672336301067844, \"cold_filtered_seconds\": 0.053822644986212254, \"total_seconds\": 0.8473181541194208, \"unfiltered_seconds\": 0.37756993307266384, \"filtered_seconds\": 0.46974822104675695, \"median_ms\": 7.188495015725493, \"max_ms\": 10.097079968545586}}, \"speedup\": 4.60499690342806}",
+      "interpretation": "相对存储迁移版，120条128维查询三轮中位总耗时3.902秒→0.847秒，约4.6倍；无过滤约8.6倍，过滤约1.4倍。库在冷/缓存构建下哈希一致，实际隔离镜像数值边界、状态机、资源检查通过。尚未实现HNSW或PQ/OPQ，不把这些算法的潜在收益记为本阶段已实现。"
     }
   ],
   "implementation": {

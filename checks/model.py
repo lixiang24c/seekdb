@@ -18,13 +18,14 @@ def main():
     parser.add_argument('--image', default='minivectordb:rewrite-complete')
     parser.add_argument('--output', default='protocol-results/model')
     parser.add_argument('--seed', type=int, default=20261111)
+    parser.add_argument('--dimensions', type=int, default=4)
     args = parser.parse_args()
     rng = random.Random(args.seed)
     out = ROOT / args.output
     out.mkdir(parents=True, exist_ok=True)
     s = Session(json.loads((ROOT / 'protocol_check/config.json').read_text()), out/'stderr.log',
                 image=args.image)
-    report = {'seed': args.seed, 'steps': [], 'queries_checked': 0}
+    report = {'seed': args.seed, 'dimensions':args.dimensions, 'steps': [], 'queries_checked': 0}
     current, committed, active = {}, {}, False
     def request(q, mode='exact', error=False):
         r = s.request(q, mode=mode)
@@ -32,7 +33,7 @@ def main():
         return r
     try:
         s.start()
-        request('CREATE TABLE t(id BIGINT PRIMARY KEY,n BIGINT,v VECTOR(4))')
+        request(f'CREATE TABLE t(id BIGINT PRIMARY KEY,n BIGINT,v VECTOR({args.dimensions}))')
         request('CREATE VECTOR INDEX ix ON t(v)')
         for step in range(250):
             op = rng.choice(['insert', 'insert', 'update', 'delete', 'begin', 'commit', 'rollback', 'crash'])
@@ -48,12 +49,12 @@ def main():
             elif op == 'insert':
                 ident = rng.randrange(-20, 50)
                 n = rng.randrange(5)
-                v = [rng.randrange(-5, 6) for _ in range(4)]
+                v = [rng.randrange(-5, 6) for _ in range(args.dimensions)]
                 error = ident in current
                 request(f"INSERT INTO t VALUES({ident},{n},'{json.dumps(v)}')", error=error)
                 if not error: current[ident] = (n, v)
             elif op == 'update':
-                bound = rng.randrange(-20, 50); n = rng.randrange(5); v = [rng.randrange(-5, 6) for _ in range(4)]
+                bound = rng.randrange(-20, 50); n = rng.randrange(5); v = [rng.randrange(-5, 6) for _ in range(args.dimensions)]
                 r = request(f"UPDATE t SET n={n},v='{json.dumps(v)}' WHERE id<={bound}")
                 ids = [i for i in current if i <= bound]
                 assert r['affected_rows'] == len(ids)
@@ -67,7 +68,7 @@ def main():
             if not active: committed = copy.deepcopy(current)
             expected = [[i, current[i][0], current[i][1]] for i in sorted(current)]
             assert request('SELECT * FROM t ORDER BY id')['rows'] == expected
-            q = [rng.randrange(-5, 6) for _ in range(4)]
+            q = [rng.randrange(-5, 6) for _ in range(args.dimensions)]
             limit = rng.randrange(0, 10); group = rng.randrange(5)
             rows = [(sum((x-y)**2 for x,y in zip(v,q)), i) for i,(n,v) in current.items() if n <= group]
             truth = [[i, math.sqrt(d)] for d,i in sorted(rows)[:limit]]

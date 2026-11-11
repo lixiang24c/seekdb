@@ -1,0 +1,70 @@
+{
+  "runtime_base": "python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0",
+  "compiler": "GCC 12.2.0-14+deb12u1, package versions in debian-packages.lock",
+  "flags": [
+    "-std=c11",
+    "-O3",
+    "-fPIC",
+    "-shared",
+    "-ffp-contract=off",
+    "-fno-fast-math",
+    "-lm"
+  ],
+  "cold_build": "PASS: docker build --no-cache-filter native-build",
+  "cold_build_package_download_bytes_approx": 54800000,
+  "cold_build_install_seconds": 23.2,
+  "library_bytes": 15136,
+  "library_sha256": "93481f1eac8aa02c92d918fae3f5eac102019823e29d5e98cc635bc92eea073c",
+  "warm_and_cold_library_hash_equal": true,
+  "ldd": "statically linked (no extra DT_NEEDED library listed)",
+  "runtime_compiler_present": false,
+  "source_sha256": {
+    "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+    "minidb/engine.py": "3f31306330ebef61fd095e7aa0c7a7bd0a0ed78d600dc83aa4a3db5907d6ddc8",
+    "minidb/native.py": "a93214e2a1aed800738de2de3efea8391559c3e84df37c686b49203fb956bea9",
+    "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+    "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
+    "minidb/storage.py": "751f01ef9904c1939a44b62d6796d2f163148e7bbd606feca99b7bfb9124c37f",
+    "native/screen.c": "60c05e0381c91007c4c590ff9f0e014db76981c59143e8d8637f77a56f4e0bc2",
+    "Dockerfile": "4de944ec850156a1471537a89253e1494b5cfaece28ccccec31df869a8f9cc13",
+    "debian-packages.lock": "f9745e3a9145f7697e4d2a87b66083591a2001477bf9d0dcdc92103df6c86557",
+    "requirements.lock": "c46f7eb25df84fe5cd9aa6e87c03dd7b62998bafc4beeef19ef339b656d01f73",
+    ".dockerignore": "db694d3438dedc54428288ba2f8650fa43cd1df3cf729a9125c7a0aca81af704"
+  },
+  "screen_probe": {
+    "status": "PASS",
+    "screen_checks": 648,
+    "distributions": [
+      "uniform",
+      "mixed float32 exponents"
+    ],
+    "dimensions": [
+      16,
+      17,
+      31,
+      32,
+      127,
+      128,
+      129,
+      512,
+      4096
+    ],
+    "coverage": [
+      "near threshold",
+      "zero/ties",
+      "finite extrema/subnormals",
+      "mask/empty mask",
+      "malformed record length",
+      "dimension fallback"
+    ]
+  },
+  "sanitizer": {
+    "status": "PASS",
+    "compiler": "host GCC 13.3.0",
+    "flags": [
+      "-fsanitize=address,undefined"
+    ],
+    "script": "checks/native_sanitizer.c"
+  },
+  "screen_probe_memory_limit": "64MiB"
+}
