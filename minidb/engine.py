@@ -1,5 +1,6 @@
 """SQL execution with bounded scans, flat vector indexes and external sorting."""
 import copy
+from collections import OrderedDict
 import heapq
 import itertools
 import json
@@ -37,6 +38,22 @@ class QueryResult:
     encoded_rows: object = None
 
 
+class SortCodec:
+    """Temporary sort runs contain only columns used by this query."""
+    def __init__(self, cols, fields):
+        self.fields = sorted(fields)
+        self.width = len(cols)
+        self.codec = Codec([cols[i] for i in self.fields])
+
+    def encode(self, row):
+        return self.codec.encode([row[i] for i in self.fields])
+
+    def decode(self, raw):
+        row = [None] * self.width
+        for i, value in zip(self.fields, self.codec.decode(raw)): row[i] = value
+        return row
+
+
 def row_cost(row):
     # Conservative Python object estimate, not only encoded byte length.
     return 256 + sum(64 + (40 * len(v) if isinstance(v, list) else 4 * len(v) if isinstance(v, str) else 32) for v in row)
@@ -49,6 +66,8 @@ def squared(a, b):
 class Database:
     def __init__(self, directory):
         self.store = Storage(directory)
+        self.filter_cache = OrderedDict()
+        self.filter_cache_bytes = 0
 
     def column(self, table, name):
         for i, c in enumerate(table['cols']):
@@ -131,7 +150,7 @@ class Database:
             except (OverflowError, struct.error):
                 fail('column size out of range', 'invalid_value')
             table = {'cols': cols, 'pk': pks[0], 'indexes': [], 'count': 0}
-            table = self.store.rewrite(table, iter(()))
+            table['segments'] = []
             self.store.install(name, table)
             return {}
         table = self.store.tables.get(name)
@@ -179,6 +198,14 @@ class Database:
                 if any(j == i for j, _ in sets):
                     fail('duplicate assignment')
                 sets.append((i, convert(table['cols'][i], value)))
+        if op == 'delete' and not st['where']:
+            count = table['count']
+            if count:
+                new = copy.deepcopy(table)
+                new.update(segments=[], count=0)
+                new.pop('file', None); new.pop('index_file', None)
+                self.store.install(name, new)
+            return {'affected_rows': count}
         ident = self.primary_equal(table, st['where'])
         if ident is not None:
             part, raw = self.store.lookup(table, ident)
@@ -192,11 +219,11 @@ class Database:
             self.store.install(name, new)
             return {'affected_rows': 1}
         new, count = self.store.mutate(table, match, filter_columns, sets, op == 'delete')
-        if count: self.store.install(name, new)
+        if count and new != table: self.store.install(name, new)
         return {'affected_rows': count}
 
-    def external_sort(self, table, source, key):
-        paths, codec = [], Codec(table['cols'])
+    def external_sort(self, table, source, key, columns):
+        paths, codec = [], SortCodec(table['cols'], columns)
         def chunk(rows):
             rows.sort(key=key)
             path = self.store.fresh('sort')
@@ -247,17 +274,49 @@ class Database:
                 return None  # Caller restarts scan using bounded external sort.
         return [item.row for item in sorted(heap, key=lambda x: x.key)]
 
-    def flat_topk(self, table, expr, k):
+    def filter_ids(self, table, conditions, match, columns):
+        """Bounded cache of predicate membership, keyed by immutable data versions."""
+        key = (tuple(p['file'] for p in self.store.segments(table)), tuple(conditions))
+        key_bytes = len(repr(key)) * 4 + 256
+        budget = 512 << 10
+        if key_bytes > 8192: return None
+        if key in self.filter_cache:
+            ids, cost = self.filter_cache.pop(key)
+            self.filter_cache[key] = (ids, cost)
+            return ids
+        ids = set()
+        rows = self.store.rows(table, columns={table['pk']}, predicate=match, predicate_columns=columns)
+        try:
+            for row in rows:
+                ids.add(row[table['pk']])
+                if key_bytes + len(ids) * 128 > budget:
+                    ids = None
+                    break
+        finally: rows.close()
+        cost = key_bytes + (len(ids) * 128 if ids is not None else 128)
+        while self.filter_cache and self.filter_cache_bytes + cost > budget:
+            _, (_, old_cost) = self.filter_cache.popitem(last=False)
+            self.filter_cache_bytes -= old_cost
+        self.filter_cache[key] = (ids, cost)
+        self.filter_cache_bytes += cost
+        return ids
+
+    def flat_topk(self, table, expr, k, allowed=None):
         vc, query = expr[1], expr[2]
         fmt = struct.Struct('<q' + str(len(query)) + 'f')
         heap, radius = [], math.inf
+        if allowed is not None and not allowed: return {}
+        key_format = struct.Struct('<q')
         for path in self.store.index_paths(table):
             with open(path, 'rb') as f:
                 if f.read(8) != INDEX_MAGIC: raise OSError('invalid index header')
                 block_bytes = fmt.size * max(1, 65536 // fmt.size)
                 while data := f.read(block_bytes):
                     if len(data) % fmt.size: raise OSError('incomplete index record')
-                    for values in fmt.iter_unpack(data):
+                    values_iter = (fmt.iter_unpack(data) if allowed is None else
+                                   (fmt.unpack_from(data, pos) for pos in range(0, len(data), fmt.size)
+                                    if key_format.unpack_from(data, pos)[0] in allowed))
+                    for values in values_iter:
                         # A conservative rejection bound only; accepted candidates are
                         # ranked with the original fsum squared distance, including ties.
                         if math.dist(query, values[1:]) > radius: continue
@@ -271,12 +330,13 @@ class Database:
                             radius = math.sqrt(-heap[0][0]) * (1.0 + 1e-12) + 1e-300
         return {item[2]: -item[0] for item in heap}
 
-    def vector_topk(self, table, expr, k, columns, match, filter_columns):
+    def vector_topk(self, table, expr, k, columns, match, filter_columns, conditions):
         """Filter scalars first, retain binary candidates, decode only the winners."""
         codec = Codec(table['cols'])
         vc, query = expr[1], expr[2]
         selected, cost = [], 0
-        scores = self.flat_topk(table, expr, k) if not filter_columns and table.get('indexes') else None
+        allowed = self.filter_ids(table, conditions, match, filter_columns) if filter_columns and table.get('indexes') else None
+        scores = self.flat_topk(table, expr, k, allowed) if table.get('indexes') and (not filter_columns or allowed is not None) else None
         heap, radius = [], math.inf
         records = (self.store.records(table, ordered=False) if scores is None else
                    ((ident, self.store.lookup(table, ident)[1]) for ident in scores))
@@ -362,7 +422,7 @@ class Database:
             else:
                 if limit is not None and limit <= 1024:
                     if ident is None and bounds is None and len(keys) == 1 and keys[0][0][0] == 'distance' and not keys[0][1]:
-                        rows = self.vector_topk(table, keys[0][0], limit, needed, match, filter_columns)
+                        rows = self.vector_topk(table, keys[0][0], limit, needed, match, filter_columns, st['where'])
                     else:
                         selected = source()
                         try:
@@ -370,12 +430,12 @@ class Database:
                         finally:
                             selected.close()
                 if rows is None:
-                    rows = self.external_sort(table, source(full=True), key)
+                    rows = self.external_sort(table, source(), key, needed)
             encoded, size, stream = [], 0, None
+            encode = json.JSONEncoder(ensure_ascii=False, allow_nan=False, separators=(',', ':')).encode
             try:
                 for row in itertools.islice(rows, limit):
-                    line = json.dumps([value(expr, row) for expr in outs], ensure_ascii=False,
-                                      allow_nan=False, separators=(',', ':'))
+                    line = encode([value(expr, row) for expr in outs])
                     size += len(line) * 4 + 64
                     if stream is None and size > 65536:
                         stream = open(result, 'x', encoding='utf-8')

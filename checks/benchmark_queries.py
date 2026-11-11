@@ -5,6 +5,7 @@ Build fc2567d9 as minivectordb:query-baseline-fc2567d9, and the current
 checkout as minivectordb:query-candidate before running this script.
 """
 import json
+import argparse
 import math
 from pathlib import Path
 import random
@@ -18,10 +19,15 @@ from _transport import Session
 
 
 def main():
-    out = ROOT / 'protocol-results/query-optimization'
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--baseline', default='minivectordb:query-baseline-fc2567d9')
+    parser.add_argument('--candidate', default='minivectordb:query-candidate')
+    parser.add_argument('--output', default='protocol-results/query-optimization')
+    args = parser.parse_args()
+    out = ROOT / args.output
     out.mkdir(parents=True, exist_ok=True)
     config = json.loads((ROOT / 'protocol_check/config.json').read_text())
-    session = Session(config, out / 'benchmark.stderr', image='minivectordb:query-baseline-fc2567d9')
+    session = Session(config, out / 'benchmark.stderr', image=args.baseline)
     rng = random.Random(20261112)
     vectors = [[rng.randrange(-64, 65) / 8 for _ in range(128)] for _ in range(10000)]
     query_vectors = [[rng.randrange(-64, 65) / 8 for _ in range(128)] for _ in range(80)]
@@ -40,7 +46,7 @@ def main():
             rows = ','.join(f"({i},{i%10},'{('x'*512)}','{json.dumps(vectors[i])}')" for i in range(start, start+100))
             assert session.request('INSERT INTO t VALUES ' + rows)['ok']
         assert session.request('CREATE VECTOR INDEX ix ON t(v)')['ok']
-        for label, image in [('baseline', 'minivectordb:query-baseline-fc2567d9'), ('candidate', 'minivectordb:query-candidate')]:
+        for label, image in [('baseline', args.baseline), ('candidate', args.candidate)]:
             if label == 'candidate':
                 session.shutdown(); session.image = image; session.start()
             for sql in statements[:2]: assert session.request(sql)['ok']

@@ -399,7 +399,12 @@ class Storage:
                 reader = raw_rows(self.path(part['file']), codec, table['pk'])
                 try:
                     for skipped, (ident, raw) in enumerate(reader):
-                        if match(codec.decode_fields(raw, filter_columns)): break
+                        if match(codec.decode_fields(raw, filter_columns)):
+                            current = codec.decode_fields(raw, {i for i, _ in sets}) if not delete else None
+                            if not delete and all(current[i] == value for i, value in sets):
+                                count += 1
+                                continue
+                            break
                     else:
                         parts.append(copy.deepcopy(part)); continue
                     def changed():

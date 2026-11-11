@@ -1,0 +1,32 @@
+{
+  "rows": 10000,
+  "dimensions": 128,
+  "queries": 80,
+  "filtered_queries": 40,
+  "projected_distance": true,
+  "content_bytes_per_row": 512,
+  "cpus": "2",
+  "memory": "2g",
+  "seed": 20261112,
+  "scope": "Local single-run comparison, not the formal benchmark score",
+  "runs": {
+    "baseline": {
+      "total_seconds": 3.4484016010537744,
+      "unfiltered_seconds": 1.7200179480132647,
+      "filtered_seconds": 1.7283836530405097,
+      "median_ms": 38.30563399242237,
+      "max_ms": 59.8029870307073
+    },
+    "candidate": {
+      "total_seconds": 2.66322601394495,
+      "unfiltered_seconds": 2.212552539887838,
+      "filtered_seconds": 0.4506734740571119,
+      "median_ms": 32.559986488195136,
+      "max_ms": 64.46654599858448
+    }
+  },
+  "speedup": 1.294821236724768,
+  "correctness": "All 80 candidate responses equal baseline; 8 baseline queries independently checked",
+  "baseline_commit": "fa608a576ab0b1640cac2cfdcf6a24a12cabd0f6",
+  "notes": "Single local round: filtered queries improve; unfiltered group is slower in this round. Do not infer formal score or universal speedup."
+}

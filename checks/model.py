@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Independent state-machine oracle across SQL, indexes, transactions and restarts."""
 import copy
+import argparse
 import json
 import math
 from pathlib import Path
@@ -13,11 +14,15 @@ from _transport import Session
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--image', default='minivectordb:rewrite-complete')
+    parser.add_argument('--output', default='protocol-results/model')
+    args = parser.parse_args()
     rng = random.Random(20261111)
-    out = ROOT / 'protocol-results/model'
+    out = ROOT / args.output
     out.mkdir(parents=True, exist_ok=True)
     s = Session(json.loads((ROOT / 'protocol_check/config.json').read_text()), out/'stderr.log',
-                image='minivectordb:rewrite-complete')
+                image=args.image)
     report = {'seed': 20261111, 'steps': [], 'queries_checked': 0}
     current, committed, active = {}, {}, False
     def request(q, mode='exact', error=False):

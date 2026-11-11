@@ -23,11 +23,15 @@ def emit_query(ident, result):
             return
         sys.stdout.write(head[:-1] + ',"rows":[')
         first = True
+        chunks, size = [], 0
         with open(result.path, encoding='utf-8') as f:
             for line in f:
-                if not first: sys.stdout.write(',')
-                sys.stdout.write(line.rstrip('\n'))
+                chunk = ('' if first else ',') + line.rstrip('\n')
+                chunks.append(chunk); size += len(chunk)
                 first = False
+                if size >= 16384:
+                    sys.stdout.write(''.join(chunks)); chunks, size = [], 0
+        if chunks: sys.stdout.write(''.join(chunks))
         sys.stdout.write(']}\n')
         sys.stdout.flush()
     finally:
