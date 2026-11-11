@@ -1,32 +1,98 @@
 {
   "rows": 10000,
   "dimensions": 128,
-  "queries": 80,
-  "filtered_queries": 40,
+  "queries": 120,
+  "filtered_queries": 60,
   "projected_distance": true,
   "content_bytes_per_row": 512,
   "cpus": "2",
   "memory": "2g",
-  "seed": 20261112,
-  "scope": "Local single-run comparison, not the formal benchmark score",
+  "seed": 20261114,
+  "scope": "Alternating image order across rounds; local comparison, not formal score",
+  "rounds": 3,
+  "samples": {
+    "baseline": [
+      {
+        "cold_unfiltered_seconds": 0.05361945298500359,
+        "cold_filtered_seconds": 0.05642845400143415,
+        "total_seconds": 6.578153425711207,
+        "unfiltered_seconds": 3.2973483129171655,
+        "filtered_seconds": 3.2808051127940416,
+        "median_ms": 54.41146597149782,
+        "max_ms": 67.7680759690702
+      },
+      {
+        "cold_unfiltered_seconds": 0.05558096896857023,
+        "cold_filtered_seconds": 0.05550684698391706,
+        "total_seconds": 6.505503216583747,
+        "unfiltered_seconds": 3.260032788850367,
+        "filtered_seconds": 3.2454704277333803,
+        "median_ms": 54.07561201718636,
+        "max_ms": 62.65037099365145
+      },
+      {
+        "cold_unfiltered_seconds": 0.05344710301142186,
+        "cold_filtered_seconds": 0.052230220986530185,
+        "total_seconds": 6.466551824356429,
+        "unfiltered_seconds": 3.2348821800551377,
+        "filtered_seconds": 3.2316696443012916,
+        "median_ms": 53.327645000535995,
+        "max_ms": 61.87737896107137
+      }
+    ],
+    "candidate": [
+      {
+        "cold_unfiltered_seconds": 0.05982218001736328,
+        "cold_filtered_seconds": 0.055826481024269015,
+        "total_seconds": 3.9977440757793374,
+        "unfiltered_seconds": 3.312834160751663,
+        "filtered_seconds": 0.6849099150276743,
+        "median_ms": 34.23224302241579,
+        "max_ms": 61.93550297757611
+      },
+      {
+        "cold_unfiltered_seconds": 0.05485681595746428,
+        "cold_filtered_seconds": 0.053470386017579585,
+        "total_seconds": 3.936833150102757,
+        "unfiltered_seconds": 3.258147286134772,
+        "filtered_seconds": 0.6786858639679849,
+        "median_ms": 32.78111998224631,
+        "max_ms": 61.47288699867204
+      },
+      {
+        "cold_unfiltered_seconds": 0.05474537599366158,
+        "cold_filtered_seconds": 0.05470281298039481,
+        "total_seconds": 3.8658119737519883,
+        "unfiltered_seconds": 3.2127526511321776,
+        "filtered_seconds": 0.6530593226198107,
+        "median_ms": 32.27445998345502,
+        "max_ms": 56.804204010404646
+      }
+    ]
+  },
   "runs": {
     "baseline": {
-      "total_seconds": 3.4484016010537744,
-      "unfiltered_seconds": 1.7200179480132647,
-      "filtered_seconds": 1.7283836530405097,
-      "median_ms": 38.30563399242237,
-      "max_ms": 59.8029870307073
+      "cold_unfiltered_seconds": 0.05361945298500359,
+      "cold_filtered_seconds": 0.05550684698391706,
+      "total_seconds": 6.505503216583747,
+      "unfiltered_seconds": 3.260032788850367,
+      "filtered_seconds": 3.2454704277333803,
+      "median_ms": 54.07561201718636,
+      "max_ms": 62.65037099365145
     },
     "candidate": {
-      "total_seconds": 2.66322601394495,
-      "unfiltered_seconds": 2.212552539887838,
-      "filtered_seconds": 0.4506734740571119,
-      "median_ms": 32.559986488195136,
-      "max_ms": 64.46654599858448
+      "cold_unfiltered_seconds": 0.05485681595746428,
+      "cold_filtered_seconds": 0.05470281298039481,
+      "total_seconds": 3.936833150102757,
+      "unfiltered_seconds": 3.258147286134772,
+      "filtered_seconds": 0.6786858639679849,
+      "median_ms": 32.78111998224631,
+      "max_ms": 61.47288699867204
     }
   },
-  "speedup": 1.294821236724768,
-  "correctness": "All 80 candidate responses equal baseline; 8 baseline queries independently checked",
+  "speedup": 1.652471153473686,
+  "correctness": "All 720 measured responses checked; first 8 independently checked",
   "baseline_commit": "fa608a576ab0b1640cac2cfdcf6a24a12cabd0f6",
-  "notes": "Single local round: filtered queries improve; unfiltered group is slower in this round. Do not infer formal score or universal speedup."
+  "candidate_parent_commit": "84cce35e9e467536eac03da15cd2a9b5759e51a2",
+  "notes": "Three rounds with alternating order; median per metric; includes separately measured first unfiltered/filtered requests. No other correctness jobs ran during this measurement."
 }

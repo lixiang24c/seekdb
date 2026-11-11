@@ -1,0 +1,81 @@
+{
+  "rows": 10000,
+  "dimensions": 128,
+  "queries": 120,
+  "filtered_queries": 60,
+  "projected_distance": true,
+  "content_bytes_per_row": 512,
+  "cpus": "2",
+  "memory": "2g",
+  "seed": 20261112,
+  "scope": "Alternating image order across rounds; local comparison, not formal score",
+  "rounds": 3,
+  "samples": {
+    "baseline": [
+      {
+        "total_seconds": 6.576049182738643,
+        "unfiltered_seconds": 3.2875878718914464,
+        "filtered_seconds": 3.2884613108471967,
+        "median_ms": 54.24480646615848,
+        "max_ms": 73.6229459871538
+      },
+      {
+        "total_seconds": 6.43350147997262,
+        "unfiltered_seconds": 3.2177238159347326,
+        "filtered_seconds": 3.215777664037887,
+        "median_ms": 52.986956521635875,
+        "max_ms": 73.06259503820911
+      },
+      {
+        "total_seconds": 6.50869347184198,
+        "unfiltered_seconds": 3.246221864945255,
+        "filtered_seconds": 3.2624716068967246,
+        "median_ms": 54.041977011365816,
+        "max_ms": 62.74559802841395
+      }
+    ],
+    "candidate": [
+      {
+        "total_seconds": 3.9326414043316618,
+        "unfiltered_seconds": 3.267943029117305,
+        "filtered_seconds": 0.6646983752143569,
+        "median_ms": 31.92953299731016,
+        "max_ms": 66.73639500513673
+      },
+      {
+        "total_seconds": 3.8094198053586297,
+        "unfiltered_seconds": 3.16645190352574,
+        "filtered_seconds": 0.6429679018328898,
+        "median_ms": 31.79500048281625,
+        "max_ms": 54.67320600291714
+      },
+      {
+        "total_seconds": 3.959234978770837,
+        "unfiltered_seconds": 3.294109712878708,
+        "filtered_seconds": 0.6651252658921294,
+        "median_ms": 32.70755198900588,
+        "max_ms": 57.830706995446235
+      }
+    ]
+  },
+  "runs": {
+    "baseline": {
+      "total_seconds": 6.50869347184198,
+      "unfiltered_seconds": 3.246221864945255,
+      "filtered_seconds": 3.2624716068967246,
+      "median_ms": 54.041977011365816,
+      "max_ms": 73.06259503820911
+    },
+    "candidate": {
+      "total_seconds": 3.9326414043316618,
+      "unfiltered_seconds": 3.267943029117305,
+      "filtered_seconds": 0.6646983752143569,
+      "median_ms": 31.92953299731016,
+      "max_ms": 57.830706995446235
+    }
+  },
+  "speedup": 1.6550437232016348,
+  "correctness": "All 720 measured responses checked; first 8 independently checked",
+  "candidate_commit": "84cce35e9e467536eac03da15cd2a9b5759e51a2",
+  "baseline_commit": "fa608a576ab0b1640cac2cfdcf6a24a12cabd0f6"
+}

@@ -274,32 +274,17 @@ class Database:
                 return None  # Caller restarts scan using bounded external sort.
         return [item.row for item in sorted(heap, key=lambda x: x.key)]
 
-    def filter_ids(self, table, conditions, match, columns):
-        """Bounded cache of predicate membership, keyed by immutable data versions."""
+    def filter_key(self, table, conditions):
         key = (tuple(p['file'] for p in self.store.segments(table)), tuple(conditions))
-        key_bytes = len(repr(key)) * 4 + 256
-        budget = 512 << 10
-        if key_bytes > 8192: return None
-        if key in self.filter_cache:
-            ids, cost = self.filter_cache.pop(key)
-            self.filter_cache[key] = (ids, cost)
-            return ids
-        ids = set()
-        rows = self.store.rows(table, columns={table['pk']}, predicate=match, predicate_columns=columns)
-        try:
-            for row in rows:
-                ids.add(row[table['pk']])
-                if key_bytes + len(ids) * 128 > budget:
-                    ids = None
-                    break
-        finally: rows.close()
-        cost = key_bytes + (len(ids) * 128 if ids is not None else 128)
-        while self.filter_cache and self.filter_cache_bytes + cost > budget:
+        return key if len(repr(key)) * 4 + 256 <= 8192 else None
+
+    def remember_filter(self, key, ids):
+        cost = len(repr(key)) * 4 + 256 + (len(ids) * 128 if ids is not None else 128)
+        while self.filter_cache and self.filter_cache_bytes + cost > (512 << 10):
             _, (_, old_cost) = self.filter_cache.popitem(last=False)
             self.filter_cache_bytes -= old_cost
         self.filter_cache[key] = (ids, cost)
         self.filter_cache_bytes += cost
-        return ids
 
     def flat_topk(self, table, expr, k, allowed=None):
         vc, query = expr[1], expr[2]
@@ -335,7 +320,12 @@ class Database:
         codec = Codec(table['cols'])
         vc, query = expr[1], expr[2]
         selected, cost = [], 0
-        allowed = self.filter_ids(table, conditions, match, filter_columns) if filter_columns and table.get('indexes') else None
+        cache_key = self.filter_key(table, conditions) if filter_columns and table.get('indexes') else None
+        entry = self.filter_cache.get(cache_key) if cache_key is not None else None
+        if entry is not None: self.filter_cache.move_to_end(cache_key)
+        allowed = entry[0] if entry is not None else None
+        collect_ids = set() if cache_key is not None and entry is None else None
+        collect_budget = (512 << 10) - (len(repr(cache_key)) * 4 + 256) if cache_key is not None else 0
         scores = self.flat_topk(table, expr, k, allowed) if table.get('indexes') and (not filter_columns or allowed is not None) else None
         heap, radius = [], math.inf
         records = (self.store.records(table, ordered=False) if scores is None else
@@ -351,6 +341,9 @@ class Database:
                     continue
                 if filter_columns and not match(codec.decode_fields(raw, filter_columns)):
                     continue
+                if collect_ids is not None:
+                    collect_ids.add(ident)
+                    if len(collect_ids) * 128 > collect_budget: collect_ids = None
                 offset, _ = codec.field(raw, vc)
                 vec = codec.formats[vc].unpack_from(raw, offset)
                 if math.dist(query, vec) > radius: continue
@@ -367,6 +360,8 @@ class Database:
                     radius = math.sqrt(-heap[0][0]) * (1.0 + 1e-12) + 1e-300
         finally:
             records.close()
+        if cache_key is not None and entry is None:
+            self.remember_filter(cache_key, collect_ids)
         if scores is None:
             selected = [(-neg_distance, -neg_ident, raw) for neg_distance, neg_ident, raw in heap]
         selected.sort(key=lambda item: (item[0], item[1]))

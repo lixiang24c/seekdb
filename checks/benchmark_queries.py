@@ -23,21 +23,24 @@ def main():
     parser.add_argument('--baseline', default='minivectordb:query-baseline-fc2567d9')
     parser.add_argument('--candidate', default='minivectordb:query-candidate')
     parser.add_argument('--output', default='protocol-results/query-optimization')
+    parser.add_argument('--rounds', type=int, default=1)
+    parser.add_argument('--queries', type=int, default=80)
+    parser.add_argument('--seed', type=int, default=20261112)
     args = parser.parse_args()
     out = ROOT / args.output
     out.mkdir(parents=True, exist_ok=True)
     config = json.loads((ROOT / 'protocol_check/config.json').read_text())
     session = Session(config, out / 'benchmark.stderr', image=args.baseline)
-    rng = random.Random(20261112)
+    rng = random.Random(args.seed)
     vectors = [[rng.randrange(-64, 65) / 8 for _ in range(128)] for _ in range(10000)]
-    query_vectors = [[rng.randrange(-64, 65) / 8 for _ in range(128)] for _ in range(80)]
+    query_vectors = [[rng.randrange(-64, 65) / 8 for _ in range(128)] for _ in range(args.queries)]
     statements = [f"SELECT id,L2_DISTANCE(v,'{json.dumps(q)}') AS d FROM t " +
                   ('WHERE category=3 ' if i % 2 else '') + 'ORDER BY d LIMIT 10'
                   for i, q in enumerate(query_vectors)]
-    report = {'rows': 10000, 'dimensions': 128, 'queries': 80, 'filtered_queries': 40,
+    report = {'rows': 10000, 'dimensions': 128, 'queries': args.queries, 'filtered_queries': args.queries//2,
               'projected_distance': True, 'content_bytes_per_row': 512,
-              'cpus': config['cpus'], 'memory': config['memory'], 'seed': 20261112,
-              'scope': 'Local single-run comparison, not the formal benchmark score', 'runs': {}}
+              'cpus': config['cpus'], 'memory': config['memory'], 'seed': args.seed,
+              'scope': 'Alternating image order across rounds; local comparison, not formal score', 'rounds':args.rounds, 'samples':{'baseline':[], 'candidate':[]}, 'runs':{}}
     expected = []
     try:
         session.start()
@@ -46,17 +49,25 @@ def main():
             rows = ','.join(f"({i},{i%10},'{('x'*512)}','{json.dumps(vectors[i])}')" for i in range(start, start+100))
             assert session.request('INSERT INTO t VALUES ' + rows)['ok']
         assert session.request('CREATE VECTOR INDEX ix ON t(v)')['ok']
-        for label, image in [('baseline', args.baseline), ('candidate', args.candidate)]:
-            if label == 'candidate':
+        schedule = []
+        for round_index in range(args.rounds):
+            order = [('baseline', args.baseline), ('candidate', args.candidate)]
+            schedule.extend(order if round_index%2 == 0 else order[::-1])
+        for pass_index, (label, image) in enumerate(schedule):
+            if pass_index:
                 session.shutdown(); session.image = image; session.start()
-            for sql in statements[:2]: assert session.request(sql)['ok']
+            warmup = []
+            for sql in statements[:2]:
+                started = time.perf_counter()
+                assert session.request(sql)['ok']
+                warmup.append(time.perf_counter() - started)
             latency = []
             for i, sql in enumerate(statements):
                 started = time.perf_counter()
                 result = session.request(sql, mode='ann' if i % 4 < 2 else 'exact')
                 latency.append(time.perf_counter() - started)
                 assert result['ok'], result
-                if label == 'baseline':
+                if pass_index == 0:
                     expected.append(result['rows'])
                     if i < 8:
                         q = query_vectors[i]
@@ -65,12 +76,15 @@ def main():
                         assert result['rows'] == [[j,math.sqrt(d)] for d,j in truth]
                 else:
                     assert result['rows'] == expected[i], (i, result['rows'], expected[i])
-            report['runs'][label] = {'total_seconds': sum(latency),
+            sample = {'cold_unfiltered_seconds':warmup[0], 'cold_filtered_seconds':warmup[1], 'total_seconds': sum(latency),
                 'unfiltered_seconds': sum(latency[::2]), 'filtered_seconds': sum(latency[1::2]),
                 'median_ms': statistics.median(latency)*1000, 'max_ms': max(latency)*1000}
-            print(json.dumps({label: report['runs'][label]}), flush=True)
+            report['samples'][label].append(sample)
+            print(json.dumps({label:sample}),flush=True)
+        for label, samples in report['samples'].items():
+            report['runs'][label] = {key:statistics.median(sample[key] for sample in samples) for key in samples[0]}
         report['speedup'] = report['runs']['baseline']['total_seconds']/report['runs']['candidate']['total_seconds']
-        report['correctness'] = 'All 80 candidate responses equal baseline; 8 baseline queries independently checked'
+        report['correctness'] = f'All {args.queries * len(schedule)} measured responses checked; first 8 independently checked'
         session.shutdown()
     finally:
         session.close()

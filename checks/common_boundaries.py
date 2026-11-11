@@ -19,7 +19,14 @@ with tempfile.TemporaryDirectory() as directory:
     q('INSERT INTO t VALUES '+','.join(f"({i},0,'[{i}]')" for i in range(5000)))
     q('CREATE VECTOR INDEX ix ON t(v)')
     def near(cond):return q(f"SELECT id FROM t WHERE {cond} ORDER BY L2_DISTANCE(v,'[0]') LIMIT 3")
+    original_records, scans = db.store.records, []
+    def counted_records(*args, **kwargs):
+        scans.append(1)
+        yield from original_records(*args, **kwargs)
+    db.store.records = counted_records
     assert near('c=0')==[[0],[1],[2]]
+    assert len(scans) == 1, scans
+    db.store.records = original_records
     assert any(ids is None for ids,cost in db.filter_cache.values())
     assert near('c=0')==[[0],[1],[2]]
     assert near('c=1')==[]
