@@ -436,6 +436,59 @@ class Storage:
         new.pop('file', None); new.pop('index_file', None)
         return new
 
+    def has_offsets(self, table):
+        for part in self.segments(table):
+            if not part['count']: continue
+            if not part.get('keys'): return False
+            with open(self.path(part['keys']), 'rb') as f:
+                if f.read(8) != OFFSET_MAGIC: return False
+        return True
+
+    def range_records(self, table, lower, upper, reverse=False):
+        """Inclusive primary-key range, bounded memory and one cursor per segment."""
+        codec = Codec(table['cols'])
+        def segment(part):
+            if not part['count'] or lower > upper: return
+            if part.get('min') is not None and (part['max'] < lower or part['min'] > upper): return
+            if part.get('keys'):
+                with open(self.path(part['keys']), 'rb') as keys:
+                    header = keys.read(8)
+                    if header == OFFSET_MAGIC:
+                        def entry(i):
+                            data = os.pread(keys.fileno(), 16, 8 + i * 16)
+                            if len(data) != 16: raise OSError('incomplete key index')
+                            return KEY_OFFSET.unpack(data)
+                        def lower_bound(value):
+                            lo, hi = 0, part['count']
+                            while lo < hi:
+                                mid = (lo + hi) // 2
+                                if entry(mid)[0] < value: lo = mid + 1
+                                else: hi = mid
+                            return lo
+                        start, stop = lower_bound(lower), lower_bound(upper + 1)
+                        if start == stop: return
+                        with open(self.path(part['file']), 'rb') as rows:
+                            if not reverse: rows.seek(entry(start)[1])
+                            for i in (range(stop - 1, start - 1, -1) if reverse else range(start, stop)):
+                                if reverse: rows.seek(entry(i)[1])
+                                head = rows.read(4)
+                                if len(head) != 4: raise OSError('incomplete row header')
+                                size = U32.unpack(head)[0]; raw = rows.read(size)
+                                if len(raw) != size: raise OSError('incomplete row')
+                                offset, _ = codec.field(raw, table['pk'])
+                                yield I64.unpack_from(raw, offset)[0], raw
+                        return
+                    if header != KEY_MAGIC: raise OSError('invalid key index header')
+            if reverse: raise OSError('reverse scan requires row offsets')
+            for ident, raw in raw_rows(self.path(part['file']), codec, table['pk']):
+                if ident > upper: break
+                if ident >= lower: yield ident, raw
+        readers = [segment(part) for part in self.segments(table)]
+        try:
+            yield from heapq.merge(*readers, key=lambda item: item[0], reverse=reverse)
+        finally:
+            for reader in readers: reader.close()
+
     def records(self, table, ordered=True):
         codec = Codec(table['cols'])
         readers = [raw_rows(self.path(part['file']), codec, table['pk']) for part in self.segments(table)]
@@ -447,9 +500,9 @@ class Storage:
         finally:
             for reader in readers: reader.close()
 
-    def rows(self, table, columns=None, predicate=None, predicate_columns=None):
+    def rows(self, table, columns=None, predicate=None, predicate_columns=None, bounds=None, reverse=False, ordered=True):
         codec = Codec(table['cols'])
-        records = self.records(table)
+        records = self.range_records(table, *bounds, reverse=reverse) if bounds is not None else self.records(table, ordered=ordered)
         try:
             for _, raw in records:
                 if predicate is not None and not predicate(codec.decode_fields(raw, predicate_columns)):

@@ -80,6 +80,17 @@ class Database:
                 return convert(table['cols'][table['pk']], value)
         return None
 
+    def primary_bounds(self, table, conditions):
+        lower, upper = -(1 << 63), (1 << 63) - 1
+        found = False
+        for name, op, value in conditions:
+            if self.column(table, name) != table['pk']: continue
+            found = True
+            value = convert(table['cols'][table['pk']], value)
+            if op in ('=', '>=', '>'): lower = max(lower, value + (op == '>'))
+            if op in ('=', '<=', '<'): upper = min(upper, value - (op == '<'))
+        return (lower, upper) if found else None
+
     def expression(self, table, expr):
         i = self.column(table, expr[1])
         if expr[0] == 'column':
@@ -174,6 +185,8 @@ class Database:
             if raw is None: return {'affected_rows': 0}
             row = Codec(table['cols']).decode(raw)
             if not match(row): return {'affected_rows': 0}
+            if op == 'update' and all(row[i] == value for i, value in sets):
+                return {'affected_rows': 1}
             for i, value in sets: row[i] = value
             new = self.store.replace_point(table, part, ident, None if op == 'delete' else row)
             self.store.install(name, new)
@@ -241,20 +254,21 @@ class Database:
         for path in self.store.index_paths(table):
             with open(path, 'rb') as f:
                 if f.read(8) != INDEX_MAGIC: raise OSError('invalid index header')
-                while data := f.read(fmt.size):
-                    if len(data) != fmt.size: raise OSError('incomplete index record')
-                    values = fmt.unpack(data)
-                    # A conservative rejection bound only; accepted candidates are
-                    # ranked with the original fsum squared distance, including ties.
-                    if math.dist(query, values[1:]) > radius: continue
-                    key = (squared(query, values[1:]), values[0])
-                    item = (-key[0], -key[1], values[0])
-                    if len(heap) < k:
-                        heapq.heappush(heap, item)
-                    elif item > heap[0]:
-                        heapq.heapreplace(heap, item)
-                    if len(heap) == k:
-                        radius = math.sqrt(-heap[0][0]) * (1.0 + 1e-12) + 1e-300
+                block_bytes = fmt.size * max(1, 65536 // fmt.size)
+                while data := f.read(block_bytes):
+                    if len(data) % fmt.size: raise OSError('incomplete index record')
+                    for values in fmt.iter_unpack(data):
+                        # A conservative rejection bound only; accepted candidates are
+                        # ranked with the original fsum squared distance, including ties.
+                        if math.dist(query, values[1:]) > radius: continue
+                        key = (squared(query, values[1:]), values[0])
+                        item = (-key[0], -key[1], values[0])
+                        if len(heap) < k:
+                            heapq.heappush(heap, item)
+                        elif item > heap[0]:
+                            heapq.heapreplace(heap, item)
+                        if len(heap) == k:
+                            radius = math.sqrt(-heap[0][0]) * (1.0 + 1e-12) + 1e-300
         return {item[2]: -item[0] for item in heap}
 
     def vector_topk(self, table, expr, k, columns, match, filter_columns):
@@ -325,6 +339,9 @@ class Database:
             return tuple(Desc(value(e, row, True)) if desc else value(e, row, True) for e, desc in keys) + (row[table['pk']],)
         needed = {table['pk']} | filter_columns | {e[1] for e in outs} | {e[1] for e, _ in keys}
         ident = self.primary_equal(table, st['where'])
+        bounds = self.primary_bounds(table, st['where'])
+        reverse_pk = keys == [(('column', table['pk']), True)] and self.store.has_offsets(table)
+        if reverse_pk and bounds is None: bounds = (-(1 << 63), (1 << 63) - 1)
         def source(full=False):
             if ident is not None:
                 _, raw = self.store.lookup(table, ident)
@@ -333,17 +350,18 @@ class Database:
                     if match(row): yield row
                 return
             yield from self.store.rows(table, None if full else needed,
-                                       match if filter_columns else None, filter_columns)
+                                       match if filter_columns else None, filter_columns, bounds=bounds, reverse=reverse_pk,
+                                       ordered=not keys or keys == [(('column', table['pk']), False)])
         result = self.store.fresh('result')
         rows, limit = None, st['limit']
         try:
             if limit == 0:
                 rows = iter(())
-            elif not keys or keys == [(('column', table['pk']), False)]:
+            elif not keys or keys == [(('column', table['pk']), False)] or reverse_pk:
                 rows = source()
             else:
                 if limit is not None and limit <= 1024:
-                    if ident is None and len(keys) == 1 and keys[0][0][0] == 'distance' and not keys[0][1]:
+                    if ident is None and bounds is None and len(keys) == 1 and keys[0][0][0] == 'distance' and not keys[0][1]:
                         rows = self.vector_topk(table, keys[0][0], limit, needed, match, filter_columns)
                     else:
                         selected = source()

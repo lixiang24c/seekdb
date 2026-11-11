@@ -1,0 +1,26 @@
+{
+  "rows": 10000,
+  "range_queries": 64,
+  "scope": "Local Docker 2 CPU / 2 GiB, single run, identical independent fixtures",
+  "runs": {
+    "baseline": {
+      "ranges_s": 2.521129590983037,
+      "same_value_updates_s": 0.2218571999692358,
+      "topk_s": 0.295893591013737
+    },
+    "candidate": {
+      "ranges_s": 0.06321785203181207,
+      "same_value_updates_s": 0.015255934034939855,
+      "topk_s": 0.22219840198522434
+    }
+  },
+  "speedup": {
+    "ranges_s": 39.880026131137306,
+    "same_value_updates_s": 14.542354434748344,
+    "topk_s": 1.3316639020356826
+  },
+  "correctness": "64 range/order outputs checked independently per image; three other sort/filtered-vector responses compared; delete/rollback/restart checked",
+  "baseline_commit": "da708fc69affd5df6424eec47845e3b347e52c24",
+  "vector_dimensions": 4,
+  "topk_queries": 30
+}
