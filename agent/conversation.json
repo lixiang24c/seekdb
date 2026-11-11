@@ -1,7 +1,7 @@
 {
   "material_version": "authentic-development-records-1",
   "synthetic": false,
-  "scope": "仅收录本次完整重写的真实用户指令、Agent说明和实际工具验证。较早完整对话未纳入；assistant的解释为明确标注的摘要，user字段为原文。未把Agent的设计和验证记为学生技术理解，也未生成学生反思或评分。",
+  "scope": "包含本次重写的真实用户指令、明确标注的Agent摘要和实际工具验证，以及用户在当前对话中补充的早期团队经历复盘。早期经历的来源为用户当前回顾，不伪装成当时的原始交互；较早完整对话未纳入。用户原文保留，Agent设计和工具执行不冒充学生自身解释。",
   "conversations": [
     {
       "id": "u1",
@@ -237,6 +237,70 @@
       "id": "a-exact-terms",
       "role": "assistant",
       "content": "查询采样中精确距离约占三成。将逐项差值/平方移至C生成复用乘积数组，仍由原math.fsum按原坐标顺序求和，最终主键排序不变；原生候选避免整段Python浮点解包和重复距离遍历。ABI升级5，旧/缺失库回到Python。"
+    },
+    {
+      "id": "u-prompt-discussion-start",
+      "role": "user",
+      "content": "之前队友的调查已经发你了，队友实力有限只能做到这一步（，然后prompt题目我现在才看到要求，大概是要记录和agent对话的过程？我觉得队友做不好，我们可以一起讨论了"
+    },
+    {
+      "id": "u-project-retrospective",
+      "role": "user",
+      "content": "我先和你说说整体的真实情况：首先三人根据赛题要求各自开发，然后不断优化，一段时间后在各人电脑上复现，发现一个队友的性能更快但是bug比较多，于是就采用了我的版本，然后提交发现一直过不了，于是不断排查原因，并启动之前的其他队友的结果， 但是都不行，于是从头再来，从0开始重写了一个最小的实现，并做了非常基础的一点点优化，发现这个有效，但是提交次数用完了，于是准备了完整的基础修复版，蒸馏之前的知识和吸取教训的全面优化版，以及之前实现对比现在修复问题的版本准备明天的提交，你觉得只在这个真实情况下稍微加点润色可行吗",
+      "record_type": "current_user_retrospective",
+      "provenance": "用户在当前对话中对团队开发及提测经历的亲自回顾；不作为早期逐轮对话或执行日志的逐字还原。"
+    },
+    {
+      "id": "u-minimal-rewrite-hypothesis",
+      "role": "user",
+      "content": "验证是不是额外加的各种库之类的优化手段出现问题",
+      "record_type": "current_user_retrospective",
+      "context": "回答为何从零重写最小实现：希望验证额外依赖或优化手段是否导致问题。这是用户报告的排查假设，尚不等于确认具体失败根因。"
+    },
+    {
+      "id": "u-gradual-optimization-order",
+      "role": "user",
+      "content": "肯定是先加没有任何依赖的，简单的优化，这样逐渐加上去啊",
+      "record_type": "current_user_explanation",
+      "context": "回答最小实现通过后如何恢复优化。用户提出优先加入无额外依赖的简单优化，再逐渐增加；未在这条发言中说明具体对照或验证方法。"
+    },
+    {
+      "id": "u-engineering-framing",
+      "role": "user",
+      "content": "你不用这样一点点问我，你不能自己归纳判断？我是在用工程的思维打比赛，懂吗"
+    },
+    {
+      "id": "u-engineering-general-baseline",
+      "role": "user",
+      "content": "无过滤组本轮变慢是什么情况，通用版应该是绝对有优化的版本吧，模糊的应该放其他版本，还有就是我认为现在时间稍微宽裕一点，测试集的数量什么的可以稍微多一点，但是还是要避免过度测试",
+      "record_type": "curated_original_excerpt",
+      "provenance": "从本次会话较早用户原文补录，保留完整发言；在材料中的排列为主题整理顺序，不冒充原始时间顺序。"
+    },
+    {
+      "id": "u-engineering-evaluation-window",
+      "role": "user",
+      "content": "继续优化，我需要你先把所有能想到的通用优化做好，然后现在正在评测的这版初步的评完后我将交一轮通用优化吧，评测通用优化的时候你再去做一些之前的各个经验吸取的优化，你觉得这个方向怎么样",
+      "record_type": "curated_original_excerpt",
+      "provenance": "从本次会话较早用户原文补录，保留完整发言；在材料中的排列为主题整理顺序，不冒充原始时间顺序。"
+    },
+    {
+      "id": "u-engineering-release-gate",
+      "role": "user",
+      "content": "现在最关键的是MySQL启动不了，没分，你先别修一点就推，再给我仔细核查一下",
+      "record_type": "curated_original_excerpt",
+      "provenance": "从本次会话较早用户原文补录，保留完整发言；在材料中的排列为主题整理顺序，不冒充原始时间顺序。"
+    },
+    {
+      "id": "u-engineering-stage-commits",
+      "role": "user",
+      "content": "停，分支有必要开吗，我认为只要区分提交不就行了",
+      "record_type": "curated_original_excerpt",
+      "provenance": "从本次会话较早用户原文补录，保留完整发言；在材料中的排列为主题整理顺序，不冒充原始时间顺序。"
+    },
+    {
+      "id": "u-add-research-materials",
+      "role": "user",
+      "content": "然后里面加入相关的各种论文材料，博客等"
     }
   ],
   "experiments": [
@@ -451,7 +515,7 @@
   "limitations": [
     "图索引默认关闭，仅对1024–20000行、16–256维、单表、无普通列过滤且K<=64的ann TopK生效；总分配预算16MiB。",
     "图按索引数据在CREATE INDEX或重启时建立；数据变更会失效并走精确路径，事务内建索引不触发图构建。",
-    "召回验证为小样本，单轮查询耗时与构建成本分开记录；无物理I/O采集和正式评测分数。",
+    "召回验证为小样本，单轮查询耗时与构建成本分开记录；图实验未测完整物理I/O；之后默认精确版本已补齐本地cgroup资源快照，仍无最新平台正式成绩。",
     "学生理解仅依据真实用户原文；Agent解释和工具执行不冒充学生贡献。",
     "列值分组是256KiB估算预算的内存缓存，第二种同列条件才构建；不是持久化普通列索引，首两种条件、超预算及多列过滤仍需扫描。"
   ],
@@ -513,5 +577,192 @@
       "commit": "d12d6e8f17aa74473467696419940f9a7a7551f2",
       "note": "Bounded vector-text batching retained; native kernel now ABI5."
     }
-  ]
+  ],
+  "material_notes": {
+    "team_investigation": "已阅读用户提供的MIGRATION_PLAN.md。预装GCC镜像、RUN断网构建、ctypes回退方向已在当前实现落实并本地验证；队友对平台失败根因的判断与平台日志确认区分。文档为队友资料，不作为当前用户本人理解或发言。",
+    "prompt_work": "用户开始与Agent共同讨论学习证据；后续保留真实用户解释、预测、验证及修正，不补写虚构学生发言。",
+    "retrospective_source": "当前用户提供三人独立开发、跨电脑复现、选择较稳定版本、正式提测失败、换用旧实现仍失败、最小重写有效、额度用尽后筹备三类次日候选的复盘。该段是用户报告；具体失败根因、各候选完成情况、测试数值与commit需由已有记录分别支持。",
+    "discussion_style": "用户要求按工程决策归纳已有材料，停止逐项问答。后续优先整理真实证据和结果，不要求用户复述Agent技术解释。"
+  },
+  "engineering_summary": {
+    "author": "assistant",
+    "basis": "归纳依据为用户当前复盘、真实早期指令及已有工具结果；不是新增学生原话或隐藏推理。",
+    "content": "工程主线：三人并行探索后跨电脑复现，比较性能和缺陷后选择实现；正式评测持续失败时收敛到启动与准入问题，要求完整核查而非零碎推送；以最小重写验证额外依赖/优化是否相关，得到有效评测结果后，再按无新增依赖的简单优化、复杂算法/依赖迁移分阶段推进。用户要求通用版本保留有明确收益的优化，将不确定方案另行区分；利用约半小时评测窗口并行推进后续候选，按提交区分阶段，并控制本地测试投入。",
+    "attribution": "上述约束、顺序及取舍归于用户可定位的发言。具体实现、测试设计细节、执行和数值分析若来自Agent，仍标为Agent或工具来源；不据此推断用户独立设计了每项测试。",
+    "remaining_uncertainty": "用户报告了三类次日候选的筹备目标，不据此声明三类版本均已正式通过；构建断网线索与平台失败根因确认分开。"
+  },
+  "literature_note": "资料由Agent检索整理，老师资料包采用摘要及关键段落摘读。条目说明哪些在开发中参考、哪些本轮补充复盘，概念和项目结果直接写入本JSON；用户的真实工程决策仍以其原话为依据。",
+  "literature": [
+    {
+      "id": "faiss-paper",
+      "title": "Billion-scale similarity search with GPUs",
+      "url": "https://arxiv.org/abs/1702.08734",
+      "kind": "论文；老师资料包",
+      "reading": "开发阶段摘读，本轮核对原始来源摘要。",
+      "notes": "论文把距离计算、TopK选择和内存层级作为共同的性能问题。项目据此关注连续float32布局、分块扫描和小K候选选择，在CPU上自行实现；没有引入GPU或Faiss库。",
+      "project": "原生筛选、块内TopK、SIMD及批量回表分别测量后采用；当前候选乘积由C生成，最终仍用math.fsum求和。",
+      "experiments": [
+        "native-results",
+        "topk-results",
+        "simd-results",
+        "batch-lookup-stage",
+        "exact-terms-stage"
+      ]
+    },
+    {
+      "id": "faiss-notes",
+      "title": "Faiss Implementation notes",
+      "url": "https://github.com/facebookresearch/faiss/wiki/Implementation-notes",
+      "kind": "官方技术文章",
+      "reading": "开发阶段参考，本轮核对当前说明。",
+      "notes": "实现说明比较直接平方差与范数/点积展开，强调查询规模和数值稳定性会影响选择。项目为单客户端逐条请求，先优化直接距离与有界分块，避免为了批处理构造大型临时矩阵。",
+      "project": "保留精确距离基准与极值/并列检查，原生内核只筛选或生成逐项乘积，最终排序语义不变。",
+      "experiments": [
+        "native-results",
+        "exact-terms-stage"
+      ]
+    },
+    {
+      "id": "hnsw",
+      "title": "Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs",
+      "url": "https://arxiv.org/abs/1603.09320",
+      "kind": "论文；老师资料包",
+      "reading": "开发阶段摘读分层搜索、邻居选择及搜索宽度，本轮核对摘要。",
+      "notes": "分层导航和候选搜索宽度为自实现图实验提供参考。提高搜索宽度会增加工作量，是否值得采用需要结合召回、构建和内存测量。",
+      "project": "EF256的均匀数据平均召回0.965；EF512三个种子为0.99/0.98/0.98。构图约3.3–3.5秒、峰值内存增加约6MiB，图保留为默认关闭的实验。",
+      "experiments": [
+        "graph-quality-and-freshness"
+      ]
+    },
+    {
+      "id": "acorn",
+      "title": "ACORN: Performant and Predicate-Agnostic Search Over Vector Embeddings and Structured Data",
+      "url": "https://arxiv.org/abs/2403.04871",
+      "kind": "论文",
+      "reading": "开发阶段参考过滤检索问题，本轮核对摘要。",
+      "notes": "该工作研究结构化谓词与向量图检索的结合。项目借鉴过滤与候选生成需要协同设计这一视角，当前实现使用候选ID、字节掩码及列值分组进行精确检索，未复现ACORN图遍历。",
+      "project": "同列跨条件缓存采用后，十类轮换120查询三轮中位1.050→0.625秒；单一类别基本持平。预先为单一条件建分组的方案因额外成本被调整。",
+      "experiments": [
+        "filter-mask-results",
+        "value-groups-stage"
+      ]
+    },
+    {
+      "id": "elastic-filter-blog",
+      "title": "Filtered HNSW search, fast mode",
+      "url": "https://www.elastic.co/search-labs/blog/filtered-hnsw-knn-search",
+      "kind": "工程博客；Benjamin Trent，2025-02-27",
+      "reading": "本轮补充，用于复盘及后续方案比较。",
+      "notes": "文章解释过滤可能破坏图导航、增加搜索工作，介绍Lucene对ACORN-1的适配及按选择率启用的取舍。这支持按过滤场景分别衡量算法，而非只看无过滤查询。",
+      "project": "当前普通列过滤仍走精确路径；博客作为后续过滤图实验的参考，文中加速倍数不计为本项目结果。",
+      "experiments": [
+        "graph-quality-and-freshness",
+        "value-groups-stage"
+      ]
+    },
+    {
+      "id": "roargraph",
+      "title": "RoarGraph: A Projected Bipartite Graph for Efficient Cross-Modal Approximate Nearest Neighbor Search",
+      "url": "https://arxiv.org/abs/2408.08933",
+      "kind": "论文；老师资料包",
+      "reading": "开发阶段摘读查询分布相关段落，本轮核对摘要。",
+      "notes": "论文关注跨模态查询和库向量的分布差异。项目迁移了验证视角：使用独立查询，分别测均匀、聚类和偏移分布；没有实现论文的投影二部图。",
+      "project": "图实验除均匀随机数据外增加聚类及归一化库上的零/远距离查询；退化或距离集中时回到精确扫描。小样本结果不作为未知分布召回保证。",
+      "experiments": [
+        "graph-quality-and-freshness"
+      ]
+    },
+    {
+      "id": "pq",
+      "title": "Product Quantization for Nearest Neighbor Search",
+      "url": "https://doi.org/10.1109/TPAMI.2010.57",
+      "kind": "论文；老师资料包",
+      "reading": "开发阶段摘读子空间量化和非对称距离说明，本轮核对书目信息。",
+      "notes": "PQ把向量划分为低维子空间并分别编码，以较短码近似距离。它提供压缩检索方向，但引入量化误差和训练/重排成本。",
+      "project": "10000×128维float32原始向量约4.88MiB，当前先消除Python解析、计算和数据搬运开销；PQ暂缓，尚无本项目PQ实验成绩。",
+      "experiments": []
+    },
+    {
+      "id": "opq",
+      "title": "Optimized Product Quantization",
+      "url": "https://www.microsoft.com/en-us/research/publication/optimized-product-quantization/",
+      "kind": "论文；老师资料包",
+      "reading": "开发阶段摘读空间分解和失真优化，本轮核对作者机构页面。",
+      "notes": "OPQ进一步优化子空间分解和码本，以减少PQ的量化失真。方法与当前小规模精确检索负载的收益需要另外验证。",
+      "project": "暂未实现。后续若用于候选筛选，返回SQL距离仍需依据原始存储向量重算；没有将论文压缩或加速结果写成本项目成绩。",
+      "experiments": []
+    },
+    {
+      "id": "freshdiskann",
+      "title": "FreshDiskANN: A Fast and Accurate Graph-Based ANN Index for Streaming Similarity Search",
+      "url": "https://arxiv.org/abs/2105.09613",
+      "kind": "论文",
+      "reading": "开发阶段参考动态维护问题，本轮核对摘要。",
+      "notes": "该工作处理数据持续插入和删除时的近邻索引更新。项目参考其问题意识，检查检索是否反映当前可见记录。",
+      "project": "当前采用不可变段和有界主键覆盖，检查更新、删除、回滚及重启的索引一致性；这不是FreshDiskANN动态图实现。",
+      "experiments": [
+        "migration-storage-results",
+        "graph-quality-and-freshness"
+      ]
+    },
+    {
+      "id": "python-numerics-profile",
+      "title": "Python 3.12: math.fsum 与 The Python Profilers",
+      "url": "https://docs.python.org/3.12/library/math.html#math.fsum",
+      "additional_url": "https://docs.python.org/3.12/library/profile.html",
+      "kind": "官方数值与性能分析文档",
+      "reading": "本轮补充文档依据，与已执行采样和位级检查对照。",
+      "notes": "fsum通过跟踪中间部分和改善求和精度；cProfile用于定位开销，最终性能另用端到端测量。普通double累加不应直接当成相同数值语义。",
+      "project": "采样后优化字符串扫描，写入三轮中位4.557→2.784秒；C逐项乘积配合原fsum后，1000查询4.639→3.902秒。分别以独立对比和边界检查验证。",
+      "experiments": [
+        "parser-full-workload-stage",
+        "exact-terms-stage"
+      ]
+    },
+    {
+      "id": "docker-build",
+      "title": "Docker Docs: Multi-stage builds",
+      "url": "https://docs.docker.com/build/building/multi-stage/",
+      "kind": "官方构建技术文档",
+      "reading": "本轮补充正式出处，与已采用的构建方式对照。",
+      "notes": "多阶段构建可分离编译工具链和运行镜像。项目构建阶段使用镜像预装编译器，运行阶段只复制自建共享库和Python源码。",
+      "project": "固定镜像digest、RUN断网构建，无apt/pip在线安装；本地验证编译、库加载、启动及缺库回退。队友调查的构建线索据此形成可复现的本地修复。",
+      "experiments": [
+        "offline-build-results",
+        "exact-terms-stage"
+      ]
+    },
+    {
+      "id": "cgroup-v2",
+      "title": "Linux Kernel Documentation: Control Group v2",
+      "url": "https://docs.kernel.org/admin-guide/cgroup-v2.html",
+      "kind": "官方资源统计文档",
+      "reading": "本轮核对io.stat及memory.peak定义，补充到已执行资源对比。",
+      "notes": "io.stat按设备提供读取/写入字节；memory.peak记录cgroup及后代的峰值，资源口径不能只看数据库进程RSS。",
+      "project": "完整负载记录写入与查询T、设备I/O和容器峰值，查询资源包含装载、建索引及预热。当前为本地环境，未用这些结果推算正式E。",
+      "experiments": [
+        "parser-full-workload-stage",
+        "numeric-text-stage",
+        "exact-terms-stage"
+      ]
+    },
+    {
+      "id": "textgrad",
+      "title": "TextGrad / Optimizing generative AI by backpropagating language model feedback",
+      "url": "https://github.com/zou-group/textgrad",
+      "additional_url": "https://www.nature.com/articles/s41586-025-08661-4",
+      "kind": "论文与作者项目；用户最早分享的讨论背景",
+      "reading": "用户先分享解读与仓库，本轮核对作者说明和论文信息。",
+      "notes": "TextGrad以语言反馈指导文本变量修改，为Agent迭代提供一种类梯度的解释。项目中以外部测试和性能结果判断建议效果，保留修改或回退。",
+      "project": "作为理解反馈迭代的参考；项目未安装或运行TextGrad，也未声称实现自动文本反向传播。主键页缓存实验变慢后撤回，是已有工程反馈的例子。",
+      "experiments": [
+        "codec-and-rejected-cache"
+      ]
+    }
+  ],
+  "research_retrospective": {
+    "author": "assistant",
+    "content": "这次资料学习围绕工程路线展开：先从老师的FAISS、HNSW、PQ/OPQ和RoarGraph资料中筛选适合比赛规模的思路。1万条128维向量本身约4.88MiB，因此先优化连续布局、分块距离和TopK选择；随后用采样定位SQL解析与候选距离计算，分别落地整段字符串扫描、批量数字/float32转换和C逐项乘积加原math.fsum。过滤部分参考ACORN的问题视角，用有界候选、掩码和同列分组复用，测试不同条件轮换的收益。图索引参考HNSW做成独立实验，并借鉴RoarGraph对查询分布的关注，增加均匀、聚类与偏移查询验证。图查询虽有收益，但构建和资源成本、召回余量仍需考虑，因此默认保留精确检索。PQ/OPQ暂缓，动态更新借鉴问题拆解而采用当前存储机制。TextGrad提供反馈迭代的讨论背景，实际取舍由真实测试和性能对比决定。",
+    "current_supplement": "本轮增加Elastic过滤检索工程博客及Python、Docker、cgroup正式文档，帮助解释已有现象和后续方向；不把后来补读的资料写成早期已经阅读或实现。"
+  }
 }

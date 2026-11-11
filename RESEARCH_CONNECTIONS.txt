@@ -1,0 +1,137 @@
+资料与项目取舍
+
+以下内容同步收录于agent/conversation.json；本文件便于阅读，不增加独立参评材料。
+
+这次资料学习围绕工程路线展开：先从老师的FAISS、HNSW、PQ/OPQ和RoarGraph资料中筛选适合比赛规模的思路。1万条128维向量本身约4.88MiB，因此先优化连续布局、分块距离和TopK选择；随后用采样定位SQL解析与候选距离计算，分别落地整段字符串扫描、批量数字/float32转换和C逐项乘积加原math.fsum。过滤部分参考ACORN的问题视角，用有界候选、掩码和同列分组复用，测试不同条件轮换的收益。图索引参考HNSW做成独立实验，并借鉴RoarGraph对查询分布的关注，增加均匀、聚类与偏移查询验证。图查询虽有收益，但构建和资源成本、召回余量仍需考虑，因此默认保留精确检索。PQ/OPQ暂缓，动态更新借鉴问题拆解而采用当前存储机制。TextGrad提供反馈迭代的讨论背景，实际取舍由真实测试和性能对比决定。
+
+
+1. Billion-scale similarity search with GPUs
+
+https://arxiv.org/abs/1702.08734
+
+
+论文把距离计算、TopK选择和内存层级作为共同的性能问题。项目据此关注连续float32布局、分块扫描和小K候选选择，在CPU上自行实现；没有引入GPU或Faiss库。
+
+原生筛选、块内TopK、SIMD及批量回表分别测量后采用；当前候选乘积由C生成，最终仍用math.fsum求和。
+
+
+2. Faiss Implementation notes
+
+https://github.com/facebookresearch/faiss/wiki/Implementation-notes
+
+
+实现说明比较直接平方差与范数/点积展开，强调查询规模和数值稳定性会影响选择。项目为单客户端逐条请求，先优化直接距离与有界分块，避免为了批处理构造大型临时矩阵。
+
+保留精确距离基准与极值/并列检查，原生内核只筛选或生成逐项乘积，最终排序语义不变。
+
+
+3. Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs
+
+https://arxiv.org/abs/1603.09320
+
+
+分层导航和候选搜索宽度为自实现图实验提供参考。提高搜索宽度会增加工作量，是否值得采用需要结合召回、构建和内存测量。
+
+EF256的均匀数据平均召回0.965；EF512三个种子为0.99/0.98/0.98。构图约3.3–3.5秒、峰值内存增加约6MiB，图保留为默认关闭的实验。
+
+
+4. ACORN: Performant and Predicate-Agnostic Search Over Vector Embeddings and Structured Data
+
+https://arxiv.org/abs/2403.04871
+
+
+该工作研究结构化谓词与向量图检索的结合。项目借鉴过滤与候选生成需要协同设计这一视角，当前实现使用候选ID、字节掩码及列值分组进行精确检索，未复现ACORN图遍历。
+
+同列跨条件缓存采用后，十类轮换120查询三轮中位1.050→0.625秒；单一类别基本持平。预先为单一条件建分组的方案因额外成本被调整。
+
+
+5. Filtered HNSW search, fast mode
+
+https://www.elastic.co/search-labs/blog/filtered-hnsw-knn-search
+
+
+文章解释过滤可能破坏图导航、增加搜索工作，介绍Lucene对ACORN-1的适配及按选择率启用的取舍。这支持按过滤场景分别衡量算法，而非只看无过滤查询。
+
+当前普通列过滤仍走精确路径；博客作为后续过滤图实验的参考，文中加速倍数不计为本项目结果。
+
+
+6. RoarGraph: A Projected Bipartite Graph for Efficient Cross-Modal Approximate Nearest Neighbor Search
+
+https://arxiv.org/abs/2408.08933
+
+
+论文关注跨模态查询和库向量的分布差异。项目迁移了验证视角：使用独立查询，分别测均匀、聚类和偏移分布；没有实现论文的投影二部图。
+
+图实验除均匀随机数据外增加聚类及归一化库上的零/远距离查询；退化或距离集中时回到精确扫描。小样本结果不作为未知分布召回保证。
+
+
+7. Product Quantization for Nearest Neighbor Search
+
+https://doi.org/10.1109/TPAMI.2010.57
+
+
+PQ把向量划分为低维子空间并分别编码，以较短码近似距离。它提供压缩检索方向，但引入量化误差和训练/重排成本。
+
+10000×128维float32原始向量约4.88MiB，当前先消除Python解析、计算和数据搬运开销；PQ暂缓，尚无本项目PQ实验成绩。
+
+
+8. Optimized Product Quantization
+
+https://www.microsoft.com/en-us/research/publication/optimized-product-quantization/
+
+
+OPQ进一步优化子空间分解和码本，以减少PQ的量化失真。方法与当前小规模精确检索负载的收益需要另外验证。
+
+暂未实现。后续若用于候选筛选，返回SQL距离仍需依据原始存储向量重算；没有将论文压缩或加速结果写成本项目成绩。
+
+
+9. FreshDiskANN: A Fast and Accurate Graph-Based ANN Index for Streaming Similarity Search
+
+https://arxiv.org/abs/2105.09613
+
+
+该工作处理数据持续插入和删除时的近邻索引更新。项目参考其问题意识，检查检索是否反映当前可见记录。
+
+当前采用不可变段和有界主键覆盖，检查更新、删除、回滚及重启的索引一致性；这不是FreshDiskANN动态图实现。
+
+
+10. Python 3.12: math.fsum 与 The Python Profilers
+
+https://docs.python.org/3.12/library/math.html#math.fsum
+
+https://docs.python.org/3.12/library/profile.html
+
+fsum通过跟踪中间部分和改善求和精度；cProfile用于定位开销，最终性能另用端到端测量。普通double累加不应直接当成相同数值语义。
+
+采样后优化字符串扫描，写入三轮中位4.557→2.784秒；C逐项乘积配合原fsum后，1000查询4.639→3.902秒。分别以独立对比和边界检查验证。
+
+
+11. Docker Docs: Multi-stage builds
+
+https://docs.docker.com/build/building/multi-stage/
+
+
+多阶段构建可分离编译工具链和运行镜像。项目构建阶段使用镜像预装编译器，运行阶段只复制自建共享库和Python源码。
+
+固定镜像digest、RUN断网构建，无apt/pip在线安装；本地验证编译、库加载、启动及缺库回退。队友调查的构建线索据此形成可复现的本地修复。
+
+
+12. Linux Kernel Documentation: Control Group v2
+
+https://docs.kernel.org/admin-guide/cgroup-v2.html
+
+
+io.stat按设备提供读取/写入字节；memory.peak记录cgroup及后代的峰值，资源口径不能只看数据库进程RSS。
+
+完整负载记录写入与查询T、设备I/O和容器峰值，查询资源包含装载、建索引及预热。当前为本地环境，未用这些结果推算正式E。
+
+
+13. TextGrad / Optimizing generative AI by backpropagating language model feedback
+
+https://github.com/zou-group/textgrad
+
+https://www.nature.com/articles/s41586-025-08661-4
+
+TextGrad以语言反馈指导文本变量修改，为Agent迭代提供一种类梯度的解释。项目中以外部测试和性能结果判断建议效果，保留修改或回退。
+
+作为理解反馈迭代的参考；项目未安装或运行TextGrad，也未声称实现自动文本反向传播。主键页缓存实验变慢后撤回，是已有工程反馈的例子。

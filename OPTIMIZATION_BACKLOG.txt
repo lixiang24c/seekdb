@@ -13,7 +13,7 @@
 PQ/OPQ、RoarGraph未迁移；当前10000x128规模先评估收益，不把论文中的性能视为本实现结果。
 
 交付阶段
-接收队友失败调查后逐条复核；Agent Prompt材料待队友开展真实学习证据整理；最后把选定版本同步到正式分支，并用同一commit锁定源码、Dockerfile与conversation.json。
+队友调查MIGRATION_PLAN.md已收到并完成对照，RUN断网构建方案已落地；Prompt材料改由用户与Agent共同讨论和整理真实学习证据；最后把选定版本同步到正式分支，并用同一commit锁定源码、Dockerfile与conversation.json。
 当前本地公开用例通过不表示正式隐藏用例或平台性能已经通过。
 
 迁移盘点
