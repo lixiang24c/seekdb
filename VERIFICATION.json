@@ -11,11 +11,11 @@
     "minidb/native.py": "4615dd6ed5ff3c2e232754abf0054e118be19e9bc58f50525129b5d32d305cd0",
     "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
     "minidb/sql.py": "87a41384e63776025b973b92b43ed4a8e135def7dce180f56c56a3ac8ee830a1",
-    "minidb/storage.py": "dd7d744775b2fbe85ed7cf5e4b901b0e15317d929e26ca738cc51f3fac313dc4",
+    "minidb/storage.py": "8f1201ce90b2d6179cbf539956e603ecfa66d26b904ce89948399975502ef187",
     "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
     "native/screen.c": "0fdb28a9619aa00c7a33a6cd3b49fec6206fbba3b2bcbc46a1fe33f9b54dca89"
   },
-  "image_id": "sha256:0e7b480bcf16eb34acc80a146a3ffff0ad7c1c66a39416b91bb4a9db57e93726",
+  "image_id": "sha256:6482214ad8e21e894fd085e69000cd881aed11fc5e69589dd2c7c1460c28fbf0",
   "public": {
     "scope": "public-protocol-check",
     "passed": true,
@@ -24,121 +24,121 @@
         "id": "sql_crud",
         "status": "PASS",
         "message": "",
-        "duration_ms": 876
+        "duration_ms": 582
       },
       {
         "id": "sql_comparisons",
         "status": "PASS",
         "message": "",
-        "duration_ms": 671
+        "duration_ms": 589
       },
       {
         "id": "sql_ordering",
         "status": "PASS",
         "message": "",
-        "duration_ms": 583
+        "duration_ms": 584
       },
       {
         "id": "sql_empty",
         "status": "PASS",
         "message": "",
-        "duration_ms": 609
+        "duration_ms": 582
       },
       {
         "id": "sql_primary_key",
         "status": "PASS",
         "message": "",
-        "duration_ms": 595
+        "duration_ms": 680
       },
       {
         "id": "sql_unicode",
         "status": "PASS",
         "message": "",
-        "duration_ms": 614
+        "duration_ms": 576
       },
       {
         "id": "sql_bigint",
         "status": "PASS",
         "message": "",
-        "duration_ms": 682
+        "duration_ms": 567
       },
       {
         "id": "sql_unsupported",
         "status": "PASS",
         "message": "",
-        "duration_ms": 633
+        "duration_ms": 558
       },
       {
         "id": "storage_restart",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1183
+        "duration_ms": 1086
       },
       {
         "id": "vector_euclidean",
         "status": "PASS",
         "message": "",
-        "duration_ms": 586
+        "duration_ms": 579
       },
       {
         "id": "transaction_commit",
         "status": "PASS",
         "message": "",
-        "duration_ms": 600
+        "duration_ms": 596
       },
       {
         "id": "transaction_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 587
+        "duration_ms": 595
       },
       {
         "id": "storage_mutations",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1112
+        "duration_ms": 1120
       },
       {
         "id": "storage_multiple_tables",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1126
+        "duration_ms": 1107
       },
       {
         "id": "vector_ties_and_filter",
         "status": "PASS",
         "message": "",
-        "duration_ms": 570
+        "duration_ms": 577
       },
       {
         "id": "vector_float32",
         "status": "PASS",
         "message": "",
-        "duration_ms": 544
+        "duration_ms": 587
       },
       {
         "id": "vector_index_maintenance",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1133
+        "duration_ms": 1116
       },
       {
         "id": "transaction_failed_insert",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1190
+        "duration_ms": 1117
       },
       {
         "id": "transaction_autocommit_atomic",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1102
+        "duration_ms": 1138
       },
       {
         "id": "transaction_shutdown_rollback",
         "status": "PASS",
         "message": "",
-        "duration_ms": 1111
+        "duration_ms": 1084
       }
     ],
     "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
@@ -469,7 +469,7 @@
     "correctness": "All 80 candidate responses equal baseline; 8 baseline queries independently checked",
     "baseline_commit": "fc2567d9cea6b361bdf566216cc2f5c7da507412"
   },
-  "scope": "Current image:public20;104 buffer/mapping bitwise checks under64MiB;23 SQL view/projection/fallback checks;SQL24 and opt-in graph43;64MiB74MB database full update/sort/rollback/crash-restart;64MiB70000x256 fixture with72MB vector index,7 SQL read/transaction/restart queries.Three final alternating independent-volume10000x128/1000query cohorts,6000responses checked and independent truths/restarts.Local cgroup snapshots,not formal E.Per-query mapping experiment discarded.C kernel/ABI5 unchanged;earlier native sanitizer and broad math tests remain inherited evidence.RUN-offline build,graph disabled.",
+  "scope": "Current image:public20;104 buffer/mapping bitwise checks under64MiB;23 SQL view/projection/fallback checks;SQL24 and opt-in graph43;64MiB74MB database full update/sort/rollback/crash-restart;64MiB70000x256 fixture with72MB vector index,7 SQL read/transaction/restart queries.Three final alternating independent-volume10000x128/1000query cohorts,6000responses checked and independent truths/restarts.Local cgroup snapshots,not formal E.Per-query mapping experiment discarded.C kernel/ABI5 unchanged;earlier native sanitizer and broad math tests remain inherited evidence.RUN-offline build,graph disabled. Combined image includes remote18d6ea small-overlay compaction; public20,95 mapped-query oracles across90updates and forced compaction fallback,source101updates/90deletes and two manifest crash cuts pass. Earlier benchmark/resource reports retain their original pre-merge scope.",
   "previous_stages": [
     {
       "commit": "77808f7c2053f394c354f9cbc249fe9f86f48835",
@@ -6530,5 +6530,47 @@
       1024
     ],
     "extreme_bigint_keys": true
+  },
+  "overlay_mapping_integration": {
+    "status": "PASS",
+    "local_parent": "7af2fbf175e7ed9f723dafa4ce9758224137de10",
+    "remote_parent": "18d6ea3737b1a0fb64d0ff4ce899647a9b7276ef",
+    "combined_overlays": {
+      "status": "PASS",
+      "rows": 1000,
+      "dimensions": 128,
+      "sequential_updates": 90,
+      "oracle_queries": 95,
+      "events": {
+        "small_merges": 2,
+        "fallbacks": 1,
+        "full_rewrites": 2
+      },
+      "coverage": [
+        "mapped reads after each actual update",
+        "base retained at segment threshold",
+        "small overlay merge",
+        "full excluded-mask compaction",
+        "reduced-cap fallback to full rewrite",
+        "map invalidation",
+        "exact scalar/vector row consistency",
+        "transaction rollback",
+        "restart"
+      ]
+    },
+    "source_overlay_boundaries": {
+      "status": "PASS",
+      "updates": 101,
+      "point_deletes": 90
+    },
+    "source_overlay_recovery": {
+      "status": "PASS",
+      "cuts": [
+        "before manifest publication",
+        "after manifest publication"
+      ],
+      "restarts_per_cut": 2
+    },
+    "benchmark_scope": "Three-round mmap performance measurements precede remote small-overlay integration; merged image independently passed public20 and combined compaction/mapping checks. No merged performance claim."
   }
 }
