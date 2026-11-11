@@ -1,0 +1,112 @@
+{
+  "rows": 10000,
+  "dimensions": 128,
+  "batch_size": 100,
+  "explicit_transaction_per_batch": true,
+  "rounds": 3,
+  "samples": {
+    "baseline": [
+      {
+        "seconds": 4.996567177993711,
+        "memory_peak_bytes": 42614784,
+        "io_delta_by_device": {
+          "8:48": {
+            "rbytes": 4096,
+            "wbytes": 70635520,
+            "rios": 1,
+            "wios": 512,
+            "dbytes": 0,
+            "dios": 0
+          }
+        }
+      },
+      {
+        "seconds": 5.149886836996302,
+        "memory_peak_bytes": 33472512,
+        "io_delta_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 70635520,
+            "rios": 0,
+            "wios": 512,
+            "dbytes": 0,
+            "dios": 0
+          }
+        }
+      },
+      {
+        "seconds": 5.159881511004642,
+        "memory_peak_bytes": 33624064,
+        "io_delta_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 70635520,
+            "rios": 0,
+            "wios": 512,
+            "dbytes": 0,
+            "dios": 0
+          }
+        }
+      }
+    ],
+    "candidate": [
+      {
+        "seconds": 4.667965701955836,
+        "memory_peak_bytes": 26722304,
+        "io_delta_by_device": {
+          "8:48": {
+            "rbytes": 4096,
+            "wbytes": 40849408,
+            "rios": 1,
+            "wios": 313,
+            "dbytes": 0,
+            "dios": 0
+          }
+        }
+      },
+      {
+        "seconds": 4.786442671029363,
+        "memory_peak_bytes": 26890240,
+        "io_delta_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 40849408,
+            "rios": 0,
+            "wios": 315,
+            "dbytes": 0,
+            "dios": 0
+          }
+        }
+      },
+      {
+        "seconds": 4.657707109989133,
+        "memory_peak_bytes": 26959872,
+        "io_delta_by_device": {
+          "8:48": {
+            "rbytes": 0,
+            "wbytes": 40849408,
+            "rios": 0,
+            "wios": 313,
+            "dbytes": 0,
+            "dios": 0
+          }
+        }
+      }
+    ]
+  },
+  "scope": "Independent data volume per run; T includes BEGIN/INSERT/COMMIT and output. Local cgroup snapshots are per reported device, not a certified dedicated-device metric; no formal E.",
+  "medians": {
+    "baseline": {
+      "seconds": 5.149886836996302,
+      "memory_peak_bytes": 33624064
+    },
+    "candidate": {
+      "seconds": 4.667965701955836,
+      "memory_peak_bytes": 26890240
+    }
+  },
+  "status": "PASS",
+  "baseline_commit": "a246a09827885a5e2ebf50a31355c6b6b1cb79e6",
+  "time_reduction": 0.09357897567348272,
+  "memory_peak_reduction": 0.20026799853818977
+}

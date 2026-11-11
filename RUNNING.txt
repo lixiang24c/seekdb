@@ -111,3 +111,7 @@ SIMD阶段ABI为3（当前为4）；支持AVX2且块足够密集时自动向量�
 TopK批量回表
 默认按数据段复用主键/记录文件句柄，排序定位候选，减少逐行重新打开文件。旧主键格式、事务可见性和回退路径保持原规则。详见LOOKUP_MIGRATION.txt。
 后续未完成项见OPTIMIZATION_BACKLOG.txt。
+
+批量写入归并
+INSERT沿用原层级规则，最多16个旧段直接生成最终段，超过则保留原有界归并。最终文件及目录同步不变。
+三轮10000x128写入耗时中位5.15秒→4.67秒，详细I/O、内存和故障检查见INSERT_MIGRATION.txt、INSERT_BENCHMARK.json。

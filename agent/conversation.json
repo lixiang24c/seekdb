@@ -177,6 +177,16 @@
       "id": "a-batch-lookup",
       "role": "assistant",
       "content": "TopK从逐条打开主键/数据文件改为按段批量读取；不改变数据格式和持久化规则。普通列冷过滤索引、批量写入的写放大以及完整资源统计仍未完成。图索引实验继续关闭。"
+    },
+    {
+      "id": "u-continue-insert",
+      "role": "user",
+      "content": "继续"
+    },
+    {
+      "id": "a-fused-merge",
+      "role": "assistant",
+      "content": "INSERT先规划原有层级归并链，最多16个旧段时直接流式生成最终段；更宽时使用原两读者归并。省掉中间文件和其重复同步，最终文件及manifest持久化规则不变。"
     }
   ],
   "experiments": [
@@ -329,6 +339,12 @@
       "role": "tool",
       "output": "{\"public20_passed\": true, \"lookup_boundaries\": {\"status\": \"PASS\", \"checks\": 42, \"rows\": 803, \"dimensions\": 32, \"coverage\": [\"batch vs single lookup\", \"missing/duplicate/extreme IDs\", \"multiple overlapping segments\", \"non-leading primary key\", \"Unicode rows\", \"distance ties\", \"K1/10/64/1000\", \"transaction update/delete\", \"rollback\", \"committed overlay\", \"early generator close\", \"legacy key-only files\", \"keyless files\", \"restart\"]}, \"graph_boundaries\": {\"status\": \"PASS\", \"oracle_queries\": 43, \"ann_mean_recall\": 1.0, \"graph_hits_before_mutation\": 12, \"rows\": 2048, \"dimensions\": 32, \"coverage\": [\"negative IDs\", \"graph actually used\", \"exact unchanged\", \"filtered exact\", \"transaction update visibility\", \"rollback\", \"committed delete invalidation\", \"rebuild with excluded rows\", \"restart rebuild\"]}, \"timing_medians\": {\"baseline\": {\"cold_unfiltered_seconds\": 0.005211091018281877, \"cold_filtered_seconds\": 0.055142769997473806, \"total_seconds\": 0.5392729746527039, \"unfiltered_seconds\": 0.26854424190241843, \"filtered_seconds\": 0.2707287327502854, \"median_ms\": 4.396516509586945, \"max_ms\": 8.205925987567753}, \"candidate\": {\"cold_unfiltered_seconds\": 0.004915698023978621, \"cold_filtered_seconds\": 0.05394635698758066, \"total_seconds\": 0.5100455688079819, \"unfiltered_seconds\": 0.25240935588954017, \"filtered_seconds\": 0.25763621291844174, \"median_ms\": 3.97785849054344, \"max_ms\": 9.417615015991032}}, \"correctness\": \"All 720 measured responses checked; first 8 independently checked\"}",
       "interpretation": "三轮整组耗时中位减少5.42%，普通列过滤及无过滤均略有改善。未测正式I/O或赛事E。执行和解释来自Agent，不计为学生自身技术贡献。"
+    },
+    {
+      "id": "fused-insert-stage",
+      "role": "tool",
+      "output": "{\"public20_passed\": true, \"merge_boundaries\": {\"status\": \"PASS\", \"oracle_queries\": 21, \"fused_segment_writes\": 1, \"wide_fallback_segment_writes\": 22, \"coverage\": [\"overlapping key ranges\", \"overlay visibility\", \"one final run\", \"indexed insert\", \"duplicate statement atomicity\", \"prior successful transaction statement\", \"rollback\", \"wide-cascade bounded fallback\", \"distance ties\", \"restart\"]}, \"merge_recovery\": {\"status\": \"PASS\", \"scope\": \"Current Python source processes; fault injection outside production code\", \"scenarios\": [{\"cut\": \"during\", \"two_restarts\": \"PASS\", \"state_and_index\": \"PASS\", \"orphan_cleanup\": \"PASS\"}, {\"cut\": \"before\", \"two_restarts\": \"PASS\", \"state_and_index\": \"PASS\", \"orphan_cleanup\": \"PASS\"}, {\"cut\": \"after\", \"two_restarts\": \"PASS\", \"state_and_index\": \"PASS\", \"orphan_cleanup\": \"PASS\"}]}, \"write_benchmark\": {\"rows\": 10000, \"dimensions\": 128, \"batch_size\": 100, \"explicit_transaction_per_batch\": true, \"rounds\": 3, \"samples\": {\"baseline\": [{\"seconds\": 4.996567177993711, \"memory_peak_bytes\": 42614784, \"io_delta_by_device\": {\"8:48\": {\"rbytes\": 4096, \"wbytes\": 70635520, \"rios\": 1, \"wios\": 512, \"dbytes\": 0, \"dios\": 0}}}, {\"seconds\": 5.149886836996302, \"memory_peak_bytes\": 33472512, \"io_delta_by_device\": {\"8:48\": {\"rbytes\": 0, \"wbytes\": 70635520, \"rios\": 0, \"wios\": 512, \"dbytes\": 0, \"dios\": 0}}}, {\"seconds\": 5.159881511004642, \"memory_peak_bytes\": 33624064, \"io_delta_by_device\": {\"8:48\": {\"rbytes\": 0, \"wbytes\": 70635520, \"rios\": 0, \"wios\": 512, \"dbytes\": 0, \"dios\": 0}}}], \"candidate\": [{\"seconds\": 4.667965701955836, \"memory_peak_bytes\": 26722304, \"io_delta_by_device\": {\"8:48\": {\"rbytes\": 4096, \"wbytes\": 40849408, \"rios\": 1, \"wios\": 313, \"dbytes\": 0, \"dios\": 0}}}, {\"seconds\": 4.786442671029363, \"memory_peak_bytes\": 26890240, \"io_delta_by_device\": {\"8:48\": {\"rbytes\": 0, \"wbytes\": 40849408, \"rios\": 0, \"wios\": 315, \"dbytes\": 0, \"dios\": 0}}}, {\"seconds\": 4.657707109989133, \"memory_peak_bytes\": 26959872, \"io_delta_by_device\": {\"8:48\": {\"rbytes\": 0, \"wbytes\": 40849408, \"rios\": 0, \"wios\": 313, \"dbytes\": 0, \"dios\": 0}}}]}, \"scope\": \"Independent data volume per run; T includes BEGIN/INSERT/COMMIT and output. Local cgroup snapshots are per reported device, not a certified dedicated-device metric; no formal E.\", \"medians\": {\"baseline\": {\"seconds\": 5.149886836996302, \"memory_peak_bytes\": 33624064}, \"candidate\": {\"seconds\": 4.667965701955836, \"memory_peak_bytes\": 26890240}}, \"status\": \"PASS\", \"baseline_commit\": \"a246a09827885a5e2ebf50a31355c6b6b1cb79e6\", \"time_reduction\": 0.09357897567348272, \"memory_peak_reduction\": 0.20026799853818977}}",
+      "interpretation": "三轮写入耗时中位减少9.36%，本地设备写入字节减少42.17%，容器峰值内存中位减少20.03%。本地I/O窗口不等于平台全程统计，不推算正式E；这些执行和解释来自Agent。"
     }
   ],
   "implementation": {
@@ -342,11 +358,11 @@
       "minidb/native.py": "97b66b0e47977884bc0a3b414cd5deb2d8a28db3a13a550adca211acb06f9a40",
       "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
       "minidb/sql.py": "cf2212ba726c0bed0806d2a157361879640e8d68f220edae79881f94ebdb2cfc",
-      "minidb/storage.py": "1e852e8999ad70a53c3d43989936f8335fbb1b76783e9d948687ced829d34264",
+      "minidb/storage.py": "dd7d744775b2fbe85ed7cf5e4b901b0e15317d929e26ca738cc51f3fac313dc4",
       "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
       "native/screen.c": "0bb4998bc99a0a597c72861859a055916a6019ced614633707b3eccbc7b87796"
     },
-    "storage": "Bounded point overlays, immutable segments and atomic manifest retained.",
+    "storage": "Immutable segments, bounded point overlays, preplanned <=16-old-run INSERT fusion with original wide-cascade fallback; atomic fsynced manifest retained.",
     "query": "Default exact native scan, bounded predicate caches and per-segment batched TopK row lookup; optional graph stays disabled."
   },
   "limitations": [
@@ -388,6 +404,10 @@
     {
       "commit": "7c6ab1e9ea8ae1fee1e36cc310f429dc5a730ce0",
       "note": "Graph-stage implementation hashes retained in previous committed material."
+    },
+    {
+      "commit": "a246a09827885a5e2ebf50a31355c6b6b1cb79e6",
+      "note": "TopK batched lookup stage, unchanged in this merge stage."
     }
   ]
 }

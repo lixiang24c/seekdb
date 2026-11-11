@@ -320,17 +320,30 @@ class Storage:
                             if found == ident: fail('duplicate primary key', 'duplicate_key')
                             if found < ident: left = mid + 1
                             else: right = mid
-            part = self.write_segment(table, ((row[pk], codec.encode(row)) for row in incoming), created)
-            part['level'] = max(0, (part['count'] // 100).bit_length() - 1)
-            while parts and parts[-1]['level'] <= part['level']:
-                old = parts.pop()
-                level = max(old['level'], part['level']) + 1
-                readers = [self.part_records(table, p) for p in (old, part)]
+            level = max(0, (len(incoming) // 100).bit_length() - 1)
+            merging = []
+            while parts and parts[-1]['level'] <= level:
+                old = parts.pop(); merging.append(old)
+                level = max(old['level'], level) + 1
+            if len(merging) <= 16:
+                # Plan the existing merge cascade first; write only its final run.
+                readers = [self.part_records(table, p) for p in merging]
                 try:
-                    part = self.write_segment(table, heapq.merge(*readers, key=lambda item: item[0]), created)
+                    records = ((row[pk], codec.encode(row)) for row in incoming)
+                    if readers: records = heapq.merge(records, *readers, key=lambda item: item[0])
+                    part = self.write_segment(table, records, created)
                 finally:
                     for reader in readers: reader.close()
-                part['level'] = level
+            else:
+                # Keep the old two-reader path for unusually wide overlay cascades.
+                part = self.write_segment(table, ((row[pk], codec.encode(row)) for row in incoming), created)
+                for old in merging:
+                    readers = [self.part_records(table, p) for p in (old, part)]
+                    try:
+                        part = self.write_segment(table, heapq.merge(*readers, key=lambda item: item[0]), created)
+                    finally:
+                        for reader in readers: reader.close()
+            part['level'] = level
             new.update(segments=parts + [part], count=table['count'] + len(incoming))
             new.pop('file', None); new.pop('index_file', None)
             return new
