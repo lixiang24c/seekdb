@@ -275,7 +275,7 @@ class Database:
         return [item.row for item in sorted(heap, key=lambda x: x.key)]
 
     def filter_key(self, table, conditions):
-        key = (tuple(p['file'] for p in self.store.segments(table)), tuple(conditions))
+        key = (tuple((p['file'], tuple(p.get('excluded', ()))) for p in self.store.segments(table)), tuple(conditions))
         return key if len(repr(key)) * 4 + 256 <= 8192 else None
 
     def remember_filter(self, key, ids):
@@ -292,7 +292,7 @@ class Database:
         heap, radius = [], math.inf
         if allowed is not None and not allowed: return {}
         key_format = struct.Struct('<q')
-        for path in self.store.index_paths(table):
+        for path, excluded in self.store.index_segments(table):
             with open(path, 'rb') as f:
                 if f.read(8) != INDEX_MAGIC: raise OSError('invalid index header')
                 block_bytes = fmt.size * max(1, 65536 // fmt.size)
@@ -302,6 +302,7 @@ class Database:
                                    (fmt.unpack_from(data, pos) for pos in range(0, len(data), fmt.size)
                                     if key_format.unpack_from(data, pos)[0] in allowed))
                     for values in values_iter:
+                        if values[0] in excluded: continue
                         # A conservative rejection bound only; accepted candidates are
                         # ranked with the original fsum squared distance, including ties.
                         if math.dist(query, values[1:]) > radius: continue

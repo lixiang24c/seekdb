@@ -143,7 +143,7 @@ class Storage:
         try:
             with open(self.manifest, encoding='utf-8') as f:
                 doc = strict_json(f.read())
-            if doc.get('format') != 1 or not isinstance(doc.get('tables'), dict):
+            if doc.get('format') not in (1, 2) or not isinstance(doc.get('tables'), dict):
                 raise OSError('unsupported or invalid manifest')
             self.tables = doc['tables']
             for t in self.tables.values():
@@ -175,7 +175,7 @@ class Storage:
         os.fsync(self.dirfd)
         temp = self.fresh('manifest')
         with open(temp, 'x', encoding='utf-8') as f:
-            json.dump({'format': 1, 'tables': self.tables}, f, ensure_ascii=False, allow_nan=False)
+            json.dump({'format': 2, 'tables': self.tables}, f, ensure_ascii=False, allow_nan=False)
             f.flush(); os.fsync(f.fileno())
         os.replace(temp, self.manifest)
         os.fsync(self.dirfd)
@@ -213,6 +213,19 @@ class Storage:
             return table['segments']
         # Read the original single-file format without changing its committed files.
         return [{k: table[k] for k in ('file', 'index_file', 'count') if k in table}] if table.get('file') else []
+
+    def part_records(self, table, part):
+        excluded = set(part.get('excluded', ()))
+        reader = raw_rows(self.path(part['file']), Codec(table['cols']), table['pk'])
+        try:
+            for ident, raw in reader:
+                if ident not in excluded: yield ident, raw
+        finally:
+            reader.close()
+
+    def index_segments(self, table):
+        return [(self.path(part['index_file']), set(part.get('excluded', ())))
+                for part in self.segments(table) if part.get('index_file')]
 
     def index_paths(self, table):
         return [self.path(part['index_file']) for part in self.segments(table) if part.get('index_file')]
@@ -296,6 +309,7 @@ class Storage:
                     if header not in (KEY_MAGIC, OFFSET_MAGIC): raise OSError('invalid key index header')
                     stride = 16 if header == OFFSET_MAGIC else 8
                     for ident in ids[lo:hi]:
+                        if ident in part.get('excluded', ()): continue
                         left, right = 0, part['count']
                         while left < right:
                             mid = (left + right) // 2
@@ -310,7 +324,7 @@ class Storage:
             while parts and parts[-1]['level'] <= part['level']:
                 old = parts.pop()
                 level = max(old['level'], part['level']) + 1
-                readers = [raw_rows(self.path(p['file']), codec, pk) for p in (old, part)]
+                readers = [self.part_records(table, p) for p in (old, part)]
                 try:
                     part = self.write_segment(table, heapq.merge(*readers, key=lambda item: item[0]), created)
                 finally:
@@ -327,7 +341,7 @@ class Storage:
         """Return a binary row and its segment; old key files remain readable."""
         codec = Codec(table['cols'])
         for part in self.segments(table):
-            if not part['count']: continue
+            if not part['count'] or ident in part.get('excluded', ()): continue
             if part.get('min') is not None and not part['min'] <= ident <= part['max']: continue
             if part.get('keys'):
                 with open(self.path(part['keys']), 'rb') as f:
@@ -371,7 +385,7 @@ class Storage:
                 path = self.fresh('index'); created.append(path)
                 with open(path, 'xb') as f:
                     f.write(INDEX_MAGIC)
-                    for ident, raw in raw_rows(self.path(part['file']), codec, table['pk']):
+                    for ident, raw in self.part_records(table, part):
                         offset, size = codec.field(raw, vc)
                         f.write(I64.pack(ident)); f.write(memoryview(raw)[offset:offset + size])
                     f.flush(); os.fsync(f.fileno())
@@ -396,7 +410,7 @@ class Storage:
                 yield ident, codec.encode(row)
         try:
             for part in self.segments(table):
-                reader = raw_rows(self.path(part['file']), codec, table['pk'])
+                reader = self.part_records(table, part)
                 try:
                     for skipped, (ident, raw) in enumerate(reader):
                         if match(codec.decode_fields(raw, filter_columns)):
@@ -408,7 +422,7 @@ class Storage:
                     else:
                         parts.append(copy.deepcopy(part)); continue
                     def changed():
-                        prefix = raw_rows(self.path(part['file']), codec, table['pk'])
+                        prefix = self.part_records(table, part)
                         try: yield from itertools.islice(prefix, skipped)
                         finally: prefix.close()
                         yield from replace(ident, raw)
@@ -428,16 +442,22 @@ class Storage:
             raise
 
     def replace_point(self, table, part, ident, replacement):
-        codec, created = Codec(table['cols']), []
-        def records():
-            for key, raw in raw_rows(self.path(part['file']), codec, table['pk']):
-                if key != ident: yield key, raw
-                elif replacement is not None: yield key, codec.encode(replacement)
-        new = copy.deepcopy(table)
-        updated = self.write_segment(table, records(), created)
-        updated['level'] = part.get('level', 0)
-        new['segments'] = [updated if p == part else copy.deepcopy(p) for p in self.segments(table)]
-        new['count'] -= int(replacement is None)
+        # Bounded overlays amortize large rewrites without unbounded readers or metadata.
+        parts = self.segments(table)
+        if len(parts) >= 32 or sum(len(p.get('excluded', ())) for p in parts) >= 64:
+            table = self.rewrite(table, self.rows(table))
+            part, _ = self.lookup(table, ident)
+        new, created = copy.deepcopy(table), []
+        parts = copy.deepcopy(self.segments(table))
+        for current in parts:
+            if current['file'] == part['file']:
+                current['excluded'] = sorted(set(current.get('excluded', ())) | {ident})
+        parts = [p for p in parts if len(p.get('excluded', ())) < p['count']]
+        if replacement is not None:
+            codec = Codec(table['cols'])
+            delta = self.write_segment(table, [(ident, codec.encode(replacement))], created)
+            parts.append(delta)
+        new.update(segments=parts, count=table['count'] - int(replacement is None))
         new.pop('file', None); new.pop('index_file', None)
         return new
 
@@ -481,11 +501,12 @@ class Storage:
                                 size = U32.unpack(head)[0]; raw = rows.read(size)
                                 if len(raw) != size: raise OSError('incomplete row')
                                 offset, _ = codec.field(raw, table['pk'])
-                                yield I64.unpack_from(raw, offset)[0], raw
+                                ident = I64.unpack_from(raw, offset)[0]
+                                if ident not in part.get('excluded', ()): yield ident, raw
                         return
                     if header != KEY_MAGIC: raise OSError('invalid key index header')
             if reverse: raise OSError('reverse scan requires row offsets')
-            for ident, raw in raw_rows(self.path(part['file']), codec, table['pk']):
+            for ident, raw in self.part_records(table, part):
                 if ident > upper: break
                 if ident >= lower: yield ident, raw
         readers = [segment(part) for part in self.segments(table)]
@@ -496,7 +517,7 @@ class Storage:
 
     def records(self, table, ordered=True):
         codec = Codec(table['cols'])
-        readers = [raw_rows(self.path(part['file']), codec, table['pk']) for part in self.segments(table)]
+        readers = [self.part_records(table, part) for part in self.segments(table)]
         try:
             if ordered:
                 yield from heapq.merge(*readers, key=lambda item: item[0])

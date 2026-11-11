@@ -1,0 +1,198 @@
+{
+  "baseline_commit": "1791c006258de99327179338641045a50952f748",
+  "rows": 10000,
+  "dimensions": 128,
+  "point_updates_per_round": 20,
+  "samples": [
+    {
+      "rows": 10000,
+      "dimensions": 128,
+      "point_queries": 100,
+      "point_updates": 20,
+      "topk_queries": 40,
+      "filtered_queries": 20,
+      "update_pattern": "spread",
+      "scope": "single local run, independent identical fixtures, Docker 2 CPU / 2 GiB",
+      "runs": {
+        "baseline": {
+          "load_s": 4.941024584986735,
+          "index_s": 0.05644835199927911,
+          "point_select_s": 0.07432561297900975,
+          "point_update_s": 1.0330272319843061,
+          "point_update_process_write_bytes": 172556288,
+          "topk_s": 1.4258227969985455,
+          "conditional_mutations_s": 0.26041421497939155
+        },
+        "candidate": {
+          "load_s": 4.865504866000265,
+          "index_s": 0.06350243202177808,
+          "point_select_s": 0.0731724280049093,
+          "point_update_s": 0.16124473401578143,
+          "point_update_process_write_bytes": 315392,
+          "topk_s": 1.371053333976306,
+          "conditional_mutations_s": 0.2627147019957192
+        }
+      },
+      "speedup": {
+        "load_s": 1.0155214558542929,
+        "index_s": 0.8889163800832104,
+        "point_select_s": 1.0157598292901129,
+        "point_update_s": 6.406579652289302,
+        "point_update_process_write_bytes": 547.1168831168832,
+        "topk_s": 1.0399469967104766,
+        "conditional_mutations_s": 0.9912434020675205
+      },
+      "correctness": "All 264 collected responses identical; point transaction rollback and committed restart checked per image"
+    },
+    {
+      "rows": 10000,
+      "dimensions": 128,
+      "point_queries": 100,
+      "point_updates": 20,
+      "topk_queries": 40,
+      "filtered_queries": 20,
+      "update_pattern": "spread",
+      "reverse_order": true,
+      "scope": "single local run, independent identical fixtures, Docker 2 CPU / 2 GiB",
+      "runs": {
+        "candidate": {
+          "load_s": 4.84191593300784,
+          "index_s": 0.05512367998016998,
+          "point_select_s": 0.07240562204970047,
+          "point_update_s": 0.15473737701540813,
+          "point_update_process_write_bytes": 315392,
+          "topk_s": 1.3995386970345862,
+          "conditional_mutations_s": 0.2675195609917864
+        },
+        "baseline": {
+          "load_s": 4.862862506008241,
+          "index_s": 0.05735972197726369,
+          "point_select_s": 0.07412346499040723,
+          "point_update_s": 1.0008231090032496,
+          "point_update_process_write_bytes": 172556288,
+          "topk_s": 1.3384077600203454,
+          "conditional_mutations_s": 0.26924203598173335
+        }
+      },
+      "speedup": {
+        "load_s": 1.004326091838482,
+        "index_s": 1.0405640914739018,
+        "point_select_s": 1.0237252701113126,
+        "point_update_s": 6.467882087102922,
+        "point_update_process_write_bytes": 547.1168831168832,
+        "topk_s": 0.9563206525523245,
+        "conditional_mutations_s": 1.0064386880105556
+      },
+      "correctness": "All 264 collected responses identical; point transaction rollback and committed restart checked per image"
+    },
+    {
+      "rows": 10000,
+      "dimensions": 128,
+      "point_queries": 100,
+      "point_updates": 20,
+      "topk_queries": 40,
+      "filtered_queries": 20,
+      "update_pattern": "spread",
+      "reverse_order": false,
+      "scope": "single local run, independent identical fixtures, Docker 2 CPU / 2 GiB",
+      "runs": {
+        "baseline": {
+          "load_s": 4.896048062015325,
+          "index_s": 0.055723683966789395,
+          "point_select_s": 0.07816332002403215,
+          "point_update_s": 1.0075506920111366,
+          "point_update_process_write_bytes": 172556288,
+          "topk_s": 1.3470776799949817,
+          "conditional_mutations_s": 0.26278584002284333
+        },
+        "candidate": {
+          "load_s": 4.937589114997536,
+          "index_s": 0.05654241802403703,
+          "point_select_s": 0.07129965501371771,
+          "point_update_s": 0.1527551009785384,
+          "point_update_process_write_bytes": 315392,
+          "topk_s": 1.3493488529929891,
+          "conditional_mutations_s": 0.2564803999848664
+        }
+      },
+      "speedup": {
+        "load_s": 0.991586774027828,
+        "index_s": 0.9855200027543997,
+        "point_select_s": 1.0962650521800408,
+        "point_update_s": 6.595856279475042,
+        "point_update_process_write_bytes": 547.1168831168832,
+        "topk_s": 0.9983168377895978,
+        "conditional_mutations_s": 1.0245844908162534
+      },
+      "correctness": "All 264 collected responses identical; point transaction rollback and committed restart checked per image"
+    }
+  ],
+  "median": {
+    "baseline": {
+      "load_s": 4.896048062015325,
+      "index_s": 0.05644835199927911,
+      "point_select_s": 0.07432561297900975,
+      "point_update_s": 1.0075506920111366,
+      "point_update_process_write_bytes": 172556288,
+      "topk_s": 1.3470776799949817,
+      "conditional_mutations_s": 0.26278584002284333
+    },
+    "candidate": {
+      "load_s": 4.865504866000265,
+      "index_s": 0.05654241802403703,
+      "point_select_s": 0.07240562204970047,
+      "point_update_s": 0.15473737701540813,
+      "point_update_process_write_bytes": 315392,
+      "topk_s": 1.371053333976306,
+      "conditional_mutations_s": 0.2627147019957192
+    }
+  },
+  "speedup": {
+    "load_s": 1.0062774977841442,
+    "index_s": 0.9983363636001925,
+    "point_select_s": 1.026517152604412,
+    "point_update_s": 6.511359514067559,
+    "point_update_process_write_bytes": 547.1168831168832,
+    "topk_s": 0.9825129676671362,
+    "conditional_mutations_s": 1.0002707805333455
+  },
+  "io_scope": "Linux /proc/1/io write_bytes for the DB process, not the official cgroup I/O metric",
+  "correctness": "264 responses per pair compared over three independent fixture pairs; separate oracle and crash checks",
+  "tail_workload": {
+    "rows": 10000,
+    "dimensions": 128,
+    "point_queries": 100,
+    "point_updates": 20,
+    "topk_queries": 40,
+    "filtered_queries": 20,
+    "scope": "single local run, independent identical fixtures, Docker 2 CPU / 2 GiB",
+    "runs": {
+      "baseline": {
+        "load_s": 5.143672587000765,
+        "index_s": 0.05752050696173683,
+        "point_select_s": 0.07586492301197723,
+        "point_update_s": 0.2336594599764794,
+        "topk_s": 1.362159161013551,
+        "conditional_mutations_s": 0.2811148350010626
+      },
+      "candidate": {
+        "load_s": 4.863226167974062,
+        "index_s": 0.05821415997343138,
+        "point_select_s": 0.07060381298651919,
+        "point_update_s": 0.19996814598562196,
+        "topk_s": 1.3650451980065554,
+        "conditional_mutations_s": 0.2724969429546036
+      }
+    },
+    "speedup": {
+      "load_s": 1.0576667441200933,
+      "index_s": 0.9880844624055191,
+      "point_select_s": 1.0745159475517643,
+      "point_update_s": 1.1684834043182053,
+      "topk_s": 0.9978857571916161,
+      "conditional_mutations_s": 1.0316256467064098
+    },
+    "correctness": "All 264 collected responses identical; point transaction rollback and committed restart checked per image"
+  },
+  "scope": "Storage candidate, not frozen common version. First spread run preceded explicit generator cleanup; final two use final image."
+}
