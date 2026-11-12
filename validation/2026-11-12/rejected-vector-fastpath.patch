@@ -1,0 +1,40 @@
+diff --git a/minidb/sql.py b/minidb/sql.py
+index 240cf255f..fa12aea87 100644
+--- a/minidb/sql.py
++++ b/minidb/sql.py
+@@ -72,6 +72,7 @@ def tokenize(source):
+ 
+ 
+ def vector(value, dim):
++    parsed_fast_string = False
+     if isinstance(value, str):
+         text = value.strip()
+         if not text.startswith('[') or not text.endswith(']'):
+@@ -81,7 +82,12 @@ def vector(value, dim):
+         if middle and len(pieces) <= 4096 and len(middle) <= 65536:
+             if not VECTOR_BODY.fullmatch(middle):
+                 fail('invalid vector element', 'invalid_vector')
+-            values = list(map(float, map(str.strip, pieces)))
++            try:
++                values = list(map(float, pieces))
++            except ValueError:
++                # str.strip() also accepts U+001C..U+001F, unlike float().
++                values = list(map(float, map(str.strip, pieces)))
++            parsed_fast_string = True
+         else:
+             values = []
+             for part in pieces:
+@@ -96,9 +102,10 @@ def vector(value, dim):
+     if len(values) != dim:
+         fail('vector dimension mismatch', 'dimension_mismatch')
+     try:
+-        for x in values:
+-            if type(x) not in (int, float) or not math.isfinite(x):
+-                raise ValueError()
++        if not parsed_fast_string:
++            for x in values:
++                if type(x) not in (int, float) or not math.isfinite(x):
++                    raise ValueError()
+         fmt = '<' + str(dim) + 'f'
+         result = list(struct.unpack(fmt, struct.pack(fmt, *values)))
+         if not all(math.isfinite(x) for x in result):

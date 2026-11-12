@@ -1,0 +1,364 @@
+{
+  "status": "PASS",
+  "image_id": "sha256:1287f8a69169a8f7ec6c62da8458ca24967de265aaf352b018c8a8ae330bc2d4",
+  "public_check_executed": true,
+  "source_commit": "f10eddfdf209b0fd6e374da7d271e39e41b4b2c9",
+  "git_status": "M agent/conversation.json",
+  "source_sha256": {
+    "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
+    ".dockerignore": "d04e7a34f971bcf973caa86450cc1f243cb6bb9cf31bc25c37c4327a3e7388bf",
+    "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+    "minidb/engine.py": "32fe2618b49669d98e0598847d0a0876a486ef7e1dbce8e3fc39e9bb3f62c949",
+    "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
+    "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+    "minidb/indexio.py": "d071540d69b9dcde3d3333e96f1a25965be2a3d6ef9fab33513868fa9aeb7223",
+    "minidb/native.py": "4615dd6ed5ff3c2e232754abf0054e118be19e9bc58f50525129b5d32d305cd0",
+    "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+    "minidb/sql.py": "87a41384e63776025b973b92b43ed4a8e135def7dce180f56c56a3ac8ee830a1",
+    "minidb/storage.py": "797f86884ccc481d1e2a3976a104edc55664a8f5bd4212a58b30e16e9fd81a74",
+    "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
+    "native/screen.c": "0fdb28a9619aa00c7a33a6cd3b49fec6206fbba3b2bcbc46a1fe33f9b54dca89"
+  },
+  "checker_sha256": {
+    "protocol_check/README.md": "9044224f625f3e5ab2948755aefc624084d70f0d6ebe1c37a7bdb408f799cb3f",
+    "protocol_check/_assertions.py": "e39367c70d689b2cd7927df6d10296127ff8f2f5fed0763ca6262881d5ea4a28",
+    "protocol_check/_transport.py": "fb3a820105e6e94fc348167c7644ce23a270c63f57b026065f4b563d6ef0674f",
+    "protocol_check/config.json": "63fe51cac3aaaf45c3739b53b1de8420e5d001e8abb6cf88532d9f190d72d904",
+    "protocol_check/example_stdio.py": "b37cb26ff9a4253d6785c2e63ebb3139e4817949368291360ab5ca12b569216a",
+    "protocol_check/run.py": "4e8c6ead177da7f9222b36bc04e819c777507e21f6adbe24eb679e238f02f513",
+    "mysqltest/README.md": "be0f15ff7ce4cce4ff2b9fae4992a8dc4f34f7c2cc998172764c2f8fbb0284c9",
+    "mysqltest/cases/sql_bigint.result": "ec2f19a62ffeb7241142324f9ba46855e3d5046204274d5d2b7627f52937864b",
+    "mysqltest/cases/sql_bigint.test": "85131b29d94827de64c31055bd4e4169c65639ee86a2fda2efda2fb62db839bf",
+    "mysqltest/cases/sql_comparisons.result": "91042d560debd503a0499a39febcb736bc032d3c502cfee6a3513712de76a829",
+    "mysqltest/cases/sql_comparisons.test": "bfff03b3f18ca0012369730cd202d2313eab305e819b5d577f9158a701effb60",
+    "mysqltest/cases/sql_crud.result": "241a4249157f7674dcb08d38d444b36aaa930581495d9ee909302f38bbe7eb98",
+    "mysqltest/cases/sql_crud.test": "2dbdc8c792d0a137c4d9654d24e758edc4c07287e5561151d78e9efec87667ae",
+    "mysqltest/cases/sql_empty.result": "1f7145867144221c28ac55035b4732866e351e18c49f3776726fa541ffe408c3",
+    "mysqltest/cases/sql_empty.test": "91c62c80dd6ff9ff1169603b21fb813e96b1ba7ed855946716b8c63f6be04edd",
+    "mysqltest/cases/sql_ordering.result": "43824b4e189a5551d0d5f53095a0d8901e235ee3e3a646e826554d409ae2d645",
+    "mysqltest/cases/sql_ordering.test": "8f6cf80f87365799cfd43604dfa987bb83a450dcef1e5ef815ac59a74633cefd",
+    "mysqltest/cases/sql_primary_key.result": "1749b095cfc531e2ecf6ccce06747058930e7eed14c526c99d1170768cea3170",
+    "mysqltest/cases/sql_primary_key.test": "76296f841f5a5105fffbe0985ae2a7e847e2291f75ea86cdf8d9e624d551ef04",
+    "mysqltest/cases/sql_unicode.result": "9b6c4b01f9a753f4b0e87dd6531e5df40614cfd31c2e6c92d795815bdffcc70b",
+    "mysqltest/cases/sql_unicode.test": "5de827789e19e96bb22bfaf65f06d14647e444baa7589318e6ba139e5a3bd520",
+    "mysqltest/cases/sql_unsupported.result": "7b003c2f63419fccd23c981beefcf8e7c36ff6d8051ad5bc823f614934e41dbe",
+    "mysqltest/cases/sql_unsupported.test": "6cf9a1de73a4e8eafa4595874908c26d8d795b53270211b2e5acbf620434e3f6",
+    "mysqltest/cases/storage_multiple_tables.result": "6a97f61f52656e83d07ea14781dbf1348d5c751411899fdf9a360173ab79fdb8",
+    "mysqltest/cases/storage_multiple_tables.test": "e4343a4644c4f5ff1033ab013ad0c254dc4b1cf24b12d6fe65c948adfe1d7144",
+    "mysqltest/cases/storage_mutations.result": "6c9c49dc99f3e07937d5d2155694289734c85b7d3564f52763e104a51c69808b",
+    "mysqltest/cases/storage_mutations.test": "6ddc9d796c7c76f3987e388cb04674475c85967bb60d20450053f8b4e39e0c6a",
+    "mysqltest/cases/storage_restart.result": "eb8eeb26f8b3db5c9d2da07340679dd4b1ae1fdc02bb83e9df8b493544577881",
+    "mysqltest/cases/storage_restart.test": "700f0026d5fef88421a303454d837fa22011dc3e8759f72b3449cd6046045f80",
+    "mysqltest/cases/transaction_autocommit_atomic.result": "7df96d20e24bbd6361544cc1b01c905288d41e3c51e2de33cc526ae2a305fb12",
+    "mysqltest/cases/transaction_autocommit_atomic.test": "d976bfaa3dbad67f0a6b515103ada46b985cdbaf79a53f0c367210910c5263e8",
+    "mysqltest/cases/transaction_commit.result": "8641156ace82031439b95cafae6a78bce6256b96c11a9e41b95220c0a2cb8832",
+    "mysqltest/cases/transaction_commit.test": "873543181bbaa96b4b3cced4cf8e9a3fba5b447522644d98be7509490dce9cd3",
+    "mysqltest/cases/transaction_failed_insert.result": "1f29ab65a1589d3aced189c6ffdeaa0dd4dad14d107a589b3da54a30f52f4964",
+    "mysqltest/cases/transaction_failed_insert.test": "3fdf65810ba864714dc67abb6142452eb944bdab09c86728e5a69a6d76f3532c",
+    "mysqltest/cases/transaction_rollback.result": "f8d6992bc3e0d62fe4a3e77d62305693840a29fc9685cde7adb2951acccd2e60",
+    "mysqltest/cases/transaction_rollback.test": "7fd2bf54a143d248f4f6c727fb79f79aab9c4490119730ee22c45f97f5dc4df2",
+    "mysqltest/cases/transaction_shutdown_rollback.result": "feca1c43740cc2dac0c5f7b178611cf255ef5022f4479d00dfb65c3386e181d3",
+    "mysqltest/cases/transaction_shutdown_rollback.test": "6f72115a099d8dfee36255e09beafbacd96df03f2f04e107dcd28d493e193f54",
+    "mysqltest/cases/vector_euclidean.result": "548b1ec06db7aaa97c62c775ce03b47d219915f6cb484722c8fb303f95d1fde8",
+    "mysqltest/cases/vector_euclidean.test": "6a5981471416a5cc2ce9ba73ceaa3e714bead80ff767f8f89f15e0dac3c5c39d",
+    "mysqltest/cases/vector_float32.result": "77866950b550e15ee08b57b73a052aa34a97cc2b82586fce062661ae2a731452",
+    "mysqltest/cases/vector_float32.test": "f7bceae16b250b1cb2ac69108633819352126b8c6b2a6d1d46381572a1885b87",
+    "mysqltest/cases/vector_index_maintenance.result": "080799d103aa68b3674042278db499c29c8a759cdffd30453b43094b66b05f97",
+    "mysqltest/cases/vector_index_maintenance.test": "d8315fc0147cc4c389a1f1b1d4a8d9376c8d4ff51df5356b4f9d66835218bfb9",
+    "mysqltest/cases/vector_ties_and_filter.result": "44bed5f7f34874c13846a75089b185a9aeb778ac0c7cf32368817762bd6f02b0",
+    "mysqltest/cases/vector_ties_and_filter.test": "2b0ebf0f09eddf7caa20fa2acc1a90196d0380695e2a3d42663607eff6605296",
+    "mysqltest/manifest.json": "a05fc8ff810affb8c899df4a2c1e31c35450178635d62b3efd6ae6ac15056aae"
+  },
+  "config": {
+    "startup_timeout": 120,
+    "request_timeout": 60,
+    "case_timeout": 600,
+    "max_response_bytes": 16777216,
+    "cpus": "2",
+    "memory": "2g",
+    "pids_limit": 128,
+    "abs_tol": 1e-05,
+    "rel_tol": 1e-05,
+    "error_codes": {}
+  },
+  "cases": [
+    {
+      "id": "sql_crud",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 793
+    },
+    {
+      "id": "sql_comparisons",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 809
+    },
+    {
+      "id": "sql_ordering",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 767
+    },
+    {
+      "id": "sql_empty",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 788
+    },
+    {
+      "id": "sql_primary_key",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 757
+    },
+    {
+      "id": "sql_unicode",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 734
+    },
+    {
+      "id": "sql_bigint",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 801
+    },
+    {
+      "id": "sql_unsupported",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 740
+    },
+    {
+      "id": "storage_restart",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 1390
+    },
+    {
+      "id": "vector_euclidean",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 755
+    },
+    {
+      "id": "transaction_commit",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 815
+    },
+    {
+      "id": "transaction_rollback",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 778
+    },
+    {
+      "id": "storage_mutations",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 1278
+    },
+    {
+      "id": "storage_multiple_tables",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 1272
+    },
+    {
+      "id": "vector_ties_and_filter",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 745
+    },
+    {
+      "id": "vector_float32",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 720
+    },
+    {
+      "id": "vector_index_maintenance",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 1377
+    },
+    {
+      "id": "transaction_failed_insert",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 1270
+    },
+    {
+      "id": "transaction_autocommit_atomic",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 1247
+    },
+    {
+      "id": "transaction_shutdown_rollback",
+      "status": "PASS",
+      "message": "",
+      "duration_ms": 1223
+    }
+  ],
+  "runtime_probe": {
+    "source_sha256": {
+      "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+      "minidb/engine.py": "32fe2618b49669d98e0598847d0a0876a486ef7e1dbce8e3fc39e9bb3f62c949",
+      "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
+      "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+      "minidb/indexio.py": "d071540d69b9dcde3d3333e96f1a25965be2a3d6ef9fab33513868fa9aeb7223",
+      "minidb/native.py": "4615dd6ed5ff3c2e232754abf0054e118be19e9bc58f50525129b5d32d305cd0",
+      "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+      "minidb/sql.py": "87a41384e63776025b973b92b43ed4a8e135def7dce180f56c56a3ac8ee830a1",
+      "minidb/storage.py": "797f86884ccc481d1e2a3976a104edc55664a8f5bd4212a58b30e16e9fd81a74"
+    },
+    "cgroup": {
+      "cpu.max": "200000 100000",
+      "memory.max": "2147483648",
+      "memory.swap.max": "0",
+      "pids.max": "128"
+    },
+    "interfaces": [
+      "lo"
+    ]
+  },
+  "public_result": {
+    "scope": "public-protocol-check",
+    "passed": true,
+    "cases": [
+      {
+        "id": "sql_crud",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 793
+      },
+      {
+        "id": "sql_comparisons",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 809
+      },
+      {
+        "id": "sql_ordering",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 767
+      },
+      {
+        "id": "sql_empty",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 788
+      },
+      {
+        "id": "sql_primary_key",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 757
+      },
+      {
+        "id": "sql_unicode",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 734
+      },
+      {
+        "id": "sql_bigint",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 801
+      },
+      {
+        "id": "sql_unsupported",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 740
+      },
+      {
+        "id": "storage_restart",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1390
+      },
+      {
+        "id": "vector_euclidean",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 755
+      },
+      {
+        "id": "transaction_commit",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 815
+      },
+      {
+        "id": "transaction_rollback",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 778
+      },
+      {
+        "id": "storage_mutations",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1278
+      },
+      {
+        "id": "storage_multiple_tables",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1272
+      },
+      {
+        "id": "vector_ties_and_filter",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 745
+      },
+      {
+        "id": "vector_float32",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 720
+      },
+      {
+        "id": "vector_index_maintenance",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1377
+      },
+      {
+        "id": "transaction_failed_insert",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1270
+      },
+      {
+        "id": "transaction_autocommit_atomic",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1247
+      },
+      {
+        "id": "transaction_shutdown_rollback",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 1223
+      }
+    ],
+    "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
+  },
+  "case_counts": {
+    "PASS": 20,
+    "FAIL": 0,
+    "ERROR": 0,
+    "TIMEOUT": 0,
+    "SKIPPED": 0,
+    "NOT_RUN": 0
+  },
+  "finished_at": "2026-11-12T09:29:03.067342+00:00"
+}

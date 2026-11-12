@@ -1,0 +1,9 @@
+{
+  "decision": "REVERTED_BOTH_STEPS",
+  "reason": "Final write median reduction 0.1252117919993907 s is below predefined observed-noise bound 0.2972049589989183 s; no best-round selection. This is insufficient evidence under the predeclared rule, not proof of zero benefit.",
+  "restored_source_matches_baseline": true,
+  "sql_sha256": "87a41384e63776025b973b92b43ed4a8e135def7dce180f56c56a3ac8ee830a1",
+  "baseline_image": "sha256:1287f8a69169a8f7ec6c62da8458ca24967de265aaf352b018c8a8ae330bc2d4",
+  "conversation_unchanged": true,
+  "recorded_at": "2026-11-12T11:48:06.017592+00:00"
+}

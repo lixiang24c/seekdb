@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "<string>", line 21, in <module>
+  File "<string>", line 15, in check
+  File "<string>", line 10, in result
+  File "/home/chenyifu/OceanBase/competition_seekdb/minidb/sql.py", line 84, in vector
+    values = list(map(float, pieces))
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: could not convert string to float: '0\x1c'

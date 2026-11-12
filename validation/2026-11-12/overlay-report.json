@@ -1,0 +1,1554 @@
+{
+  "status": "PASS",
+  "image_id": "sha256:1287f8a69169a8f7ec6c62da8458ca24967de265aaf352b018c8a8ae330bc2d4",
+  "source_commit": "f10eddfdf209b0fd6e374da7d271e39e41b4b2c9",
+  "source_sha256": {
+    "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
+    ".dockerignore": "d04e7a34f971bcf973caa86450cc1f243cb6bb9cf31bc25c37c4327a3e7388bf",
+    "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+    "minidb/engine.py": "32fe2618b49669d98e0598847d0a0876a486ef7e1dbce8e3fc39e9bb3f62c949",
+    "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
+    "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+    "minidb/indexio.py": "d071540d69b9dcde3d3333e96f1a25965be2a3d6ef9fab33513868fa9aeb7223",
+    "minidb/native.py": "4615dd6ed5ff3c2e232754abf0054e118be19e9bc58f50525129b5d32d305cd0",
+    "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+    "minidb/sql.py": "87a41384e63776025b973b92b43ed4a8e135def7dce180f56c56a3ac8ee830a1",
+    "minidb/storage.py": "797f86884ccc481d1e2a3976a104edc55664a8f5bd4212a58b30e16e9fd81a74",
+    "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
+    "native/screen.c": "0fdb28a9619aa00c7a33a6cd3b49fec6206fbba3b2bcbc46a1fe33f9b54dca89"
+  },
+  "prior_report": "/home/chenyifu/OceanBase/reports/public-container-verification-20261112T092830893308Z/report.json",
+  "checks_sha256": {
+    "probe.py": "b4ca025f5e2ca95a2e5d9f6b98dccc821c5519b0d4c001676ef0d06168707a3b",
+    "checks/overlay_boundaries.py": "a6635578b212bbd87557dbcdb765aae20123c89626b9890f74d1c13f0e8b20fe",
+    "checks/overlay_recovery.py": "1c5ed933f0676c0a488a7e6b284cbddbdcd19efefee993545f03d6f51290ef2c",
+    "checks/recovery.py": "93b566e8b603beafc45ef7d239639a7e48bfa6478930bd3f4d115437c8c1d67f",
+    "checks/combined_overlays.py": "e9f7f0c34802594030fbc653c36f7b71d7002e4be252f66ac777a6263296b882",
+    "combined_probe.py": "e9520e78f3de005324032f9d2b8c2d15ca0c6e8e0bb03bf135ab1d635a6e5e5a"
+  },
+  "cases": [
+    {
+      "id": "reuse-overlay_boundaries",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-0-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "status": "PASS",
+          "updates": 101,
+          "point_deletes": 90,
+          "checks": [
+            "base retained",
+            "overlay compaction",
+            "delete threshold compaction",
+            "ordinary/range/reverse/filtered/unfiltered oracle",
+            "rollback",
+            "general mutation",
+            "deleted key reinsertion",
+            "live duplicate rejection",
+            "second index",
+            "restart"
+          ]
+        }
+      ],
+      "checkpoints": []
+    },
+    {
+      "id": "reuse-combined_overlays",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-1-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "status": "PASS",
+          "rows": 1000,
+          "dimensions": 128,
+          "sequential_updates": 160,
+          "oracle_queries": 165,
+          "events": {
+            "small_merges": 5,
+            "fallbacks": 1,
+            "full_rewrites": 2
+          },
+          "coverage": [
+            "mapped reads after each actual update",
+            "base retained at segment threshold",
+            "small overlay merge",
+            "full excluded-mask compaction",
+            "reduced-cap fallback to full rewrite",
+            "map invalidation",
+            "exact scalar/vector row consistency",
+            "transaction rollback",
+            "restart"
+          ]
+        }
+      ],
+      "checkpoints": []
+    },
+    {
+      "id": "reuse-overlay_recovery",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-2-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "status": "PASS",
+          "scenarios": [
+            {
+              "cut": "before",
+              "compaction": "PASS",
+              "two_restarts": "PASS"
+            },
+            {
+              "cut": "after",
+              "compaction": "PASS",
+              "two_restarts": "PASS"
+            }
+          ]
+        }
+      ],
+      "checkpoints": []
+    },
+    {
+      "id": "txn-scan-commit",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-3-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "txn-scan-commit",
+          "oracle_queries": 457
+        }
+      ],
+      "checkpoints": [
+        "initial_cache_warmup",
+        "vector_only_change",
+        "filter_only_change",
+        "vector_and_filter_change",
+        "deleted_key_absent",
+        "same_key_reinsert_new_values",
+        "after_duplicate_statement_failure",
+        "after_invalid_vector_statement_failure",
+        "continued_writes_after_failures",
+        "after_commit",
+        "restart_1_after_commit",
+        "restart_2_after_commit",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    },
+    {
+      "id": "txn-scan-rollback",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-4-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "txn-scan-rollback",
+          "oracle_queries": 457
+        }
+      ],
+      "checkpoints": [
+        "initial_cache_warmup",
+        "vector_only_change",
+        "filter_only_change",
+        "vector_and_filter_change",
+        "deleted_key_absent",
+        "same_key_reinsert_new_values",
+        "after_duplicate_statement_failure",
+        "after_invalid_vector_statement_failure",
+        "continued_writes_after_failures",
+        "after_rollback",
+        "restart_1_after_rollback",
+        "restart_2_after_rollback",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    },
+    {
+      "id": "txn-scan-shutdown",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-5-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "txn-scan-shutdown",
+          "oracle_queries": 419
+        }
+      ],
+      "checkpoints": [
+        "initial_cache_warmup",
+        "vector_only_change",
+        "filter_only_change",
+        "vector_and_filter_change",
+        "deleted_key_absent",
+        "same_key_reinsert_new_values",
+        "after_duplicate_statement_failure",
+        "after_invalid_vector_statement_failure",
+        "continued_writes_after_failures",
+        "restart_1_after_shutdown",
+        "restart_2_after_shutdown",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    },
+    {
+      "id": "txn-scan-kill",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-6-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "txn-scan-kill",
+          "oracle_queries": 419
+        }
+      ],
+      "checkpoints": [
+        "initial_cache_warmup",
+        "vector_only_change",
+        "filter_only_change",
+        "vector_and_filter_change",
+        "deleted_key_absent",
+        "same_key_reinsert_new_values",
+        "after_duplicate_statement_failure",
+        "after_invalid_vector_statement_failure",
+        "continued_writes_after_failures",
+        "restart_1_after_kill",
+        "restart_2_after_kill",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    },
+    {
+      "id": "txn-indexed-commit",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-7-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "txn-indexed-commit",
+          "oracle_queries": 457
+        }
+      ],
+      "checkpoints": [
+        "initial_cache_warmup",
+        "vector_only_change",
+        "filter_only_change",
+        "vector_and_filter_change",
+        "deleted_key_absent",
+        "same_key_reinsert_new_values",
+        "after_duplicate_statement_failure",
+        "after_invalid_vector_statement_failure",
+        "continued_writes_after_failures",
+        "after_commit",
+        "restart_1_after_commit",
+        "restart_2_after_commit",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    },
+    {
+      "id": "txn-indexed-rollback",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-8-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "txn-indexed-rollback",
+          "oracle_queries": 457
+        }
+      ],
+      "checkpoints": [
+        "initial_cache_warmup",
+        "vector_only_change",
+        "filter_only_change",
+        "vector_and_filter_change",
+        "deleted_key_absent",
+        "same_key_reinsert_new_values",
+        "after_duplicate_statement_failure",
+        "after_invalid_vector_statement_failure",
+        "continued_writes_after_failures",
+        "after_rollback",
+        "restart_1_after_rollback",
+        "restart_2_after_rollback",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    },
+    {
+      "id": "txn-indexed-shutdown",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-9-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "txn-indexed-shutdown",
+          "oracle_queries": 419
+        }
+      ],
+      "checkpoints": [
+        "initial_cache_warmup",
+        "vector_only_change",
+        "filter_only_change",
+        "vector_and_filter_change",
+        "deleted_key_absent",
+        "same_key_reinsert_new_values",
+        "after_duplicate_statement_failure",
+        "after_invalid_vector_statement_failure",
+        "continued_writes_after_failures",
+        "restart_1_after_shutdown",
+        "restart_2_after_shutdown",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    },
+    {
+      "id": "txn-indexed-kill",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-10-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "txn-indexed-kill",
+          "oracle_queries": 419
+        }
+      ],
+      "checkpoints": [
+        "initial_cache_warmup",
+        "vector_only_change",
+        "filter_only_change",
+        "vector_and_filter_change",
+        "deleted_key_absent",
+        "same_key_reinsert_new_values",
+        "after_duplicate_statement_failure",
+        "after_invalid_vector_statement_failure",
+        "continued_writes_after_failures",
+        "restart_1_after_kill",
+        "restart_2_after_kill",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    },
+    {
+      "id": "boundary-excluded-update",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-11-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "layout",
+          "label": "initial",
+          "segments": 1,
+          "excluded": 0,
+          "files": [
+            "mv-2dac95acf2c646cfa841658ad4437aad.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "125_point_updates",
+          "segments": 7,
+          "excluded": 125,
+          "files": [
+            "mv-2dac95acf2c646cfa841658ad4437aad.rows",
+            "mv-3f2d6fa2dd8a470084586e7b5c4fe67c.rows",
+            "mv-d955449fabff4c5c8715c992d276eb0d.rows",
+            "mv-1cbd5ddaead0480482b8d28cbbd790d2.rows",
+            "mv-16eb29d15d98436f8f30276d321c8125.rows",
+            "mv-b5c32464e873474ba1d63c70af32f3e9.rows",
+            "mv-286760ab946048bfb53c1598dc30c2ae.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "126_point_updates",
+          "segments": 8,
+          "excluded": 126,
+          "files": [
+            "mv-2dac95acf2c646cfa841658ad4437aad.rows",
+            "mv-3f2d6fa2dd8a470084586e7b5c4fe67c.rows",
+            "mv-d955449fabff4c5c8715c992d276eb0d.rows",
+            "mv-1cbd5ddaead0480482b8d28cbbd790d2.rows",
+            "mv-16eb29d15d98436f8f30276d321c8125.rows",
+            "mv-b5c32464e873474ba1d63c70af32f3e9.rows",
+            "mv-286760ab946048bfb53c1598dc30c2ae.rows",
+            "mv-314666a5b77f407e8cee1d88d2f06626.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "127_point_updates",
+          "segments": 9,
+          "excluded": 127,
+          "files": [
+            "mv-2dac95acf2c646cfa841658ad4437aad.rows",
+            "mv-3f2d6fa2dd8a470084586e7b5c4fe67c.rows",
+            "mv-d955449fabff4c5c8715c992d276eb0d.rows",
+            "mv-1cbd5ddaead0480482b8d28cbbd790d2.rows",
+            "mv-16eb29d15d98436f8f30276d321c8125.rows",
+            "mv-b5c32464e873474ba1d63c70af32f3e9.rows",
+            "mv-286760ab946048bfb53c1598dc30c2ae.rows",
+            "mv-314666a5b77f407e8cee1d88d2f06626.rows",
+            "mv-279b184e353d43ada24f69aa0a58bbe1.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "128_point_updates",
+          "segments": 10,
+          "excluded": 128,
+          "files": [
+            "mv-2dac95acf2c646cfa841658ad4437aad.rows",
+            "mv-3f2d6fa2dd8a470084586e7b5c4fe67c.rows",
+            "mv-d955449fabff4c5c8715c992d276eb0d.rows",
+            "mv-1cbd5ddaead0480482b8d28cbbd790d2.rows",
+            "mv-16eb29d15d98436f8f30276d321c8125.rows",
+            "mv-b5c32464e873474ba1d63c70af32f3e9.rows",
+            "mv-286760ab946048bfb53c1598dc30c2ae.rows",
+            "mv-314666a5b77f407e8cee1d88d2f06626.rows",
+            "mv-279b184e353d43ada24f69aa0a58bbe1.rows",
+            "mv-61e74589864146c18dacd7cff9ff273b.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "129_point_updates",
+          "segments": 2,
+          "excluded": 1,
+          "files": [
+            "mv-a8cc9fd0201847d089f85889ecd61fcd.rows",
+            "mv-5a19b616ea1a4bf9b5cb423a2c4db942.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "130_point_updates",
+          "segments": 3,
+          "excluded": 2,
+          "files": [
+            "mv-a8cc9fd0201847d089f85889ecd61fcd.rows",
+            "mv-5a19b616ea1a4bf9b5cb423a2c4db942.rows",
+            "mv-8d191bed775841cc995fe4768ad68cc1.rows"
+          ]
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "boundary-excluded-update",
+          "oracle_queries": 266
+        }
+      ],
+      "checkpoints": [
+        "excluded_boundary_125",
+        "excluded_boundary_126",
+        "excluded_boundary_127",
+        "excluded_boundary_128",
+        "excluded_boundary_129",
+        "excluded_boundary_130",
+        "restart_after_boundary",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    },
+    {
+      "id": "boundary-excluded-delete",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-12-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "layout",
+          "label": "initial",
+          "segments": 1,
+          "excluded": 0,
+          "files": [
+            "mv-67e39ea227464ee3853d4c404a6e909c.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "125_point_deletes",
+          "segments": 1,
+          "excluded": 125,
+          "files": [
+            "mv-67e39ea227464ee3853d4c404a6e909c.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "126_point_deletes",
+          "segments": 1,
+          "excluded": 126,
+          "files": [
+            "mv-67e39ea227464ee3853d4c404a6e909c.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "127_point_deletes",
+          "segments": 1,
+          "excluded": 127,
+          "files": [
+            "mv-67e39ea227464ee3853d4c404a6e909c.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "128_point_deletes",
+          "segments": 1,
+          "excluded": 128,
+          "files": [
+            "mv-67e39ea227464ee3853d4c404a6e909c.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "129_point_deletes",
+          "segments": 1,
+          "excluded": 1,
+          "files": [
+            "mv-a4f49920372f47ac991961d70b7dfcdb.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "130_point_deletes",
+          "segments": 1,
+          "excluded": 2,
+          "files": [
+            "mv-a4f49920372f47ac991961d70b7dfcdb.rows"
+          ]
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "boundary-excluded-delete",
+          "oracle_queries": 266
+        }
+      ],
+      "checkpoints": [
+        "excluded_boundary_125",
+        "excluded_boundary_126",
+        "excluded_boundary_127",
+        "excluded_boundary_128",
+        "excluded_boundary_129",
+        "excluded_boundary_130",
+        "restart_after_boundary",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    },
+    {
+      "id": "boundary-segments-update",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-13-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "layout",
+          "label": "initial",
+          "segments": 1,
+          "excluded": 0,
+          "files": [
+            "mv-5d82a021faaf4c579326e7e0e2855219.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "29_updates",
+          "segments": 30,
+          "excluded": 29,
+          "files": [
+            "mv-5d82a021faaf4c579326e7e0e2855219.rows",
+            "mv-2728ba2a872646a69c8ee9f37e8f9d49.rows",
+            "mv-93407692ba0d43ec951302abceb9b906.rows",
+            "mv-63438061113a43219ea6965e116d36eb.rows",
+            "mv-37b054a01bf64522b7c00519fcaa04ad.rows",
+            "mv-4439669fb3e34df6b9c8ffe99617c469.rows",
+            "mv-d3894956669b4e8ebdd79ae104373476.rows",
+            "mv-775d78e13c054edfa0000d58f5f22b2b.rows",
+            "mv-e596bbcec479472fb179f79c990f6a51.rows",
+            "mv-6eb804bc8f734fea8b0bf1e90df62254.rows",
+            "mv-126a314f263340eea8acc810cfbdd9dd.rows",
+            "mv-3867f724d3d141c687cda4601bdf4c36.rows",
+            "mv-2cc2194d2d8c43da9537bab1a2c4b029.rows",
+            "mv-2bb18cbe1d3d4015a73dd7aa15315fef.rows",
+            "mv-16960bb4f2894e9ea651ec41855cb187.rows",
+            "mv-8e2bfaf817204ac59594ed4faa718c9d.rows",
+            "mv-24e29a2833f3433fa792539ebf609c18.rows",
+            "mv-9fc514ba03504cc3984ffe93ae816f4f.rows",
+            "mv-458bf1399e9b4985a9d0553dd994bae8.rows",
+            "mv-43d6530fef7247c8b983796238591e21.rows",
+            "mv-e18d8fb45db94443b180d18094b4c043.rows",
+            "mv-e03c0453396a4fbfae921a5f58c0abf0.rows",
+            "mv-fa319ff6f185428688228b1fd30ef808.rows",
+            "mv-332deb88b05b4739a8e7f49856fb2784.rows",
+            "mv-0f4168052e684dc794f5dae6d3a61f6d.rows",
+            "mv-4cda3d0ea69342ecb2440353828d59d6.rows",
+            "mv-f7d50cf4e1b84c8d81a55d63520e87e3.rows",
+            "mv-14600cfb1b8e4cad815db70e2044c790.rows",
+            "mv-d10cbdb6dfa24285a7950bc9c3d16acb.rows",
+            "mv-4c4dae10c0b64462aef742f0bae7a275.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "30_updates",
+          "segments": 31,
+          "excluded": 30,
+          "files": [
+            "mv-5d82a021faaf4c579326e7e0e2855219.rows",
+            "mv-2728ba2a872646a69c8ee9f37e8f9d49.rows",
+            "mv-93407692ba0d43ec951302abceb9b906.rows",
+            "mv-63438061113a43219ea6965e116d36eb.rows",
+            "mv-37b054a01bf64522b7c00519fcaa04ad.rows",
+            "mv-4439669fb3e34df6b9c8ffe99617c469.rows",
+            "mv-d3894956669b4e8ebdd79ae104373476.rows",
+            "mv-775d78e13c054edfa0000d58f5f22b2b.rows",
+            "mv-e596bbcec479472fb179f79c990f6a51.rows",
+            "mv-6eb804bc8f734fea8b0bf1e90df62254.rows",
+            "mv-126a314f263340eea8acc810cfbdd9dd.rows",
+            "mv-3867f724d3d141c687cda4601bdf4c36.rows",
+            "mv-2cc2194d2d8c43da9537bab1a2c4b029.rows",
+            "mv-2bb18cbe1d3d4015a73dd7aa15315fef.rows",
+            "mv-16960bb4f2894e9ea651ec41855cb187.rows",
+            "mv-8e2bfaf817204ac59594ed4faa718c9d.rows",
+            "mv-24e29a2833f3433fa792539ebf609c18.rows",
+            "mv-9fc514ba03504cc3984ffe93ae816f4f.rows",
+            "mv-458bf1399e9b4985a9d0553dd994bae8.rows",
+            "mv-43d6530fef7247c8b983796238591e21.rows",
+            "mv-e18d8fb45db94443b180d18094b4c043.rows",
+            "mv-e03c0453396a4fbfae921a5f58c0abf0.rows",
+            "mv-fa319ff6f185428688228b1fd30ef808.rows",
+            "mv-332deb88b05b4739a8e7f49856fb2784.rows",
+            "mv-0f4168052e684dc794f5dae6d3a61f6d.rows",
+            "mv-4cda3d0ea69342ecb2440353828d59d6.rows",
+            "mv-f7d50cf4e1b84c8d81a55d63520e87e3.rows",
+            "mv-14600cfb1b8e4cad815db70e2044c790.rows",
+            "mv-d10cbdb6dfa24285a7950bc9c3d16acb.rows",
+            "mv-4c4dae10c0b64462aef742f0bae7a275.rows",
+            "mv-67938b9124d248d696bae4fc30da0a71.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "31_updates",
+          "segments": 32,
+          "excluded": 31,
+          "files": [
+            "mv-5d82a021faaf4c579326e7e0e2855219.rows",
+            "mv-2728ba2a872646a69c8ee9f37e8f9d49.rows",
+            "mv-93407692ba0d43ec951302abceb9b906.rows",
+            "mv-63438061113a43219ea6965e116d36eb.rows",
+            "mv-37b054a01bf64522b7c00519fcaa04ad.rows",
+            "mv-4439669fb3e34df6b9c8ffe99617c469.rows",
+            "mv-d3894956669b4e8ebdd79ae104373476.rows",
+            "mv-775d78e13c054edfa0000d58f5f22b2b.rows",
+            "mv-e596bbcec479472fb179f79c990f6a51.rows",
+            "mv-6eb804bc8f734fea8b0bf1e90df62254.rows",
+            "mv-126a314f263340eea8acc810cfbdd9dd.rows",
+            "mv-3867f724d3d141c687cda4601bdf4c36.rows",
+            "mv-2cc2194d2d8c43da9537bab1a2c4b029.rows",
+            "mv-2bb18cbe1d3d4015a73dd7aa15315fef.rows",
+            "mv-16960bb4f2894e9ea651ec41855cb187.rows",
+            "mv-8e2bfaf817204ac59594ed4faa718c9d.rows",
+            "mv-24e29a2833f3433fa792539ebf609c18.rows",
+            "mv-9fc514ba03504cc3984ffe93ae816f4f.rows",
+            "mv-458bf1399e9b4985a9d0553dd994bae8.rows",
+            "mv-43d6530fef7247c8b983796238591e21.rows",
+            "mv-e18d8fb45db94443b180d18094b4c043.rows",
+            "mv-e03c0453396a4fbfae921a5f58c0abf0.rows",
+            "mv-fa319ff6f185428688228b1fd30ef808.rows",
+            "mv-332deb88b05b4739a8e7f49856fb2784.rows",
+            "mv-0f4168052e684dc794f5dae6d3a61f6d.rows",
+            "mv-4cda3d0ea69342ecb2440353828d59d6.rows",
+            "mv-f7d50cf4e1b84c8d81a55d63520e87e3.rows",
+            "mv-14600cfb1b8e4cad815db70e2044c790.rows",
+            "mv-d10cbdb6dfa24285a7950bc9c3d16acb.rows",
+            "mv-4c4dae10c0b64462aef742f0bae7a275.rows",
+            "mv-67938b9124d248d696bae4fc30da0a71.rows",
+            "mv-9db5f7ff8daa4e0ea958776e31c03ff1.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "mutation_starting_at_32_segments",
+          "segments": 3,
+          "excluded": 32,
+          "files": [
+            "mv-5d82a021faaf4c579326e7e0e2855219.rows",
+            "mv-a2ef508254974e938583219b2bb8b668.rows",
+            "mv-0623dcc5516e47be966d1f825fa73619.rows"
+          ]
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "boundary-segments-update",
+          "oracle_queries": 228
+        }
+      ],
+      "checkpoints": [
+        "segment_count_30",
+        "segment_count_31",
+        "segment_count_32",
+        "after_small_overlay_merge",
+        "one_more_update_after_merge",
+        "restart_after_boundary",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    },
+    {
+      "id": "boundary-segments-delete",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-14-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "layout",
+          "label": "initial",
+          "segments": 1,
+          "excluded": 0,
+          "files": [
+            "mv-9d197a5589014f328d0a032feb565a09.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "29_updates",
+          "segments": 30,
+          "excluded": 29,
+          "files": [
+            "mv-9d197a5589014f328d0a032feb565a09.rows",
+            "mv-305a57e654fb40a593be52cd393cdb8f.rows",
+            "mv-0957975f932f4cd7a733c385eccfd5b3.rows",
+            "mv-0237168daaad42cda7d0d0be1033c8e1.rows",
+            "mv-969df73ea2e44851a27ec9037e6a1bb1.rows",
+            "mv-784f0509a2d04d699e9bc72a16c094f8.rows",
+            "mv-658950d9fa744ffdaa6bcffd37b9fbb2.rows",
+            "mv-e8a4fdba67fc44e1b9f2945e5797e117.rows",
+            "mv-5542cc8146ef4da3ac26c12a1631c3d7.rows",
+            "mv-c6f43032e24b4082a173e72e5fe8d02b.rows",
+            "mv-ac3c9c527a8144d99ce2e8004fa315bf.rows",
+            "mv-b5f3e23d791c442ebd336a6b6ca031f5.rows",
+            "mv-7f40d9e5d6284378b7054369aa1a7e66.rows",
+            "mv-abc71e0d38ec4b69b56cde75b5b85391.rows",
+            "mv-d836479c1d3b4ec3ac8766e421264be7.rows",
+            "mv-cc7a14fdc0534a4c9684b9361ffce61a.rows",
+            "mv-6f21fa44e7da4e54837c803baf34d748.rows",
+            "mv-f2ec33f7298c410599a95e43aa674d6e.rows",
+            "mv-e5d3aae17d664f49828b2764d6e435cf.rows",
+            "mv-396f8982dc46490c95429bdb491cd60e.rows",
+            "mv-503bd06d23be4039b23c18f4876f3217.rows",
+            "mv-10bd0f15deea4d9b8e33a82fdd140af0.rows",
+            "mv-a3dfe5c86d7d42a7a86d4590d9cba05d.rows",
+            "mv-f87f971cc0d848ebbd172d5fee562e33.rows",
+            "mv-8da7a43f85814fb780c9a25e4593c572.rows",
+            "mv-fbfa22db32ab4689bcbb82d3fe942ecd.rows",
+            "mv-a4f5e6b9270c47d2909e7a4ebc971a8f.rows",
+            "mv-73b71b5dd4274e72b323d6f36f3c4ae3.rows",
+            "mv-68b2673aff9441d99d8746226bb307d2.rows",
+            "mv-54997c226a194ff183b80bf5ddbdd5b0.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "30_updates",
+          "segments": 31,
+          "excluded": 30,
+          "files": [
+            "mv-9d197a5589014f328d0a032feb565a09.rows",
+            "mv-305a57e654fb40a593be52cd393cdb8f.rows",
+            "mv-0957975f932f4cd7a733c385eccfd5b3.rows",
+            "mv-0237168daaad42cda7d0d0be1033c8e1.rows",
+            "mv-969df73ea2e44851a27ec9037e6a1bb1.rows",
+            "mv-784f0509a2d04d699e9bc72a16c094f8.rows",
+            "mv-658950d9fa744ffdaa6bcffd37b9fbb2.rows",
+            "mv-e8a4fdba67fc44e1b9f2945e5797e117.rows",
+            "mv-5542cc8146ef4da3ac26c12a1631c3d7.rows",
+            "mv-c6f43032e24b4082a173e72e5fe8d02b.rows",
+            "mv-ac3c9c527a8144d99ce2e8004fa315bf.rows",
+            "mv-b5f3e23d791c442ebd336a6b6ca031f5.rows",
+            "mv-7f40d9e5d6284378b7054369aa1a7e66.rows",
+            "mv-abc71e0d38ec4b69b56cde75b5b85391.rows",
+            "mv-d836479c1d3b4ec3ac8766e421264be7.rows",
+            "mv-cc7a14fdc0534a4c9684b9361ffce61a.rows",
+            "mv-6f21fa44e7da4e54837c803baf34d748.rows",
+            "mv-f2ec33f7298c410599a95e43aa674d6e.rows",
+            "mv-e5d3aae17d664f49828b2764d6e435cf.rows",
+            "mv-396f8982dc46490c95429bdb491cd60e.rows",
+            "mv-503bd06d23be4039b23c18f4876f3217.rows",
+            "mv-10bd0f15deea4d9b8e33a82fdd140af0.rows",
+            "mv-a3dfe5c86d7d42a7a86d4590d9cba05d.rows",
+            "mv-f87f971cc0d848ebbd172d5fee562e33.rows",
+            "mv-8da7a43f85814fb780c9a25e4593c572.rows",
+            "mv-fbfa22db32ab4689bcbb82d3fe942ecd.rows",
+            "mv-a4f5e6b9270c47d2909e7a4ebc971a8f.rows",
+            "mv-73b71b5dd4274e72b323d6f36f3c4ae3.rows",
+            "mv-68b2673aff9441d99d8746226bb307d2.rows",
+            "mv-54997c226a194ff183b80bf5ddbdd5b0.rows",
+            "mv-b2f2d6e1ffaa43748d4f2e862d8674b6.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "31_updates",
+          "segments": 32,
+          "excluded": 31,
+          "files": [
+            "mv-9d197a5589014f328d0a032feb565a09.rows",
+            "mv-305a57e654fb40a593be52cd393cdb8f.rows",
+            "mv-0957975f932f4cd7a733c385eccfd5b3.rows",
+            "mv-0237168daaad42cda7d0d0be1033c8e1.rows",
+            "mv-969df73ea2e44851a27ec9037e6a1bb1.rows",
+            "mv-784f0509a2d04d699e9bc72a16c094f8.rows",
+            "mv-658950d9fa744ffdaa6bcffd37b9fbb2.rows",
+            "mv-e8a4fdba67fc44e1b9f2945e5797e117.rows",
+            "mv-5542cc8146ef4da3ac26c12a1631c3d7.rows",
+            "mv-c6f43032e24b4082a173e72e5fe8d02b.rows",
+            "mv-ac3c9c527a8144d99ce2e8004fa315bf.rows",
+            "mv-b5f3e23d791c442ebd336a6b6ca031f5.rows",
+            "mv-7f40d9e5d6284378b7054369aa1a7e66.rows",
+            "mv-abc71e0d38ec4b69b56cde75b5b85391.rows",
+            "mv-d836479c1d3b4ec3ac8766e421264be7.rows",
+            "mv-cc7a14fdc0534a4c9684b9361ffce61a.rows",
+            "mv-6f21fa44e7da4e54837c803baf34d748.rows",
+            "mv-f2ec33f7298c410599a95e43aa674d6e.rows",
+            "mv-e5d3aae17d664f49828b2764d6e435cf.rows",
+            "mv-396f8982dc46490c95429bdb491cd60e.rows",
+            "mv-503bd06d23be4039b23c18f4876f3217.rows",
+            "mv-10bd0f15deea4d9b8e33a82fdd140af0.rows",
+            "mv-a3dfe5c86d7d42a7a86d4590d9cba05d.rows",
+            "mv-f87f971cc0d848ebbd172d5fee562e33.rows",
+            "mv-8da7a43f85814fb780c9a25e4593c572.rows",
+            "mv-fbfa22db32ab4689bcbb82d3fe942ecd.rows",
+            "mv-a4f5e6b9270c47d2909e7a4ebc971a8f.rows",
+            "mv-73b71b5dd4274e72b323d6f36f3c4ae3.rows",
+            "mv-68b2673aff9441d99d8746226bb307d2.rows",
+            "mv-54997c226a194ff183b80bf5ddbdd5b0.rows",
+            "mv-b2f2d6e1ffaa43748d4f2e862d8674b6.rows",
+            "mv-c52c1c7ad32e45dd8a23ad1f57571685.rows"
+          ]
+        },
+        {
+          "kind": "layout",
+          "label": "mutation_starting_at_32_segments",
+          "segments": 2,
+          "excluded": 32,
+          "files": [
+            "mv-9d197a5589014f328d0a032feb565a09.rows",
+            "mv-51e030d7b3074b31aaf7c5a651059c56.rows"
+          ]
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "boundary-segments-delete",
+          "oracle_queries": 228
+        }
+      ],
+      "checkpoints": [
+        "segment_count_30",
+        "segment_count_31",
+        "segment_count_32",
+        "after_small_overlay_merge",
+        "one_more_update_after_merge",
+        "restart_after_boundary",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    },
+    {
+      "id": "txboundary-excluded-commit",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-15-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "layout",
+          "label": "before_transaction",
+          "segments": 1,
+          "excluded": 127,
+          "files": [
+            "mv-5b569fc37e6045c2ad21a31902ec570f.rows"
+          ]
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "txboundary-excluded-commit",
+          "oracle_queries": 343
+        }
+      ],
+      "checkpoints": [
+        "before_boundary_transaction",
+        "transaction_reaches_threshold",
+        "transaction_crosses_threshold",
+        "after_duplicate_statement_failure",
+        "after_invalid_vector_statement_failure",
+        "transaction_reinsert_after_failure_and_merge",
+        "after_commit",
+        "restart_1_after_commit",
+        "restart_2_after_commit",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    },
+    {
+      "id": "txboundary-excluded-rollback",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-16-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "layout",
+          "label": "before_transaction",
+          "segments": 1,
+          "excluded": 127,
+          "files": [
+            "mv-97eb9bc68fe8427bbd5640337f58d306.rows"
+          ]
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "txboundary-excluded-rollback",
+          "oracle_queries": 343
+        }
+      ],
+      "checkpoints": [
+        "before_boundary_transaction",
+        "transaction_reaches_threshold",
+        "transaction_crosses_threshold",
+        "after_duplicate_statement_failure",
+        "after_invalid_vector_statement_failure",
+        "transaction_reinsert_after_failure_and_merge",
+        "after_rollback",
+        "restart_1_after_rollback",
+        "restart_2_after_rollback",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    },
+    {
+      "id": "txboundary-excluded-kill",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-17-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "layout",
+          "label": "before_transaction",
+          "segments": 1,
+          "excluded": 127,
+          "files": [
+            "mv-465d1ad3087845738868fef8a0398e5a.rows"
+          ]
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "txboundary-excluded-kill",
+          "oracle_queries": 305
+        }
+      ],
+      "checkpoints": [
+        "before_boundary_transaction",
+        "transaction_reaches_threshold",
+        "transaction_crosses_threshold",
+        "after_duplicate_statement_failure",
+        "after_invalid_vector_statement_failure",
+        "transaction_reinsert_after_failure_and_merge",
+        "restart_1_after_kill",
+        "restart_2_after_kill",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    },
+    {
+      "id": "txboundary-segments-commit",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-18-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "layout",
+          "label": "before_transaction",
+          "segments": 31,
+          "excluded": 30,
+          "files": [
+            "mv-e11385ce9a5a4890bac6f29d124a384f.rows",
+            "mv-ff86d3d91cdc446b9fcb8b7382b3cdf3.rows",
+            "mv-445e9da399544ba69788674d0e383347.rows",
+            "mv-eaf26963ae014bb0af3458d5581b700e.rows",
+            "mv-5865e62e067a4b07b0287905f4543765.rows",
+            "mv-39edbe08658c43d196e6f4ea0d273098.rows",
+            "mv-83fb3b4f8133495f863ca7f85ccff9b0.rows",
+            "mv-fe062d9dbe384b32b7c79773a2bd24a6.rows",
+            "mv-9b493256a333495c9a5bbbffd00d042e.rows",
+            "mv-0093ebdf2b9f4f6faa1a1227b5e65b60.rows",
+            "mv-dff858b01997417f97aa5580be25abb1.rows",
+            "mv-1e16adc23f62450e929db4486830d4b5.rows",
+            "mv-6397b9705e8249d187a1f2e7e60e697d.rows",
+            "mv-07fdff92d7b448de9b283609c3b0020f.rows",
+            "mv-0c54f5f2edbb43109bc973a1991c73d9.rows",
+            "mv-56efd715e862439cb1dee9aeb2b5fbd3.rows",
+            "mv-1a7464b3941548539c6fcc5bc5f8466b.rows",
+            "mv-dfcad5177a9d466282a55e70f5ee38d1.rows",
+            "mv-9e806c57c6ed457db2869cc575f587fe.rows",
+            "mv-20357154289c461f957cd2cb3669884c.rows",
+            "mv-9a2014790ba848148917bf419ba4cb61.rows",
+            "mv-580a573d02824134a523a64e3a4f0a1d.rows",
+            "mv-85fabb7e722f4b7a84ce542072175364.rows",
+            "mv-4375589f8e19455f84bb39181558f007.rows",
+            "mv-b7a0b21266c24122bc658c4eb1f536a3.rows",
+            "mv-93975a33a43d416cb27b4217b3f22070.rows",
+            "mv-b6bfc621cac342cfab55017e663372b5.rows",
+            "mv-67407dcadaef46b79a4bb64fb8798030.rows",
+            "mv-1a5718eaad26489f9ece6ce727db6e40.rows",
+            "mv-e85b4847e2d1463eb4eae401e7ce409f.rows",
+            "mv-e6295faf55b74ba3b242e65412895b6e.rows"
+          ]
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "txboundary-segments-commit",
+          "oracle_queries": 343
+        }
+      ],
+      "checkpoints": [
+        "before_boundary_transaction",
+        "transaction_reaches_threshold",
+        "transaction_crosses_threshold",
+        "after_duplicate_statement_failure",
+        "after_invalid_vector_statement_failure",
+        "transaction_reinsert_after_failure_and_merge",
+        "after_commit",
+        "restart_1_after_commit",
+        "restart_2_after_commit",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    },
+    {
+      "id": "txboundary-segments-rollback",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-19-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "layout",
+          "label": "before_transaction",
+          "segments": 31,
+          "excluded": 30,
+          "files": [
+            "mv-493ae48c260d4efd977b26ee8a82f251.rows",
+            "mv-ea394dd7c8a646d19e76e6fd4e6eb140.rows",
+            "mv-3a4918fbff264aeda4a2bf83bfd4ddc5.rows",
+            "mv-98007ae64d19481ca842e7fc1ac15a25.rows",
+            "mv-59d91ec8396f4c14abff75a5badfe428.rows",
+            "mv-6e0003bcc665427c9ab9148995f9edb9.rows",
+            "mv-33ee341bb01d42e1af2a04b21f4c8b9c.rows",
+            "mv-680fbcb3ec1245dbb9a7e98449278b35.rows",
+            "mv-f0c48bebb4f641d0971cc4bfc9c952b0.rows",
+            "mv-f8e71b6fd0d749c5a09262c5d0389ee7.rows",
+            "mv-c6ff496dacdb42b685a393ae41b2feac.rows",
+            "mv-3d6c279c2c0e4d0daf2ec2e4f9f90d21.rows",
+            "mv-135db610756942e0abb8b986abf83799.rows",
+            "mv-bc798b7f2dc04d08814ae1f1b78b0416.rows",
+            "mv-afec0da9bc394bee83fa2289c635cdf8.rows",
+            "mv-d2120ed087f44f4cb70a506b4a883c72.rows",
+            "mv-643a05860ee843468ada32600411bc95.rows",
+            "mv-9deb8b48c450491cbd79d94add317aaa.rows",
+            "mv-cbe79c9e41c041519aa2d10745b2d492.rows",
+            "mv-35ace8bc1c024165a8dadcf09b82bed0.rows",
+            "mv-a32b9373a2c041938d9c93ef59a8e18e.rows",
+            "mv-e346ddd3833741a18a9fcb8d89a555a3.rows",
+            "mv-c6a7abf4dfb442f6a06047d1726a897c.rows",
+            "mv-aad536724f62463e937610a2eb5da114.rows",
+            "mv-b8ae8ee7dc58423bb7fa533aac46e304.rows",
+            "mv-71fa52d2f767442b99d250d6d255ff7f.rows",
+            "mv-16cd4f7ce15e484f8a59fd4e47f7ec64.rows",
+            "mv-d0b4230cce7240df91b4364a7cb8c54e.rows",
+            "mv-b866116e276b4621b74752b419877305.rows",
+            "mv-71bb26ed771a4461af4639aabe865571.rows",
+            "mv-64a19626edb04bb6a4f206c65216af10.rows"
+          ]
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "txboundary-segments-rollback",
+          "oracle_queries": 343
+        }
+      ],
+      "checkpoints": [
+        "before_boundary_transaction",
+        "transaction_reaches_threshold",
+        "transaction_crosses_threshold",
+        "after_duplicate_statement_failure",
+        "after_invalid_vector_statement_failure",
+        "transaction_reinsert_after_failure_and_merge",
+        "after_rollback",
+        "restart_1_after_rollback",
+        "restart_2_after_rollback",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    },
+    {
+      "id": "txboundary-segments-kill",
+      "status": "PASS",
+      "volume": "overlay-verify-20261112t101038252339z-20-data",
+      "exit_code": 0,
+      "results": [
+        {
+          "kind": "runtime",
+          "image_source_matches": true,
+          "cgroup": {
+            "cpu.max": "200000 100000",
+            "memory.max": "2147483648",
+            "memory.swap.max": "0",
+            "pids.max": "128"
+          },
+          "interfaces": [
+            "lo"
+          ],
+          "native_available": true,
+          "native_sha256": "3b6a3461fb6b79c2e02760612dca1789e616a78d3b615024adc41f54a0db767d",
+          "MAX_EXCLUDED": 128,
+          "MAX_SEGMENTS": 32
+        },
+        {
+          "kind": "layout",
+          "label": "before_transaction",
+          "segments": 31,
+          "excluded": 30,
+          "files": [
+            "mv-fea079d947c348d1bf1ae2de3e1f702e.rows",
+            "mv-aa08170ea29d4f72872d620a1156afe4.rows",
+            "mv-9708a587a9fe4f83939f70db76c5713e.rows",
+            "mv-34dccda1fef147b284bf8529e2e199db.rows",
+            "mv-b4f81fa473a04de0acaf1625fa625948.rows",
+            "mv-97b7e54f59884b30866a60a536618b58.rows",
+            "mv-58ba7fca45a94f3f9e6e1e4742e11d70.rows",
+            "mv-be972e91b8d742d7ae25402c720f59a4.rows",
+            "mv-841954cfe32544e688f4d652641095d8.rows",
+            "mv-d28d717ff60142bbb7eb0d754d1f8e19.rows",
+            "mv-3579a1ecd25c4b4fa8b9b4d705bbcd9b.rows",
+            "mv-6e5b9b8e09c34d108c996e434e2b385e.rows",
+            "mv-16e1211233b4462ba1edc1c506ad4e01.rows",
+            "mv-ec73baf3a5c640779f24011dd2cf3080.rows",
+            "mv-f80e9ecf95254812986e5953b9ba4e96.rows",
+            "mv-953adc7a45a74385a12c70bd8b6fe23c.rows",
+            "mv-08ca19b7298a4b199b3ea80c0aa39473.rows",
+            "mv-a3f9a853f98b4d89acfa63d4ac0d4cb1.rows",
+            "mv-17e643f1a787486e8275942a8fc4bf3f.rows",
+            "mv-d60a5a3879454b85b0834269b2de442e.rows",
+            "mv-3b4840823ddf4ee486c1b2f4cdd272fc.rows",
+            "mv-40b7483424fe4787b89a928891b969a4.rows",
+            "mv-2eee8f99e1614d01a2ef5de703e530c1.rows",
+            "mv-4e94aac380024f169dfefa2653f4cd30.rows",
+            "mv-20e15047e7ed406c8bc0fd747a6a6f68.rows",
+            "mv-6bfb715d64914845874c71257201b9a7.rows",
+            "mv-7a221642a8c44de5a1fb275038c201b6.rows",
+            "mv-745a483b026f490481ec31aa57947792.rows",
+            "mv-eed64c9d5453457691ad55d3eb66884d.rows",
+            "mv-61f0786d2f214bf29203fe7d6eb65ab3.rows",
+            "mv-d067fea71a754df0a09b81269cad1c78.rows"
+          ]
+        },
+        {
+          "kind": "result",
+          "status": "PASS",
+          "scenario": "txboundary-segments-kill",
+          "oracle_queries": 305
+        }
+      ],
+      "checkpoints": [
+        "before_boundary_transaction",
+        "transaction_reaches_threshold",
+        "transaction_crosses_threshold",
+        "after_duplicate_statement_failure",
+        "after_invalid_vector_statement_failure",
+        "transaction_reinsert_after_failure_and_merge",
+        "restart_1_after_kill",
+        "restart_2_after_kill",
+        "recreated_container_persistent_volume"
+      ],
+      "container_recreation_exit_code": 0
+    }
+  ],
+  "omissions": [
+    "No host reboot, disk-full, fsync/device power-loss, or concurrent-client tests.",
+    "Default image configuration only; graph ANN is disabled in this image.",
+    "New model tests use 16-dimensional vectors, existing combined check uses 128; not an exhaustive dimension/size benchmark.",
+    "The existing combined check temporarily sets MAX_SEGMENTS=1 only to exercise fallback; normal boundary tests use unchanged 32/128 constants."
+  ],
+  "counts": {
+    "PASS": 21,
+    "FAIL": 0,
+    "TIMEOUT": 0,
+    "NOT_RUN": 0
+  },
+  "source_and_conversation_unchanged": true,
+  "finished_at": "2026-11-12T10:11:29.241672+00:00"
+}

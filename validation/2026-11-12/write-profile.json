@@ -1,0 +1,4418 @@
+{
+  "scope": "Separate instrumented run; never a benchmark or scoring sample",
+  "target": "write",
+  "selected_execute_calls": 300,
+  "instrumented_execute_seconds": 3.3940840890045365,
+  "profile_total_self_seconds": 3.3833490239999993,
+  "limitations": "cProfile includes instrumentation overhead; native C work is charged to Python ctypes callers. JSON request decoding and stdin waiting are outside execute profiling.",
+  "functions": [
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method posix.fsync>",
+      "primitive_calls": 500,
+      "calls": 500,
+      "self_seconds": 0.889119948,
+      "cumulative_seconds": 0.889119948,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 175,
+          "function": "publish",
+          "stats": [
+            300,
+            300,
+            0.42752095900000003,
+            0.42752095900000003
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            200,
+            200,
+            0.461598989,
+            0.461598989
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/sql.py",
+      "line": 74,
+      "function": "vector",
+      "primitive_calls": 10000,
+      "calls": 10000,
+      "self_seconds": 0.488832623,
+      "cumulative_seconds": 1.260953397,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 111,
+          "function": "convert",
+          "stats": [
+            10000,
+            10000,
+            0.488832623,
+            1.260953397
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'fullmatch' of 're.Pattern' objects>",
+      "primitive_calls": 10000,
+      "calls": 10000,
+      "self_seconds": 0.25612169300000004,
+      "cumulative_seconds": 0.25612169300000004,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 74,
+          "function": "vector",
+          "stats": [
+            10000,
+            10000,
+            0.25612169300000004,
+            0.25612169300000004
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/sql.py",
+      "line": 29,
+      "function": "tokenize",
+      "primitive_calls": 300,
+      "calls": 300,
+      "self_seconds": 0.20233298400000002,
+      "cumulative_seconds": 0.407664179,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 131,
+          "function": "__init__",
+          "stats": [
+            300,
+            300,
+            0.20233298400000002,
+            0.407664179
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method math.isfinite>",
+      "primitive_calls": 2560000,
+      "calls": 2560000,
+      "self_seconds": 0.181845118,
+      "cumulative_seconds": 0.181845118,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 74,
+          "function": "vector",
+          "stats": [
+            1280000,
+            1280000,
+            0.102141928,
+            0.102141928
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 104,
+          "function": "<genexpr>",
+          "stats": [
+            1280000,
+            1280000,
+            0.07970319000000001,
+            0.07970319000000001
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/sql.py",
+      "line": 104,
+      "function": "<genexpr>",
+      "primitive_calls": 1290000,
+      "calls": 1290000,
+      "self_seconds": 0.153842793,
+      "cumulative_seconds": 0.233545983,
+      "callers": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.all>",
+          "stats": [
+            1290000,
+            1290000,
+            0.153842793,
+            0.233545983
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.all>",
+      "primitive_calls": 10000,
+      "calls": 10000,
+      "self_seconds": 0.08723207200000001,
+      "cumulative_seconds": 0.320778055,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 74,
+          "function": "vector",
+          "stats": [
+            10000,
+            10000,
+            0.08723207200000001,
+            0.320778055
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 235,
+      "function": "write_segment",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 0.07588992600000001,
+      "cumulative_seconds": 0.8740421770000001,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 284,
+          "function": "insert",
+          "stats": [
+            100,
+            100,
+            0.07588992600000001,
+            0.8740421770000001
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'write' of '_io.BufferedWriter' objects>",
+      "primitive_calls": 113000,
+      "calls": 113000,
+      "self_seconds": 0.05635532,
+      "cumulative_seconds": 0.05635532,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            113000,
+            113000,
+            0.05635532,
+            0.05635532
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.len>",
+      "primitive_calls": 448935,
+      "calls": 448935,
+      "self_seconds": 0.051125365000000006,
+      "cumulative_seconds": 0.051125365000000006,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/heapq.py",
+          "line": 316,
+          "function": "merge",
+          "stats": [
+            147,
+            147,
+            2.4503000000000002e-05,
+            2.4503000000000002e-05
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 208,
+          "function": "parse",
+          "stats": [
+            300,
+            300,
+            4.3214e-05,
+            4.3214e-05
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 47,
+          "function": "encode",
+          "stats": [
+            10000,
+            10000,
+            0.001344672,
+            0.001344672
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 74,
+          "function": "vector",
+          "stats": [
+            30000,
+            30000,
+            0.004540586,
+            0.004540586
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 160,
+          "function": "value",
+          "stats": [
+            40000,
+            40000,
+            0.004860463000000001,
+            0.004860463000000001
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            37600,
+            37600,
+            0.004633596,
+            0.004633596
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 29,
+          "function": "tokenize",
+          "stats": [
+            121200,
+            121200,
+            0.014670993,
+            0.014670993
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 284,
+          "function": "insert",
+          "stats": [
+            300,
+            300,
+            8.135e-05,
+            8.135e-05
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "stats": [
+            300,
+            300,
+            9.045200000000001e-05,
+            9.045200000000001e-05
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 111,
+          "function": "convert",
+          "stats": [
+            10000,
+            10000,
+            0.0014555400000000002,
+            0.0014555400000000002
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 97,
+          "function": "raw_rows",
+          "stats": [
+            55200,
+            55200,
+            0.005872136,
+            0.005872136
+          ]
+        },
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 140,
+          "function": "execute",
+          "stats": [
+            30600,
+            30600,
+            0.0038270820000000003,
+            0.0038270820000000003
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 147,
+          "function": "ident",
+          "stats": [
+            100,
+            100,
+            1.0333000000000001e-05,
+            1.0333000000000001e-05
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 135,
+          "function": "take",
+          "stats": [
+            112200,
+            112200,
+            0.009557637,
+            0.009557637
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 407,
+          "function": "_load_parts",
+          "stats": [
+            988,
+            988,
+            0.00011280800000000001,
+            0.00011280800000000001
+          ]
+        }
+      ]
+    },
+    {
+      "file": "<string>",
+      "line": 2,
+      "function": "__init__",
+      "primitive_calls": 100500,
+      "calls": 100500,
+      "self_seconds": 0.049267121000000004,
+      "cumulative_seconds": 0.049267121000000004,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 29,
+          "function": "tokenize",
+          "stats": [
+            100500,
+            100500,
+            0.049267121000000004,
+            0.049267121000000004
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'match' of 're.Pattern' objects>",
+      "primitive_calls": 141000,
+      "calls": 141000,
+      "self_seconds": 0.048432256,
+      "cumulative_seconds": 0.048432256,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 29,
+          "function": "tokenize",
+          "stats": [
+            141000,
+            141000,
+            0.048432256,
+            0.048432256
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'startswith' of 'str' objects>",
+      "primitive_calls": 213455,
+      "calls": 213455,
+      "self_seconds": 0.043512271000000005,
+      "cumulative_seconds": 0.043512271000000005,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 387,
+          "function": "_parse_path",
+          "stats": [
+            97,
+            97,
+            3.3025e-05,
+            3.3025e-05
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 74,
+          "function": "vector",
+          "stats": [
+            10000,
+            10000,
+            0.002709824,
+            0.002709824
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 29,
+          "function": "tokenize",
+          "stats": [
+            201000,
+            201000,
+            0.039977441,
+            0.039977441
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 186,
+          "function": "collect",
+          "stats": [
+            1864,
+            1864,
+            0.000612053,
+            0.000612053
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 167,
+          "function": "path",
+          "stats": [
+            97,
+            97,
+            2.9063000000000003e-05,
+            2.9063000000000003e-05
+          ]
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 71,
+          "function": "join",
+          "stats": [
+            397,
+            397,
+            0.000150865,
+            0.000150865
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'pack' of '_struct.Struct' objects>",
+      "primitive_calls": 152800,
+      "calls": 152800,
+      "self_seconds": 0.041628277000000005,
+      "cumulative_seconds": 0.041628277000000005,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 47,
+          "function": "encode",
+          "stats": [
+            40000,
+            40000,
+            0.017472994000000002,
+            0.017472994000000002
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            112800,
+            112800,
+            0.024155283000000003,
+            0.024155283000000003
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 97,
+      "function": "raw_rows",
+      "primitive_calls": 27697,
+      "calls": 27697,
+      "self_seconds": 0.041102365,
+      "cumulative_seconds": 0.10175385,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 219,
+          "function": "part_records",
+          "stats": [
+            27697,
+            27697,
+            0.041102365,
+            0.10175385
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/sql.py",
+      "line": 111,
+      "function": "convert",
+      "primitive_calls": 40000,
+      "calls": 40000,
+      "self_seconds": 0.038943954,
+      "cumulative_seconds": 1.305511844,
+      "callers": [
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 140,
+          "function": "execute",
+          "stats": [
+            40000,
+            40000,
+            0.038943954,
+            1.305511844
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/sql.py",
+      "line": 135,
+      "function": "take",
+      "primitive_calls": 112200,
+      "calls": 112200,
+      "self_seconds": 0.038142752,
+      "cumulative_seconds": 0.061327846000000005,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 208,
+          "function": "parse",
+          "stats": [
+            52000,
+            52000,
+            0.01922167,
+            0.031322089000000004
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 160,
+          "function": "value",
+          "stats": [
+            40000,
+            40000,
+            0.011676137000000001,
+            0.018260554000000002
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 143,
+          "function": "need",
+          "stats": [
+            20200,
+            20200,
+            0.007244945,
+            0.011745203000000001
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'append' of 'list' objects>",
+      "primitive_calls": 207504,
+      "calls": 207504,
+      "self_seconds": 0.036202337,
+      "cumulative_seconds": 0.036202337,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/heapq.py",
+          "line": 316,
+          "function": "merge",
+          "stats": [
+            147,
+            147,
+            2.4943e-05,
+            2.4943e-05
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 208,
+          "function": "parse",
+          "stats": [
+            40000,
+            40000,
+            0.006945890000000001,
+            0.006945890000000001
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 358,
+          "function": "__init__",
+          "stats": [
+            2358,
+            2358,
+            0.0005310660000000001,
+            0.0005310660000000001
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 47,
+          "function": "encode",
+          "stats": [
+            30000,
+            30000,
+            0.005265888000000001,
+            0.005265888000000001
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            200,
+            200,
+            5.6680000000000006e-05,
+            5.6680000000000006e-05
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 29,
+          "function": "tokenize",
+          "stats": [
+            120500,
+            120500,
+            0.020252834,
+            0.020252834
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 284,
+          "function": "insert",
+          "stats": [
+            97,
+            97,
+            1.9876e-05,
+            1.9876e-05
+          ]
+        },
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 140,
+          "function": "execute",
+          "stats": [
+            10000,
+            10000,
+            0.0024675260000000003,
+            0.0024675260000000003
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/copy.py",
+          "line": 191,
+          "function": "_deepcopy_list",
+          "stats": [
+            1751,
+            1751,
+            0.00020645100000000002,
+            0.00020645100000000002
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/copy.py",
+          "line": 231,
+          "function": "_keep_alive",
+          "stats": [
+            2451,
+            2451,
+            0.000431183,
+            0.000431183
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'split' of 'str' objects>",
+      "primitive_calls": 10494,
+      "calls": 10494,
+      "self_seconds": 0.035068188,
+      "cumulative_seconds": 0.035068188,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 387,
+          "function": "_parse_path",
+          "stats": [
+            494,
+            494,
+            0.000229298,
+            0.000229298
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 74,
+          "function": "vector",
+          "stats": [
+            10000,
+            10000,
+            0.034838890000000004,
+            0.034838890000000004
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 47,
+      "function": "encode",
+      "primitive_calls": 10000,
+      "calls": 10000,
+      "self_seconds": 0.033908022,
+      "cumulative_seconds": 0.065242057,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 333,
+          "function": "<genexpr>",
+          "stats": [
+            10000,
+            10000,
+            0.033908022,
+            0.065242057
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/engine.py",
+      "line": 140,
+      "function": "execute",
+      "primitive_calls": 300,
+      "calls": 300,
+      "self_seconds": 0.032723411,
+      "cumulative_seconds": 3.362232848,
+      "callers": []
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method _struct.unpack>",
+      "primitive_calls": 10000,
+      "calls": 10000,
+      "self_seconds": 0.030821005000000002,
+      "cumulative_seconds": 0.030821005000000002,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 74,
+          "function": "vector",
+          "stats": [
+            10000,
+            10000,
+            0.030821005000000002,
+            0.030821005000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/sql.py",
+      "line": 208,
+      "function": "parse",
+      "primitive_calls": 300,
+      "calls": 300,
+      "self_seconds": 0.029717934,
+      "cumulative_seconds": 0.153166654,
+      "callers": [
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 140,
+          "function": "execute",
+          "stats": [
+            300,
+            300,
+            0.029717934,
+            0.153166654
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/sql.py",
+      "line": 160,
+      "function": "value",
+      "primitive_calls": 40000,
+      "calls": 40000,
+      "self_seconds": 0.027947597,
+      "cumulative_seconds": 0.069143779,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 208,
+          "function": "parse",
+          "stats": [
+            40000,
+            40000,
+            0.027947597,
+            0.069143779
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'read' of '_io.BufferedReader' objects>",
+      "primitive_calls": 55394,
+      "calls": 55394,
+      "self_seconds": 0.022920353,
+      "cumulative_seconds": 0.022920353,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 97,
+          "function": "raw_rows",
+          "stats": [
+            55394,
+            55394,
+            0.022920353,
+            0.022920353
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/heapq.py",
+      "line": 316,
+      "function": "merge",
+      "primitive_calls": 32650,
+      "calls": 32650,
+      "self_seconds": 0.021898744,
+      "cumulative_seconds": 0.17649168,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            32650,
+            32650,
+            0.021898744,
+            0.17649168
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/copy.py",
+      "line": 118,
+      "function": "deepcopy",
+      "primitive_calls": 300,
+      "calls": 23965,
+      "self_seconds": 0.019308729,
+      "cumulative_seconds": 0.041647837,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 175,
+          "function": "publish",
+          "stats": [
+            100,
+            100,
+            0.00039941200000000003,
+            0.017858625
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 284,
+          "function": "insert",
+          "stats": [
+            200,
+            200,
+            0.000402131,
+            0.023789212
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/copy.py",
+          "line": 191,
+          "function": "_deepcopy_list",
+          "stats": [
+            1751,
+            1751,
+            0.002093506,
+            0.034029442
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/copy.py",
+          "line": 217,
+          "function": "_deepcopy_dict",
+          "stats": [
+            21914,
+            5624,
+            0.01641368,
+            0.037382868
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 86,
+      "function": "field",
+      "primitive_calls": 27600,
+      "calls": 27600,
+      "self_seconds": 0.018063847,
+      "cumulative_seconds": 0.018063847,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 97,
+          "function": "raw_rows",
+          "stats": [
+            27600,
+            27600,
+            0.018063847,
+            0.018063847
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'tell' of '_io.BufferedWriter' objects>",
+      "primitive_calls": 37600,
+      "calls": 37600,
+      "self_seconds": 0.0163232,
+      "cumulative_seconds": 0.0163232,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            37600,
+            37600,
+            0.0163232,
+            0.0163232
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/json/encoder.py",
+      "line": 334,
+      "function": "_iterencode_dict",
+      "primitive_calls": 20170,
+      "calls": 75280,
+      "self_seconds": 0.016231178000000002,
+      "cumulative_seconds": 0.023713794,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/json/encoder.py",
+          "line": 414,
+          "function": "_iterencode",
+          "stats": [
+            20170,
+            20170,
+            0.003815263,
+            0.023713794
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/json/encoder.py",
+          "line": 334,
+          "function": "_iterencode_dict",
+          "stats": [
+            38340,
+            19370,
+            0.007488682000000001,
+            0.019603877000000002
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/json/encoder.py",
+          "line": 278,
+          "function": "_iterencode_list",
+          "stats": [
+            16770,
+            16770,
+            0.0049272330000000005,
+            0.007138922000000001
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method _io.open>",
+      "primitive_calls": 397,
+      "calls": 397,
+      "self_seconds": 0.014860924000000001,
+      "cumulative_seconds": 0.020110763,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 175,
+          "function": "publish",
+          "stats": [
+            100,
+            100,
+            0.005836574000000001,
+            0.008818897000000001
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            200,
+            200,
+            0.008439446,
+            0.009483813
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 97,
+          "function": "raw_rows",
+          "stats": [
+            97,
+            97,
+            0.000584904,
+            0.0018080530000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'isspace' of 'str' objects>",
+      "primitive_calls": 100900,
+      "calls": 100900,
+      "self_seconds": 0.014810119,
+      "cumulative_seconds": 0.014810119,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 29,
+          "function": "tokenize",
+          "stats": [
+            100900,
+            100900,
+            0.014810119,
+            0.014810119
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'upper' of 'str' objects>",
+      "primitive_calls": 91700,
+      "calls": 91700,
+      "self_seconds": 0.013627457,
+      "cumulative_seconds": 0.013627457,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 135,
+          "function": "take",
+          "stats": [
+            91700,
+            91700,
+            0.013627457,
+            0.013627457
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method _struct.pack>",
+      "primitive_calls": 10000,
+      "calls": 10000,
+      "self_seconds": 0.013039818000000002,
+      "cumulative_seconds": 0.013039818000000002,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 74,
+          "function": "vector",
+          "stats": [
+            10000,
+            10000,
+            0.013039818000000002,
+            0.013039818000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.any>",
+      "primitive_calls": 20100,
+      "calls": 20100,
+      "self_seconds": 0.011904525000000001,
+      "cumulative_seconds": 0.019816085,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 160,
+          "function": "value",
+          "stats": [
+            20000,
+            20000,
+            0.011049337000000001,
+            0.018075165
+          ]
+        },
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 140,
+          "function": "execute",
+          "stats": [
+            100,
+            100,
+            0.0008551880000000001,
+            0.0017409200000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.print>",
+      "primitive_calls": 300,
+      "calls": 300,
+      "self_seconds": 0.008339625,
+      "cumulative_seconds": 0.008339625,
+      "callers": [
+        {
+          "file": "/app/minidb/server.py",
+          "line": 11,
+          "function": "emit",
+          "stats": [
+            300,
+            300,
+            0.008339625,
+            0.008339625
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 219,
+      "function": "part_records",
+      "primitive_calls": 27697,
+      "calls": 27697,
+      "self_seconds": 0.007911164,
+      "cumulative_seconds": 0.111724079,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/heapq.py",
+          "line": 316,
+          "function": "merge",
+          "stats": [
+            27697,
+            27697,
+            0.007911164,
+            0.111724079
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'get' of 'dict' objects>",
+      "primitive_calls": 52362,
+      "calls": 52362,
+      "self_seconds": 0.007859178,
+      "cumulative_seconds": 0.007859178,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/copy.py",
+          "line": 118,
+          "function": "deepcopy",
+          "stats": [
+            47930,
+            47930,
+            0.00710196,
+            0.00710196
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            100,
+            100,
+            2.3003e-05,
+            2.3003e-05
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 284,
+          "function": "insert",
+          "stats": [
+            316,
+            316,
+            6.2869e-05,
+            6.2869e-05
+          ]
+        },
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 140,
+          "function": "execute",
+          "stats": [
+            100,
+            100,
+            7.0814e-05,
+            7.0814e-05
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 186,
+          "function": "collect",
+          "stats": [
+            3819,
+            3819,
+            0.000578789,
+            0.000578789
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 219,
+          "function": "part_records",
+          "stats": [
+            97,
+            97,
+            2.1743000000000002e-05,
+            2.1743000000000002e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'disable' of '_lsprof.Profiler' objects>",
+      "primitive_calls": 600,
+      "calls": 600,
+      "self_seconds": 0.007549050000000001,
+      "cumulative_seconds": 0.007549050000000001,
+      "callers": []
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method posix.unlink>",
+      "primitive_calls": 194,
+      "calls": 194,
+      "self_seconds": 0.007392573,
+      "cumulative_seconds": 0.007508461,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 1336,
+          "function": "unlink",
+          "stats": [
+            194,
+            194,
+            0.007392573,
+            0.007508461
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/sql.py",
+      "line": 180,
+      "function": "<genexpr>",
+      "primitive_calls": 80000,
+      "calls": 80000,
+      "self_seconds": 0.0070258280000000005,
+      "cumulative_seconds": 0.0070258280000000005,
+      "callers": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "stats": [
+            80000,
+            80000,
+            0.0070258280000000005,
+            0.0070258280000000005
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/copy.py",
+      "line": 217,
+      "function": "_deepcopy_dict",
+      "primitive_calls": 516,
+      "calls": 2051,
+      "self_seconds": 0.006659862000000001,
+      "cumulative_seconds": 0.039353974,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/copy.py",
+          "line": 118,
+          "function": "deepcopy",
+          "stats": [
+            2051,
+            516,
+            0.006659862000000001,
+            0.039353974
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method _heapq.heapreplace>",
+      "primitive_calls": 27503,
+      "calls": 27503,
+      "self_seconds": 0.006295645000000001,
+      "cumulative_seconds": 0.006295645000000001,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/heapq.py",
+          "line": 316,
+          "function": "merge",
+          "stats": [
+            27503,
+            27503,
+            0.006295645000000001,
+            0.006295645000000001
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/json/__init__.py",
+      "line": 120,
+      "function": "dump",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 0.006231585,
+      "cumulative_seconds": 0.037841393,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 175,
+          "function": "publish",
+          "stats": [
+            100,
+            100,
+            0.006231585,
+            0.037841393
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'unpack_from' of '_struct.Struct' objects>",
+      "primitive_calls": 27600,
+      "calls": 27600,
+      "self_seconds": 0.006008189000000001,
+      "cumulative_seconds": 0.006008189000000001,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 97,
+          "function": "raw_rows",
+          "stats": [
+            27600,
+            27600,
+            0.006008189000000001,
+            0.006008189000000001
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'find' of 'str' objects>",
+      "primitive_calls": 20000,
+      "calls": 20000,
+      "self_seconds": 0.005869224,
+      "cumulative_seconds": 0.005869224,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 29,
+          "function": "tokenize",
+          "stats": [
+            20000,
+            20000,
+            0.005869224,
+            0.005869224
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method posix.listdir>",
+      "primitive_calls": 200,
+      "calls": 200,
+      "self_seconds": 0.005865881000000001,
+      "cumulative_seconds": 0.0062577100000000005,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 1050,
+          "function": "iterdir",
+          "stats": [
+            200,
+            200,
+            0.005865881000000001,
+            0.0062577100000000005
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'encode' of 'str' objects>",
+      "primitive_calls": 20000,
+      "calls": 20000,
+      "self_seconds": 0.0056780220000000005,
+      "cumulative_seconds": 0.0056780220000000005,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 47,
+          "function": "encode",
+          "stats": [
+            10000,
+            10000,
+            0.002680594,
+            0.002680594
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 111,
+          "function": "convert",
+          "stats": [
+            10000,
+            10000,
+            0.0029974280000000003,
+            0.0029974280000000003
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method posix.replace>",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 0.005623366,
+      "cumulative_seconds": 0.005997496000000001,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 175,
+          "function": "publish",
+          "stats": [
+            100,
+            100,
+            0.005623366,
+            0.005997496000000001
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.isinstance>",
+      "primitive_calls": 44038,
+      "calls": 44038,
+      "self_seconds": 0.005570088,
+      "cumulative_seconds": 0.005570088,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/json/encoder.py",
+          "line": 414,
+          "function": "_iterencode",
+          "stats": [
+            500,
+            500,
+            8.8186e-05,
+            8.8186e-05
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 358,
+          "function": "__init__",
+          "stats": [
+            5113,
+            5113,
+            0.000945003,
+            0.000945003
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 74,
+          "function": "vector",
+          "stats": [
+            10000,
+            10000,
+            0.001005742,
+            0.001005742
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/json/encoder.py",
+          "line": 334,
+          "function": "_iterencode_dict",
+          "stats": [
+            12942,
+            12942,
+            0.0015073740000000001,
+            0.0015073740000000001
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/json/encoder.py",
+          "line": 278,
+          "function": "_iterencode_list",
+          "stats": [
+            3595,
+            3595,
+            0.000488809,
+            0.000488809
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "stats": [
+            300,
+            300,
+            5.5777000000000005e-05,
+            5.5777000000000005e-05
+          ]
+        },
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 111,
+          "function": "convert",
+          "stats": [
+            10000,
+            10000,
+            0.001161525,
+            0.001161525
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 167,
+          "function": "path",
+          "stats": [
+            97,
+            97,
+            1.4205e-05,
+            1.4205e-05
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/json/encoder.py",
+          "line": 183,
+          "function": "encode",
+          "stats": [
+            600,
+            600,
+            0.0001809,
+            0.0001809
+          ]
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 138,
+          "function": "splitroot",
+          "stats": [
+            494,
+            494,
+            6.322700000000001e-05,
+            6.322700000000001e-05
+          ]
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 41,
+          "function": "_get_sep",
+          "stats": [
+            397,
+            397,
+            5.9340000000000004e-05,
+            5.9340000000000004e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'unpack' of '_struct.Struct' objects>",
+      "primitive_calls": 27600,
+      "calls": 27600,
+      "self_seconds": 0.005564442,
+      "cumulative_seconds": 0.005564442,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 97,
+          "function": "raw_rows",
+          "stats": [
+            27600,
+            27600,
+            0.005564442,
+            0.005564442
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 186,
+      "function": "collect",
+      "primitive_calls": 200,
+      "calls": 200,
+      "self_seconds": 0.00456722,
+      "cumulative_seconds": 0.040851055000000004,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 196,
+          "function": "commit",
+          "stats": [
+            100,
+            100,
+            0.0021042500000000002,
+            0.023318696
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 206,
+          "function": "install",
+          "stats": [
+            100,
+            100,
+            0.00246297,
+            0.017532359
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method posix.stat>",
+      "primitive_calls": 1664,
+      "calls": 1664,
+      "self_seconds": 0.0044972910000000005,
+      "cumulative_seconds": 0.005289997,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 835,
+          "function": "stat",
+          "stats": [
+            1664,
+            1664,
+            0.0044972910000000005,
+            0.005289997
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 333,
+      "function": "<genexpr>",
+      "primitive_calls": 10100,
+      "calls": 10100,
+      "self_seconds": 0.004396229000000001,
+      "cumulative_seconds": 0.06963828600000001,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/heapq.py",
+          "line": 316,
+          "function": "merge",
+          "stats": [
+            5050,
+            5050,
+            0.002112545,
+            0.034225870000000005
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            5050,
+            5050,
+            0.0022836840000000002,
+            0.035412416
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'group' of 're.Match' objects>",
+      "primitive_calls": 20600,
+      "calls": 20600,
+      "self_seconds": 0.004337527,
+      "cumulative_seconds": 0.004337527,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 29,
+          "function": "tokenize",
+          "stats": [
+            20600,
+            20600,
+            0.004337527,
+            0.004337527
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'join' of 'str' objects>",
+      "primitive_calls": 20697,
+      "calls": 20697,
+      "self_seconds": 0.004188779,
+      "cumulative_seconds": 0.004188779,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 29,
+          "function": "tokenize",
+          "stats": [
+            20000,
+            20000,
+            0.0038748030000000004,
+            0.0038748030000000004
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 429,
+          "function": "_format_parsed_parts",
+          "stats": [
+            397,
+            397,
+            0.00018371200000000002,
+            0.00018371200000000002
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/json/encoder.py",
+          "line": 183,
+          "function": "encode",
+          "stats": [
+            300,
+            300,
+            0.000130264,
+            0.000130264
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/sql.py",
+      "line": 143,
+      "function": "need",
+      "primitive_calls": 20200,
+      "calls": 20200,
+      "self_seconds": 0.0041054970000000005,
+      "cumulative_seconds": 0.015850700000000002,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 208,
+          "function": "parse",
+          "stats": [
+            20200,
+            20200,
+            0.0041054970000000005,
+            0.015850700000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/json/encoder.py",
+      "line": 278,
+      "function": "_iterencode_list",
+      "primitive_calls": 17370,
+      "calls": 17370,
+      "self_seconds": 0.003938144,
+      "cumulative_seconds": 0.011591366,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/json/encoder.py",
+          "line": 334,
+          "function": "_iterencode_dict",
+          "stats": [
+            17370,
+            17370,
+            0.003938144,
+            0.011591366
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 284,
+      "function": "insert",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 0.0038492860000000004,
+      "cumulative_seconds": 0.903311179,
+      "callers": [
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 140,
+          "function": "execute",
+          "stats": [
+            100,
+            100,
+            0.0038492860000000004,
+            0.903311179
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'end' of 're.Match' objects>",
+      "primitive_calls": 20600,
+      "calls": 20600,
+      "self_seconds": 0.003838877,
+      "cumulative_seconds": 0.003838877,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 29,
+          "function": "tokenize",
+          "stats": [
+            20600,
+            20600,
+            0.003838877,
+            0.003838877
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'strip' of 'str' objects>",
+      "primitive_calls": 20000,
+      "calls": 20000,
+      "self_seconds": 0.003640018,
+      "cumulative_seconds": 0.003640018,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 74,
+          "function": "vector",
+          "stats": [
+            20000,
+            20000,
+            0.003640018,
+            0.003640018
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/json/encoder.py",
+      "line": 414,
+      "function": "_iterencode",
+      "primitive_calls": 20170,
+      "calls": 20170,
+      "self_seconds": 0.003579375,
+      "cumulative_seconds": 0.027381355000000003,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/json/__init__.py",
+          "line": 120,
+          "function": "dump",
+          "stats": [
+            20170,
+            20170,
+            0.003579375,
+            0.027381355000000003
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'write' of '_io.TextIOWrapper' objects>",
+      "primitive_calls": 20070,
+      "calls": 20070,
+      "self_seconds": 0.0034522690000000004,
+      "cumulative_seconds": 0.0034522690000000004,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/json/__init__.py",
+          "line": 120,
+          "function": "dump",
+          "stats": [
+            20070,
+            20070,
+            0.0034522690000000004,
+            0.0034522690000000004
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.id>",
+      "primitive_calls": 30986,
+      "calls": 30986,
+      "self_seconds": 0.0033171290000000003,
+      "cumulative_seconds": 0.0033171290000000003,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/copy.py",
+          "line": 118,
+          "function": "deepcopy",
+          "stats": [
+            23965,
+            23965,
+            0.002518244,
+            0.002518244
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/json/encoder.py",
+          "line": 334,
+          "function": "_iterencode_dict",
+          "stats": [
+            1019,
+            1019,
+            0.00016137400000000002,
+            0.00016137400000000002
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/json/encoder.py",
+          "line": 278,
+          "function": "_iterencode_list",
+          "stats": [
+            200,
+            200,
+            2.5491e-05,
+            2.5491e-05
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/copy.py",
+          "line": 191,
+          "function": "_deepcopy_list",
+          "stats": [
+            700,
+            700,
+            7.4114e-05,
+            7.4114e-05
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/copy.py",
+          "line": 217,
+          "function": "_deepcopy_dict",
+          "stats": [
+            2051,
+            2051,
+            0.00022129400000000003,
+            0.00022129400000000003
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/copy.py",
+          "line": 231,
+          "function": "_keep_alive",
+          "stats": [
+            3051,
+            3051,
+            0.000316612,
+            0.000316612
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 1065,
+      "function": "_make_child_relpath",
+      "primitive_calls": 1864,
+      "calls": 1864,
+      "self_seconds": 0.003058378,
+      "cumulative_seconds": 0.011281505,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 1050,
+          "function": "iterdir",
+          "stats": [
+            1864,
+            1864,
+            0.003058378,
+            0.011281505
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'join' of 'bytes' objects>",
+      "primitive_calls": 10000,
+      "calls": 10000,
+      "self_seconds": 0.002897526,
+      "cumulative_seconds": 0.002897526,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 47,
+          "function": "encode",
+          "stats": [
+            10000,
+            10000,
+            0.002897526,
+            0.002897526
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'flush' of '_io.BufferedWriter' objects>",
+      "primitive_calls": 200,
+      "calls": 200,
+      "self_seconds": 0.0027918870000000003,
+      "cumulative_seconds": 0.0027918870000000003,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            200,
+            200,
+            0.0027918870000000003,
+            0.0027918870000000003
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 358,
+      "function": "__init__",
+      "primitive_calls": 2358,
+      "calls": 2358,
+      "self_seconds": 0.0027144910000000003,
+      "cumulative_seconds": 0.004699681000000001,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 1157,
+          "function": "__init__",
+          "stats": [
+            2358,
+            2358,
+            0.0027144910000000003,
+            0.004699681000000001
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'endswith' of 'str' objects>",
+      "primitive_calls": 10397,
+      "calls": 10397,
+      "self_seconds": 0.002640864,
+      "cumulative_seconds": 0.002640864,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 74,
+          "function": "vector",
+          "stats": [
+            10000,
+            10000,
+            0.002483215,
+            0.002483215
+          ]
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 71,
+          "function": "join",
+          "stats": [
+            397,
+            397,
+            0.00015764900000000002,
+            0.00015764900000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/json/encoder.py",
+      "line": 205,
+      "function": "iterencode",
+      "primitive_calls": 400,
+      "calls": 400,
+      "self_seconds": 0.0026374840000000003,
+      "cumulative_seconds": 0.002831005,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/json/__init__.py",
+          "line": 120,
+          "function": "dump",
+          "stats": [
+            100,
+            100,
+            0.000551074,
+            0.000744595
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/json/encoder.py",
+          "line": 183,
+          "function": "encode",
+          "stats": [
+            300,
+            300,
+            0.00208641,
+            0.00208641
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 380,
+      "function": "with_segments",
+      "primitive_calls": 2261,
+      "calls": 2261,
+      "self_seconds": 0.002553024,
+      "cumulative_seconds": 0.010790432,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 711,
+          "function": "joinpath",
+          "stats": [
+            397,
+            397,
+            0.000728019,
+            0.003215449
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 1065,
+          "function": "_make_child_relpath",
+          "stats": [
+            1864,
+            1864,
+            0.0018250050000000002,
+            0.007574983
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 1157,
+      "function": "__init__",
+      "primitive_calls": 2358,
+      "calls": 2358,
+      "self_seconds": 0.002309189,
+      "cumulative_seconds": 0.00700887,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 167,
+          "function": "path",
+          "stats": [
+            97,
+            97,
+            8.9398e-05,
+            0.000252435
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 380,
+          "function": "with_segments",
+          "stats": [
+            2261,
+            2261,
+            0.002219791,
+            0.006756435000000001
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 334,
+      "function": "<lambda>",
+      "primitive_calls": 27650,
+      "calls": 27650,
+      "self_seconds": 0.0021592630000000002,
+      "cumulative_seconds": 0.0021592630000000002,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/heapq.py",
+          "line": 316,
+          "function": "merge",
+          "stats": [
+            27650,
+            27650,
+            0.0021592630000000002,
+            0.0021592630000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/uuid.py",
+      "line": 139,
+      "function": "__init__",
+      "primitive_calls": 300,
+      "calls": 300,
+      "self_seconds": 0.00213183,
+      "cumulative_seconds": 0.002697983,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/uuid.py",
+          "line": 723,
+          "function": "uuid4",
+          "stats": [
+            300,
+            300,
+            0.00213183,
+            0.002697983
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 175,
+      "function": "publish",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 0.002010388,
+      "cumulative_seconds": 0.50704689,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 196,
+          "function": "commit",
+          "stats": [
+            100,
+            100,
+            0.002010388,
+            0.50704689
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'extend' of 'list' objects>",
+      "primitive_calls": 10497,
+      "calls": 10497,
+      "self_seconds": 0.0018913150000000002,
+      "cumulative_seconds": 0.0018913150000000002,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 358,
+          "function": "__init__",
+          "stats": [
+            397,
+            397,
+            0.000152652,
+            0.000152652
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 47,
+          "function": "encode",
+          "stats": [
+            10000,
+            10000,
+            0.001672361,
+            0.001672361
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            100,
+            100,
+            6.6302e-05,
+            6.6302e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'flush' of '_io.TextIOWrapper' objects>",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 0.0017931630000000002,
+      "cumulative_seconds": 0.0017931630000000002,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 175,
+          "function": "publish",
+          "stats": [
+            100,
+            100,
+            0.0017931630000000002,
+            0.0017931630000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 437,
+      "function": "__str__",
+      "primitive_calls": 4519,
+      "calls": 4519,
+      "self_seconds": 0.001764804,
+      "cumulative_seconds": 0.005292675,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 447,
+          "function": "__fspath__",
+          "stats": [
+            2655,
+            2655,
+            0.0016126530000000001,
+            0.0051405240000000005
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 1065,
+          "function": "_make_child_relpath",
+          "stats": [
+            1864,
+            1864,
+            0.000152151,
+            0.000152151
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 447,
+      "function": "__fspath__",
+      "primitive_calls": 2655,
+      "calls": 2655,
+      "self_seconds": 0.001738935,
+      "cumulative_seconds": 0.006879459,
+      "callers": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method _io.open>",
+          "stats": [
+            397,
+            397,
+            0.000331044,
+            0.0052049060000000005
+          ]
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.stat>",
+          "stats": [
+            1664,
+            1664,
+            0.0006675300000000001,
+            0.000792706
+          ]
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.listdir>",
+          "stats": [
+            200,
+            200,
+            0.000312494,
+            0.000391829
+          ]
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.replace>",
+          "stats": [
+            200,
+            200,
+            0.0003255,
+            0.00037413
+          ]
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method posix.unlink>",
+          "stats": [
+            194,
+            194,
+            0.000102367,
+            0.00011588800000000001
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/copy.py",
+      "line": 231,
+      "function": "_keep_alive",
+      "primitive_calls": 2751,
+      "calls": 2751,
+      "self_seconds": 0.0017311940000000001,
+      "cumulative_seconds": 0.002478989,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/copy.py",
+          "line": 118,
+          "function": "deepcopy",
+          "stats": [
+            2751,
+            2751,
+            0.0017311940000000001,
+            0.002478989
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'close' of '_io.BufferedWriter' objects>",
+      "primitive_calls": 200,
+      "calls": 200,
+      "self_seconds": 0.001712009,
+      "cumulative_seconds": 0.001712009,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            200,
+            200,
+            0.001712009,
+            0.001712009
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/copy.py",
+      "line": 172,
+      "function": "_deepcopy_atomic",
+      "primitive_calls": 21214,
+      "calls": 21214,
+      "self_seconds": 0.001526882,
+      "cumulative_seconds": 0.001526882,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/copy.py",
+          "line": 118,
+          "function": "deepcopy",
+          "stats": [
+            21214,
+            21214,
+            0.001526882,
+            0.001526882
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 886,
+      "function": "is_file",
+      "primitive_calls": 1664,
+      "calls": 1664,
+      "self_seconds": 0.001415344,
+      "cumulative_seconds": 0.007407402,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 186,
+          "function": "collect",
+          "stats": [
+            1664,
+            1664,
+            0.001415344,
+            0.007407402
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method '__exit__' of '_io._IOBase' objects>",
+      "primitive_calls": 197,
+      "calls": 197,
+      "self_seconds": 0.0014050800000000002,
+      "cumulative_seconds": 0.0014050800000000002,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 175,
+          "function": "publish",
+          "stats": [
+            100,
+            100,
+            0.000990615,
+            0.000990615
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 97,
+          "function": "raw_rows",
+          "stats": [
+            97,
+            97,
+            0.00041446500000000004,
+            0.00041446500000000004
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'sort' of 'list' objects>",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 0.001206938,
+      "cumulative_seconds": 0.001940513,
+      "callers": [
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 140,
+          "function": "execute",
+          "stats": [
+            100,
+            100,
+            0.001206938,
+            0.001940513
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 387,
+      "function": "_parse_path",
+      "primitive_calls": 494,
+      "calls": 494,
+      "self_seconds": 0.0011955470000000001,
+      "cumulative_seconds": 0.002794463,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 407,
+          "function": "_load_parts",
+          "stats": [
+            494,
+            494,
+            0.0011955470000000001,
+            0.002794463
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 569,
+      "function": "_tail",
+      "primitive_calls": 6086,
+      "calls": 6086,
+      "self_seconds": 0.001175707,
+      "cumulative_seconds": 0.004068521,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 583,
+          "function": "name",
+          "stats": [
+            3825,
+            3825,
+            0.000996755,
+            0.0038895690000000003
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 437,
+          "function": "__str__",
+          "stats": [
+            397,
+            397,
+            3.6019e-05,
+            3.6019e-05
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 1065,
+          "function": "_make_child_relpath",
+          "stats": [
+            1864,
+            1864,
+            0.000142933,
+            0.000142933
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method _json.encode_basestring>",
+      "primitive_calls": 6071,
+      "calls": 6071,
+      "self_seconds": 0.001123286,
+      "cumulative_seconds": 0.001123286,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/json/encoder.py",
+          "line": 334,
+          "function": "_iterencode_dict",
+          "stats": [
+            6071,
+            6071,
+            0.001123286,
+            0.001123286
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/copy.py",
+      "line": 191,
+      "function": "_deepcopy_list",
+      "primitive_calls": 700,
+      "calls": 700,
+      "self_seconds": 0.0011191180000000001,
+      "cumulative_seconds": 0.035429125,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/copy.py",
+          "line": 118,
+          "function": "deepcopy",
+          "stats": [
+            700,
+            700,
+            0.0011191180000000001,
+            0.035429125
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/json/__init__.py",
+      "line": 183,
+      "function": "dumps",
+      "primitive_calls": 300,
+      "calls": 300,
+      "self_seconds": 0.001105927,
+      "cumulative_seconds": 0.0045581300000000005,
+      "callers": [
+        {
+          "file": "/app/minidb/server.py",
+          "line": 11,
+          "function": "emit",
+          "stats": [
+            300,
+            300,
+            0.001105927,
+            0.0045581300000000005
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 583,
+      "function": "name",
+      "primitive_calls": 3825,
+      "calls": 3825,
+      "self_seconds": 0.001050186,
+      "cumulative_seconds": 0.0049397550000000005,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            200,
+            200,
+            9.7791e-05,
+            0.0030887120000000004
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 186,
+          "function": "collect",
+          "stats": [
+            3528,
+            3528,
+            0.0009195700000000001,
+            0.001226162
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 167,
+          "function": "path",
+          "stats": [
+            97,
+            97,
+            3.2825000000000005e-05,
+            0.0006248810000000001
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 172,
+      "function": "fresh",
+      "primitive_calls": 300,
+      "calls": 300,
+      "self_seconds": 0.0010468930000000001,
+      "cumulative_seconds": 0.009614767,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 175,
+          "function": "publish",
+          "stats": [
+            100,
+            100,
+            0.000497605,
+            0.0041443700000000005
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            200,
+            200,
+            0.000549288,
+            0.005470397
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 1050,
+      "function": "iterdir",
+      "primitive_calls": 2064,
+      "calls": 2064,
+      "self_seconds": 0.001046079,
+      "cumulative_seconds": 0.018585294000000002,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 186,
+          "function": "collect",
+          "stats": [
+            2064,
+            2064,
+            0.001046079,
+            0.018585294000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/uuid.py",
+      "line": 723,
+      "function": "uuid4",
+      "primitive_calls": 300,
+      "calls": 300,
+      "self_seconds": 0.001038134,
+      "cumulative_seconds": 0.004558554,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 172,
+          "function": "fresh",
+          "stats": [
+            300,
+            300,
+            0.001038134,
+            0.004558554
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 407,
+      "function": "_load_parts",
+      "primitive_calls": 494,
+      "calls": 494,
+      "self_seconds": 0.001035511,
+      "cumulative_seconds": 0.005499661,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 551,
+          "function": "drive",
+          "stats": [
+            197,
+            197,
+            0.000465801,
+            0.0026068470000000002
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 569,
+          "function": "_tail",
+          "stats": [
+            297,
+            297,
+            0.0005697100000000001,
+            0.002892814
+          ]
+        }
+      ]
+    },
+    {
+      "file": "<frozen posixpath>",
+      "line": 71,
+      "function": "join",
+      "primitive_calls": 397,
+      "calls": 397,
+      "self_seconds": 0.000988621,
+      "cumulative_seconds": 0.0015568790000000002,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 407,
+          "function": "_load_parts",
+          "stats": [
+            397,
+            397,
+            0.000988621,
+            0.0015568790000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 1164,
+      "function": "__new__",
+      "primitive_calls": 2358,
+      "calls": 2358,
+      "self_seconds": 0.00088668,
+      "cumulative_seconds": 0.001588823,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 167,
+          "function": "path",
+          "stats": [
+            97,
+            97,
+            6.713e-05,
+            0.00010785
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 380,
+          "function": "with_segments",
+          "stats": [
+            2261,
+            2261,
+            0.00081955,
+            0.001480973
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/engine.py",
+      "line": 207,
+      "function": "<genexpr>",
+      "primitive_calls": 10000,
+      "calls": 10000,
+      "self_seconds": 0.0008857320000000001,
+      "cumulative_seconds": 0.0008857320000000001,
+      "callers": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "stats": [
+            10000,
+            10000,
+            0.0008857320000000001,
+            0.0008857320000000001
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method posix.urandom>",
+      "primitive_calls": 300,
+      "calls": 300,
+      "self_seconds": 0.0008224370000000001,
+      "cumulative_seconds": 0.0008224370000000001,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/uuid.py",
+          "line": 723,
+          "function": "uuid4",
+          "stats": [
+            300,
+            300,
+            0.0008224370000000001,
+            0.0008224370000000001
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/json/encoder.py",
+      "line": 183,
+      "function": "encode",
+      "primitive_calls": 300,
+      "calls": 300,
+      "self_seconds": 0.000785106,
+      "cumulative_seconds": 0.0031826800000000002,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/json/__init__.py",
+          "line": 183,
+          "function": "dumps",
+          "stats": [
+            300,
+            300,
+            0.000785106,
+            0.0031826800000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/engine.py",
+      "line": 206,
+      "function": "<lambda>",
+      "primitive_calls": 10000,
+      "calls": 10000,
+      "self_seconds": 0.0007335750000000001,
+      "cumulative_seconds": 0.0007335750000000001,
+      "callers": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'sort' of 'list' objects>",
+          "stats": [
+            10000,
+            10000,
+            0.0007335750000000001,
+            0.0007335750000000001
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method sys.intern>",
+      "primitive_calls": 891,
+      "calls": 891,
+      "self_seconds": 0.000726291,
+      "cumulative_seconds": 0.000726291,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 387,
+          "function": "_parse_path",
+          "stats": [
+            891,
+            891,
+            0.000726291,
+            0.000726291
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 196,
+      "function": "commit",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 0.0007055150000000001,
+      "cumulative_seconds": 0.531071101,
+      "callers": [
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 140,
+          "function": "execute",
+          "stats": [
+            100,
+            100,
+            0.0007055150000000001,
+            0.531071101
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method __new__ of type object at 0x7fbfcda81240>",
+      "primitive_calls": 2358,
+      "calls": 2358,
+      "self_seconds": 0.000702143,
+      "cumulative_seconds": 0.000702143,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 1164,
+          "function": "__new__",
+          "stats": [
+            2358,
+            2358,
+            0.000702143,
+            0.000702143
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'items' of 'dict' objects>",
+      "primitive_calls": 3070,
+      "calls": 3070,
+      "self_seconds": 0.000670332,
+      "cumulative_seconds": 0.000670332,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/json/encoder.py",
+          "line": 334,
+          "function": "_iterencode_dict",
+          "stats": [
+            1019,
+            1019,
+            0.00023813800000000002,
+            0.00023813800000000002
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/copy.py",
+          "line": 217,
+          "function": "_deepcopy_dict",
+          "stats": [
+            2051,
+            2051,
+            0.000432194,
+            0.000432194
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/server.py",
+      "line": 11,
+      "function": "emit",
+      "primitive_calls": 300,
+      "calls": 300,
+      "self_seconds": 0.0006693710000000001,
+      "cumulative_seconds": 0.013567126,
+      "callers": []
+    },
+    {
+      "file": "/usr/local/lib/python3.12/uuid.py",
+      "line": 334,
+      "function": "hex",
+      "primitive_calls": 300,
+      "calls": 300,
+      "self_seconds": 0.000597982,
+      "cumulative_seconds": 0.000597982,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 172,
+          "function": "fresh",
+          "stats": [
+            300,
+            300,
+            0.000597982,
+            0.000597982
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 551,
+      "function": "drive",
+      "primitive_calls": 2261,
+      "calls": 2261,
+      "self_seconds": 0.000597305,
+      "cumulative_seconds": 0.003204152,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 437,
+          "function": "__str__",
+          "stats": [
+            397,
+            397,
+            0.000408501,
+            0.003015348
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 1065,
+          "function": "_make_child_relpath",
+          "stats": [
+            1864,
+            1864,
+            0.00018880400000000002,
+            0.00018880400000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 43,
+      "function": "__init__",
+      "primitive_calls": 297,
+      "calls": 297,
+      "self_seconds": 0.0005762590000000001,
+      "cumulative_seconds": 0.0005762590000000001,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            100,
+            100,
+            0.000150524,
+            0.000150524
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 284,
+          "function": "insert",
+          "stats": [
+            100,
+            100,
+            0.000290851,
+            0.000290851
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 219,
+          "function": "part_records",
+          "stats": [
+            97,
+            97,
+            0.00013488400000000002,
+            0.00013488400000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 711,
+      "function": "joinpath",
+      "primitive_calls": 397,
+      "calls": 397,
+      "self_seconds": 0.000522502,
+      "cumulative_seconds": 0.003737951,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 719,
+          "function": "__truediv__",
+          "stats": [
+            397,
+            397,
+            0.000522502,
+            0.003737951
+          ]
+        }
+      ]
+    },
+    {
+      "file": "<frozen posixpath>",
+      "line": 138,
+      "function": "splitroot",
+      "primitive_calls": 494,
+      "calls": 494,
+      "self_seconds": 0.000496328,
+      "cumulative_seconds": 0.0006103020000000001,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 387,
+          "function": "_parse_path",
+          "stats": [
+            494,
+            494,
+            0.000496328,
+            0.0006103020000000001
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method posix.fspath>",
+      "primitive_calls": 3249,
+      "calls": 3249,
+      "self_seconds": 0.00045423500000000004,
+      "cumulative_seconds": 0.00045423500000000004,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 358,
+          "function": "__init__",
+          "stats": [
+            2358,
+            2358,
+            0.00035646900000000005,
+            0.00035646900000000005
+          ]
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 138,
+          "function": "splitroot",
+          "stats": [
+            494,
+            494,
+            5.0747e-05,
+            5.0747e-05
+          ]
+        },
+        {
+          "file": "<frozen posixpath>",
+          "line": 71,
+          "function": "join",
+          "stats": [
+            397,
+            397,
+            4.7019000000000005e-05,
+            4.7019000000000005e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 835,
+      "function": "stat",
+      "primitive_calls": 1664,
+      "calls": 1664,
+      "self_seconds": 0.00044729300000000003,
+      "cumulative_seconds": 0.00573729,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 886,
+          "function": "is_file",
+          "stats": [
+            1664,
+            1664,
+            0.00044729300000000003,
+            0.00573729
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/sql.py",
+      "line": 131,
+      "function": "__init__",
+      "primitive_calls": 300,
+      "calls": 300,
+      "self_seconds": 0.000399342,
+      "cumulative_seconds": 0.40806352100000004,
+      "callers": [
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 140,
+          "function": "execute",
+          "stats": [
+            300,
+            300,
+            0.000399342,
+            0.40806352100000004
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/engine.py",
+      "line": 86,
+      "function": "install",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 0.00031978400000000004,
+      "cumulative_seconds": 0.018182807000000002,
+      "callers": [
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 140,
+          "function": "execute",
+          "stats": [
+            100,
+            100,
+            0.00031978400000000004,
+            0.018182807000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/json/encoder.py",
+      "line": 105,
+      "function": "__init__",
+      "primitive_calls": 400,
+      "calls": 400,
+      "self_seconds": 0.000301112,
+      "cumulative_seconds": 0.000301112,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/json/__init__.py",
+          "line": 183,
+          "function": "dumps",
+          "stats": [
+            300,
+            300,
+            0.00026952300000000003,
+            0.00026952300000000003
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/json/__init__.py",
+          "line": 120,
+          "function": "dump",
+          "stats": [
+            100,
+            100,
+            3.1589e-05,
+            3.1589e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'update' of 'dict' objects>",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 0.00029581700000000003,
+      "cumulative_seconds": 0.00029581700000000003,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 284,
+          "function": "insert",
+          "stats": [
+            100,
+            100,
+            0.00029581700000000003,
+            0.00029581700000000003
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 167,
+      "function": "path",
+      "primitive_calls": 97,
+      "calls": 97,
+      "self_seconds": 0.000291522,
+      "cumulative_seconds": 0.001872168,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 219,
+          "function": "part_records",
+          "stats": [
+            97,
+            97,
+            0.000291522,
+            0.001872168
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method _bisect.bisect_left>",
+      "primitive_calls": 316,
+      "calls": 316,
+      "self_seconds": 0.000284419,
+      "cumulative_seconds": 0.000284419,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 284,
+          "function": "insert",
+          "stats": [
+            316,
+            316,
+            0.000284419,
+            0.000284419
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method _stat.S_ISREG>",
+      "primitive_calls": 1664,
+      "calls": 1664,
+      "self_seconds": 0.000254768,
+      "cumulative_seconds": 0.000254768,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 886,
+          "function": "is_file",
+          "stats": [
+            1664,
+            1664,
+            0.000254768,
+            0.000254768
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 429,
+      "function": "_format_parsed_parts",
+      "primitive_calls": 397,
+      "calls": 397,
+      "self_seconds": 0.00025355800000000003,
+      "cumulative_seconds": 0.00043727,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 437,
+          "function": "__str__",
+          "stats": [
+            397,
+            397,
+            0.00025355800000000003,
+            0.00043727
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 206,
+      "function": "install",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 0.00023985800000000002,
+      "cumulative_seconds": 0.017772217,
+      "callers": [
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 86,
+          "function": "install",
+          "stats": [
+            100,
+            100,
+            0.00023985800000000002,
+            0.017772217
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'count' of 'list' objects>",
+      "primitive_calls": 300,
+      "calls": 300,
+      "self_seconds": 0.00023499100000000001,
+      "cumulative_seconds": 0.00023499100000000001,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "stats": [
+            300,
+            300,
+            0.00023499100000000001,
+            0.00023499100000000001
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 719,
+      "function": "__truediv__",
+      "primitive_calls": 397,
+      "calls": 397,
+      "self_seconds": 0.00022559900000000002,
+      "cumulative_seconds": 0.003963550000000001,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 167,
+          "function": "path",
+          "stats": [
+            97,
+            97,
+            3.5083e-05,
+            0.0005522120000000001
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 172,
+          "function": "fresh",
+          "stats": [
+            300,
+            300,
+            0.000190516,
+            0.0034113380000000003
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 560,
+      "function": "root",
+      "primitive_calls": 2261,
+      "calls": 2261,
+      "self_seconds": 0.00020349000000000002,
+      "cumulative_seconds": 0.00020349000000000002,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 437,
+          "function": "__str__",
+          "stats": [
+            397,
+            397,
+            3.9234000000000004e-05,
+            3.9234000000000004e-05
+          ]
+        },
+        {
+          "file": "/usr/local/lib/python3.12/pathlib.py",
+          "line": 1065,
+          "function": "_make_child_relpath",
+          "stats": [
+            1864,
+            1864,
+            0.00016425600000000002,
+            0.00016425600000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/json/encoder.py",
+      "line": 260,
+      "function": "_make_iterencode",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 0.00019352100000000002,
+      "cumulative_seconds": 0.00019352100000000002,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/json/encoder.py",
+          "line": 205,
+          "function": "iterencode",
+          "stats": [
+            100,
+            100,
+            0.00019352100000000002,
+            0.00019352100000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method from_bytes>",
+      "primitive_calls": 300,
+      "calls": 300,
+      "self_seconds": 0.000184933,
+      "cumulative_seconds": 0.000184933,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/uuid.py",
+          "line": 139,
+          "function": "__init__",
+          "stats": [
+            300,
+            300,
+            0.000184933,
+            0.000184933
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 212,
+      "function": "segments",
+      "primitive_calls": 500,
+      "calls": 500,
+      "self_seconds": 0.000181578,
+      "cumulative_seconds": 0.000181578,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 284,
+          "function": "insert",
+          "stats": [
+            100,
+            100,
+            4.4996e-05,
+            4.4996e-05
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 186,
+          "function": "collect",
+          "stats": [
+            400,
+            400,
+            0.000136582,
+            0.000136582
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.max>",
+      "primitive_calls": 197,
+      "calls": 197,
+      "self_seconds": 0.00016391700000000002,
+      "cumulative_seconds": 0.00016391700000000002,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 284,
+          "function": "insert",
+          "stats": [
+            197,
+            197,
+            0.00016391700000000002,
+            0.00016391700000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "<frozen posixpath>",
+      "line": 41,
+      "function": "_get_sep",
+      "primitive_calls": 397,
+      "calls": 397,
+      "self_seconds": 0.00015338500000000002,
+      "cumulative_seconds": 0.000212725,
+      "callers": [
+        {
+          "file": "<frozen posixpath>",
+          "line": 71,
+          "function": "join",
+          "stats": [
+            397,
+            397,
+            0.00015338500000000002,
+            0.000212725
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 240,
+      "function": "<genexpr>",
+      "primitive_calls": 200,
+      "calls": 200,
+      "self_seconds": 0.00015257400000000002,
+      "cumulative_seconds": 0.00015257400000000002,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            100,
+            100,
+            9.859300000000001e-05,
+            9.859300000000001e-05
+          ]
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.next>",
+          "stats": [
+            100,
+            100,
+            5.3981000000000004e-05,
+            5.3981000000000004e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'values' of 'dict' objects>",
+      "primitive_calls": 400,
+      "calls": 400,
+      "self_seconds": 0.00013831300000000002,
+      "cumulative_seconds": 0.00013831300000000002,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 186,
+          "function": "collect",
+          "stats": [
+            400,
+            400,
+            0.00013831300000000002,
+            0.00013831300000000002
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'fileno' of '_io.BufferedWriter' objects>",
+      "primitive_calls": 200,
+      "calls": 200,
+      "self_seconds": 0.000136536,
+      "cumulative_seconds": 0.000136536,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            200,
+            200,
+            0.000136536,
+            0.000136536
+          ]
+        }
+      ]
+    },
+    {
+      "file": "<frozen importlib._bootstrap>",
+      "line": 645,
+      "function": "parent",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 0.000100625,
+      "cumulative_seconds": 0.000156734,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 284,
+          "function": "insert",
+          "stats": [
+            100,
+            100,
+            0.000100625,
+            0.000156734
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/usr/local/lib/python3.12/pathlib.py",
+      "line": 1336,
+      "function": "unlink",
+      "primitive_calls": 194,
+      "calls": 194,
+      "self_seconds": 9.0779e-05,
+      "cumulative_seconds": 0.00759924,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 186,
+          "function": "collect",
+          "stats": [
+            194,
+            194,
+            9.0779e-05,
+            0.00759924
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/indexio.py",
+      "line": 44,
+      "function": "clear",
+      "primitive_calls": 200,
+      "calls": 200,
+      "self_seconds": 8.8657e-05,
+      "cumulative_seconds": 8.8657e-05,
+      "callers": [
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 140,
+          "function": "execute",
+          "stats": [
+            100,
+            100,
+            4.2819000000000005e-05,
+            4.2819000000000005e-05
+          ]
+        },
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 86,
+          "function": "install",
+          "stats": [
+            100,
+            100,
+            4.5838000000000004e-05,
+            4.5838000000000004e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method _heapq.heapify>",
+      "primitive_calls": 50,
+      "calls": 50,
+      "self_seconds": 8.552700000000001e-05,
+      "cumulative_seconds": 8.552700000000001e-05,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/heapq.py",
+          "line": 316,
+          "function": "merge",
+          "stats": [
+            50,
+            50,
+            8.552700000000001e-05,
+            8.552700000000001e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/graph.py",
+      "line": 43,
+      "function": "validate",
+      "primitive_calls": 200,
+      "calls": 200,
+      "self_seconds": 8.3115e-05,
+      "cumulative_seconds": 8.3115e-05,
+      "callers": [
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 140,
+          "function": "execute",
+          "stats": [
+            100,
+            100,
+            3.8147e-05,
+            3.8147e-05
+          ]
+        },
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 86,
+          "function": "install",
+          "stats": [
+            100,
+            100,
+            4.4968e-05,
+            4.4968e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method _bisect.bisect_right>",
+      "primitive_calls": 316,
+      "calls": 316,
+      "self_seconds": 8.1766e-05,
+      "cumulative_seconds": 8.1766e-05,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 284,
+          "function": "insert",
+          "stats": [
+            316,
+            316,
+            8.1766e-05,
+            8.1766e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'fileno' of '_io.TextIOWrapper' objects>",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 7.098400000000001e-05,
+      "cumulative_seconds": 7.098400000000001e-05,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 175,
+          "function": "publish",
+          "stats": [
+            100,
+            100,
+            7.098400000000001e-05,
+            7.098400000000001e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'lower' of 'str' objects>",
+      "primitive_calls": 200,
+      "calls": 200,
+      "self_seconds": 7.0041e-05,
+      "cumulative_seconds": 7.0041e-05,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 208,
+          "function": "parse",
+          "stats": [
+            200,
+            200,
+            7.0041e-05,
+            7.0041e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'pop' of 'dict' objects>",
+      "primitive_calls": 200,
+      "calls": 200,
+      "self_seconds": 6.3911e-05,
+      "cumulative_seconds": 6.3911e-05,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 284,
+          "function": "insert",
+          "stats": [
+            200,
+            200,
+            6.3911e-05,
+            6.3911e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/sql.py",
+      "line": 147,
+      "function": "ident",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 6.2674e-05,
+      "cumulative_seconds": 7.3007e-05,
+      "callers": [
+        {
+          "file": "/app/minidb/sql.py",
+          "line": 208,
+          "function": "parse",
+          "stats": [
+            100,
+            100,
+            6.2674e-05,
+            7.3007e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'close' of 'generator' objects>",
+      "primitive_calls": 194,
+      "calls": 194,
+      "self_seconds": 5.8152e-05,
+      "cumulative_seconds": 5.8152e-05,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 284,
+          "function": "insert",
+          "stats": [
+            97,
+            97,
+            2.7882000000000002e-05,
+            2.7882000000000002e-05
+          ]
+        },
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 219,
+          "function": "part_records",
+          "stats": [
+            97,
+            97,
+            3.0270000000000003e-05,
+            3.0270000000000003e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'rpartition' of 'str' objects>",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 5.6109e-05,
+      "cumulative_seconds": 5.6109e-05,
+      "callers": [
+        {
+          "file": "<frozen importlib._bootstrap>",
+          "line": 645,
+          "function": "parent",
+          "stats": [
+            100,
+            100,
+            5.6109e-05,
+            5.6109e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method _heapq.heappop>",
+      "primitive_calls": 97,
+      "calls": 97,
+      "self_seconds": 5.3106e-05,
+      "cumulative_seconds": 5.3106e-05,
+      "callers": [
+        {
+          "file": "/usr/local/lib/python3.12/heapq.py",
+          "line": 316,
+          "function": "merge",
+          "stats": [
+            97,
+            97,
+            5.3106e-05,
+            5.3106e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.next>",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 4.9330000000000004e-05,
+      "cumulative_seconds": 0.000103311,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 235,
+          "function": "write_segment",
+          "stats": [
+            100,
+            100,
+            4.9330000000000004e-05,
+            0.000103311
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'casefold' of 'str' objects>",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 4.7809e-05,
+      "cumulative_seconds": 4.7809e-05,
+      "callers": [
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 140,
+          "function": "execute",
+          "stats": [
+            100,
+            100,
+            4.7809e-05,
+            4.7809e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "<frozen codecs>",
+      "line": 186,
+      "function": "__init__",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 4.4933000000000005e-05,
+      "cumulative_seconds": 4.4933000000000005e-05,
+      "callers": [
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method _io.open>",
+          "stats": [
+            100,
+            100,
+            4.4933000000000005e-05,
+            4.4933000000000005e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'bit_length' of 'int' objects>",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 3.0718e-05,
+      "cumulative_seconds": 3.0718e-05,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 284,
+          "function": "insert",
+          "stats": [
+            100,
+            100,
+            3.0718e-05,
+            3.0718e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "/app/minidb/storage.py",
+      "line": 193,
+      "function": "begin",
+      "primitive_calls": 100,
+      "calls": 100,
+      "self_seconds": 2.6701e-05,
+      "cumulative_seconds": 2.6701e-05,
+      "callers": [
+        {
+          "file": "/app/minidb/engine.py",
+          "line": 140,
+          "function": "execute",
+          "stats": [
+            100,
+            100,
+            2.6701e-05,
+            2.6701e-05
+          ]
+        }
+      ]
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<method 'pop' of 'list' objects>",
+      "primitive_calls": 97,
+      "calls": 97,
+      "self_seconds": 2.5398000000000003e-05,
+      "cumulative_seconds": 2.5398000000000003e-05,
+      "callers": [
+        {
+          "file": "/app/minidb/storage.py",
+          "line": 284,
+          "function": "insert",
+          "stats": [
+            97,
+            97,
+            2.5398000000000003e-05,
+            2.5398000000000003e-05
+          ]
+        }
+      ]
+    }
+  ]
+}

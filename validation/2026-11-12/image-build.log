@@ -1,0 +1,33 @@
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  117.2kB
+Step 1/9 : FROM gcc:12-bookworm@sha256:44482187aa3865ad1e2477dc8c56bae4fd8e071e7d99c5f44956effc7f7cc846 AS native-build
+ ---> 44482187aa38
+Step 2/9 : COPY native/ /tmp/native/
+ ---> 3d4eaf0019f6
+Step 3/9 : RUN gcc -std=c11 -O3 -fPIC -shared -ffp-contract=off -fno-fast-math /tmp/native/screen.c -o /tmp/libscreen.so -lm
+ ---> Running in a6c12fd429a7
+ ---> Removed intermediate container a6c12fd429a7
+ ---> 49a763a55919
+Step 4/9 : FROM python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0
+ ---> 2199a62885a1
+Step 5/9 : WORKDIR /app
+ ---> Running in e63f59a1c577
+ ---> Removed intermediate container e63f59a1c577
+ ---> ac77d1c7ab10
+Step 6/9 : COPY minidb /app/minidb
+ ---> deb8a8821cf4
+Step 7/9 : COPY --from=native-build /tmp/libscreen.so /app/minidb/libscreen.so
+ ---> 5b1051b79f67
+Step 8/9 : RUN mkdir -p /data && chmod 0777 /data
+ ---> Running in 9dfdcd7f6e1a
+ ---> Removed intermediate container 9dfdcd7f6e1a
+ ---> 09b1a369ae59
+Step 9/9 : ENTRYPOINT ["python3", "-B", "-u", "-m", "minidb.server", "/data"]
+ ---> Running in 204dcabd5036
+ ---> Removed intermediate container 204dcabd5036
+ ---> 1287f8a69169
+Successfully built 1287f8a69169
+Successfully tagged minivectordb:verify-20261112t092830893308z

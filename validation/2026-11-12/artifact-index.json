@@ -1,0 +1,42 @@
+{
+  "public-report.json": {
+    "sha256": "8c1c8510c175b18cbdca9468eca6a11be54794fe33a9d3ab4e7cda63e25a986d",
+    "original_artifact": "/home/chenyifu/OceanBase/reports/public-container-verification-20261112T092830893308Z/report.json"
+  },
+  "public-cases.json": {
+    "sha256": "86173b7be3d2349d8d3c77cf07fa96b3eb14489c3cd8c74ab631b930bc1d5a4e",
+    "original_artifact": "/home/chenyifu/OceanBase/reports/public-container-verification-20261112T092830893308Z/public/result.json"
+  },
+  "image-build.log": {
+    "sha256": "5c09fc920dbc35e5b0615fd3b1554b08f1d95ad6699532a79f2a4e3b4bab30b8",
+    "original_artifact": "/home/chenyifu/OceanBase/reports/public-container-verification-20261112T092830893308Z/build.log"
+  },
+  "overlay-report.json": {
+    "sha256": "825428f03f550143b5912f906f238a40e5e0e8b56a607dde00b600f20f191ad0",
+    "original_artifact": "/home/chenyifu/OceanBase/reports/overlay-image-verification-20261112T101038252339Z/report.json"
+  },
+  "performance-report.json": {
+    "sha256": "15ac5c6850bf68e62aed3bd8855840966e666d15a8870172ac1a85f3bb25f369",
+    "original_artifact": "/home/chenyifu/OceanBase/reports/performance-image-20261112T103843980496Z/report.json"
+  },
+  "write-profile.json": {
+    "sha256": "0054b28833fe2543b656e18d262f9d4916582819ad10ae57e08cc9ab8eaecb68",
+    "original_artifact": "/home/chenyifu/OceanBase/reports/performance-image-20261112T103843980496Z/profile.json"
+  },
+  "vector-fastpath-ab.json": {
+    "sha256": "27480d1c067921bfeefb731bccb3289c5f33dcdecbf1dd2e244534eef3112816",
+    "original_artifact": "/home/chenyifu/OceanBase/reports/vector-fastpath-ab-20261112T114347169064Z/report.json"
+  },
+  "vector-fastpath-decision.json": {
+    "sha256": "306b9a7ad998528edde85f3e1c94319cfd6cc9d966d5f49e2b4bc4402d8ffd3b",
+    "original_artifact": "/home/chenyifu/OceanBase/reports/vector-fastpath-ab-20261112T114347169064Z/decision.json"
+  },
+  "rejected-vector-fastpath.patch": {
+    "sha256": "dea3e49769b9589a37155fbcd9c0ad5e943ff05af2365f1382630f4957a041a4",
+    "original_artifact": "/home/chenyifu/OceanBase/reports/vector-fastpath-ab-20261112T114347169064Z/candidate.patch"
+  },
+  "strip-compatibility-failure.log": {
+    "sha256": "e659e3216269f050d9edd92d25015388f73e263379c0b76efdf92eb5efe736d5",
+    "original_artifact": "/home/chenyifu/OceanBase/reports/vector-fastpath-experiment/step1-literal-vector-text.stderr.log"
+  }
+}
