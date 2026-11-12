@@ -142,6 +142,8 @@ class Storage:
         self.dirfd = os.open(self.root, os.O_RDONLY | os.O_DIRECTORY)
         self.manifest = self.root / 'manifest.json'
         self.in_txn = False
+        self._path_cache = {}
+        self._segment_cache = (None, None)
         try:
             with open(self.manifest, encoding='utf-8') as f:
                 doc = strict_json(f.read())
@@ -165,9 +167,16 @@ class Storage:
         self.collect()
 
     def path(self, name):
-        if not isinstance(name, str) or Path(name).name != name or not name.startswith('mv-'):
+        if not isinstance(name, str):
             raise OSError('invalid manifest path')
-        return self.root / name
+        cached = self._path_cache.get(name)
+        if cached is not None: return cached
+        if Path(name).name != name or not name.startswith('mv-'):
+            raise OSError('invalid manifest path')
+        result = self.root / name
+        if len(self._path_cache) >= 256: self._path_cache.clear()
+        self._path_cache[name] = result
+        return result
 
     def fresh(self, suffix='rows'):
         return self.root / ('mv-' + uuid.uuid4().hex + '.' + suffix)
@@ -226,8 +235,12 @@ class Storage:
             reader.close()
 
     def index_segments(self, table):
-        return [(self.path(part['index_file']), set(part.get('excluded', ())))
-                for part in self.segments(table) if part.get('index_file')]
+        cached_table, cached = self._segment_cache
+        if cached_table is table: return cached
+        result = [(self.path(part['index_file']), set(part.get('excluded', ())))
+                  for part in self.segments(table) if part.get('index_file')]
+        self._segment_cache = (table, result)
+        return result
 
     def index_paths(self, table):
         return [self.path(part['index_file']) for part in self.segments(table) if part.get('index_file')]
