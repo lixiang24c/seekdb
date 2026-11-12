@@ -1,4 +1,5 @@
 """Parser for the published SQL subset; never executes a partial parse."""
+import json
 import math
 import re
 import struct
@@ -23,10 +24,14 @@ class Token:
 
 NUMBER = re.compile(r'[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?')
 VECTOR_BODY = re.compile(NUMBER.pattern + r'(?:\s*,\s*' + NUMBER.pattern + r')*')
+JSON_NUMBER = r'-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?'
+VECTOR_JSON = re.compile(
+    r'\[[ \t\n\r]*(?:' + JSON_NUMBER +
+    r'(?:[ \t\n\r]*,[ \t\n\r]*' + JSON_NUMBER + r')*)?[ \t\n\r]*\]')
 IDENT = re.compile(r'[A-Za-z_][A-Za-z_0-9]*')
 
 
-def tokenize(source):
+def tokenize(source, _vectors=False):
     tokens, i = [], 0
     while i < len(source):
         c = source[i]
@@ -54,6 +59,9 @@ def tokenize(source):
                     continue
                 break
             tokens.append(Token('str' if quote == "'" else 'id', ''.join(buf)))
+        elif _vectors and c == '[' and (m := VECTOR_JSON.match(source, i)) is not None:
+            tokens.append(Token('vec', json.loads(m.group())))
+            i = m.end()
         elif (m := NUMBER.match(source, i)) is not None:
             tokens.append(Token('num', m.group()))
             i = m.end()
@@ -129,13 +137,13 @@ def convert(col, value):
 
 class Parser:
     def __init__(self, text):
-        self.tokens = tokenize(text)
+        self.tokens = tokenize(text, True)
         self.pos = 0
 
     def take(self, value):
         if self.pos < len(self.tokens):
             t = self.tokens[self.pos]
-            if t.kind != 'str' and t.value.upper() == value:
+            if t.kind not in ('str', 'vec') and t.value.upper() == value:
                 self.pos += 1
                 return True
         return False
@@ -158,6 +166,10 @@ class Parser:
         return v
 
     def value(self):
+        if self.pos < len(self.tokens) and self.tokens[self.pos].kind == 'vec':
+            items = self.tokens[self.pos].value
+            self.pos += 1
+            return items
         if self.take('['):
             items = []
             if not self.take(']'):
