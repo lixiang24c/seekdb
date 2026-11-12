@@ -148,9 +148,74 @@ def convert(col, value):
     return vector(value, col['n'])
 
 
+_INSERT_HEAD = re.compile(r'\s*INSERT\s+INTO\s+', re.IGNORECASE)
+
+
+def _fast_insert(text):
+    """Parse the common bare INSERT ... VALUES shape without building tokens."""
+    head = _INSERT_HEAD.match(text)
+    if head is None: return None
+    n, i = len(text), head.end()
+    match = IDENT.match(text, i)
+    if match is None: return None
+    table = match.group(); i = match.end()
+    while i < n and text[i].isspace(): i += 1
+    if text[i:i + 6].upper() != 'VALUES': return None
+    i += 6
+    if i < n and (text[i].isalnum() or text[i] == '_'): return None
+    rows = []
+    while True:
+        while i < n and text[i].isspace(): i += 1
+        if i >= n or text[i] != '(': return None
+        i += 1
+        row = []
+        while True:
+            while i < n and text[i].isspace(): i += 1
+            if i >= n: return None
+            if text[i] == '[':
+                try:
+                    values, i = _VECTOR_DECODER.raw_decode(text, i)
+                except ValueError:
+                    return None
+                if not all(type(value) is int or
+                           (type(value) is float and math.isfinite(value))
+                           for value in values):
+                    return None
+                row.append(values)
+            elif text[i] == "'":
+                return None
+            else:
+                match = NUMBER.match(text, i)
+                if match is None: return None
+                token = match.group(); i = match.end()
+                row.append(float(token) if any(c in token for c in '.eE') else int(token))
+            while i < n and text[i].isspace(): i += 1
+            if i < n and text[i] == ',':
+                i += 1
+                continue
+            if i < n and text[i] == ')':
+                i += 1
+                break
+            return None
+        if not row: return None
+        rows.append(row)
+        while i < n and text[i].isspace(): i += 1
+        if i >= n: break
+        if text[i] == ',':
+            i += 1
+            continue
+        if text[i] == ';':
+            i += 1
+            while i < n and text[i].isspace(): i += 1
+            if i == n: break
+        return None
+    return {'op': 'insert', 'table': table, 'cols': None, 'rows': rows}
+
+
 class Parser:
     def __init__(self, text):
-        self.tokens = tokenize(text, True)
+        self.text = text
+        self.tokens = None
         self.pos = 0
 
     def take(self, value):
@@ -231,6 +296,10 @@ class Parser:
         return out
 
     def parse(self):
+        if self.tokens is None:
+            fast = _fast_insert(self.text)
+            if fast is not None: return fast
+            self.tokens = tokenize(self.text, True)
         if self.take('CREATE'):
             if self.take('TABLE'):
                 name = self.ident()
