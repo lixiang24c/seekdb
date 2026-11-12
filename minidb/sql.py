@@ -65,7 +65,7 @@ def tokenize(source, _vectors=False):
         elif _vectors and c == '[':
             try:
                 values, end = _VECTOR_DECODER.raw_decode(source, i)
-            except ValueError:
+            except (ValueError, RecursionError):
                 values = None
             if values is not None and all(
                     type(v) is int or (type(v) is float and math.isfinite(v))
@@ -148,7 +148,8 @@ def convert(col, value):
     return vector(value, col['n'])
 
 
-_INSERT_HEAD = re.compile(r'\s*INSERT\s+INTO\s+', re.IGNORECASE)
+# SQL keywords are ASCII; surrounding whitespace retains Python's Unicode rules.
+_INSERT_HEAD = re.compile(r'\s*(?ai:INSERT)\s+(?ai:INTO)\s+')
 
 
 def _fast_insert(text):
@@ -160,7 +161,8 @@ def _fast_insert(text):
     if match is None: return None
     table = match.group(); i = match.end()
     while i < n and text[i].isspace(): i += 1
-    if text[i:i + 6].upper() != 'VALUES': return None
+    keyword = text[i:i + 6]
+    if not keyword.isascii() or keyword.upper() != 'VALUES': return None
     i += 6
     if i < n and (text[i].isalnum() or text[i] == '_'): return None
     rows = []
@@ -175,7 +177,7 @@ def _fast_insert(text):
             if text[i] == '[':
                 try:
                     values, i = _VECTOR_DECODER.raw_decode(text, i)
-                except ValueError:
+                except (ValueError, RecursionError):
                     return None
                 if not all(type(value) is int or
                            (type(value) is float and math.isfinite(value))
