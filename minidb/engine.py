@@ -337,7 +337,7 @@ class Database:
         reuse = entry[0] if entry is not None else None
         pending = {} if mask_key is not None and entry is None and screen.query is not None else None
         pending_cost = len(repr(mask_key)) * 4 + 256
-        block_bytes = fmt.size * max(1, (512 << 10) // fmt.size)
+        block_bytes = fmt.size * max(1, (1 << 20) // fmt.size)
         for path, excluded in self.store.index_segments(table):
             with self.index_reader.blocks(path, block_bytes, INDEX_MAGIC, mapped=screen.query is not None) as blocks:
                 cached = reuse.get(path.name) if reuse is not None else None
