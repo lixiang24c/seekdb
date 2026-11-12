@@ -174,4 +174,41 @@ size_t mv_screen_topk(const unsigned char *data, size_t bytes, size_t dim,
     return found;
 }
 
+/* Build the predicate byte mask for one index block.  Both id arrays are
+   sorted ascending; allowed == NULL means every key is allowed. */
+size_t mv_id_mask(const unsigned char *data, size_t bytes, size_t dim,
+                  const int64_t *allowed, size_t allowed_count,
+                  const int64_t *excluded, size_t excluded_count,
+                  unsigned char *mask) {
+    if (!data || !mask || !dim || dim > 4096) return SIZE_MAX;
+    size_t stride = 8 + dim * 4;
+    if (bytes % stride) return SIZE_MAX;
+    size_t count = bytes / stride;
+    for (size_t i = 0; i < count; ++i) {
+        int64_t ident; memcpy(&ident, data + i * stride, 8);
+        int keep = 1;
+        if (allowed) {
+            size_t lo = 0, hi = allowed_count;
+            keep = 0;
+            while (lo < hi) {
+                size_t mid = lo + (hi - lo) / 2;
+                if (allowed[mid] < ident) lo = mid + 1;
+                else if (allowed[mid] > ident) hi = mid;
+                else { keep = 1; break; }
+            }
+        }
+        if (keep && excluded_count) {
+            size_t lo = 0, hi = excluded_count;
+            while (lo < hi) {
+                size_t mid = lo + (hi - lo) / 2;
+                if (excluded[mid] < ident) lo = mid + 1;
+                else if (excluded[mid] > ident) hi = mid;
+                else { keep = 0; break; }
+            }
+        }
+        mask[i] = (unsigned char)keep;
+    }
+    return count;
+}
+
 #include "graph.c"

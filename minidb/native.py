@@ -27,6 +27,12 @@ def available():
             lib.mv_screen.restype = ctypes.c_size_t
             lib.mv_screen_topk.argtypes = lib.mv_screen.argtypes[:-1] + [ctypes.c_size_t, ctypes.POINTER(ctypes.c_uint32)]
             lib.mv_screen_topk.restype = ctypes.c_size_t
+            if hasattr(lib, 'mv_id_mask'):
+                lib.mv_id_mask.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_size_t,
+                    ctypes.POINTER(ctypes.c_int64), ctypes.c_size_t,
+                    ctypes.POINTER(ctypes.c_int64), ctypes.c_size_t,
+                    ctypes.POINTER(ctypes.c_ubyte)]
+                lib.mv_id_mask.restype = ctypes.c_size_t
             lib.mv_screen_set_simd.argtypes = [ctypes.c_int]
             lib.mv_screen_set_simd.restype = None
             lib.mv_screen_simd.argtypes = []
@@ -80,3 +86,29 @@ class Screen:
         if result == ctypes.c_size_t(-1).value: return None
         if result > count: raise RuntimeError('invalid native result count')
         return self.output[:result]
+
+
+def id_mask(data, dimension, allowed, excluded, pointer=None):
+    if not available(): return None
+    lib = _library
+    if not hasattr(lib, 'mv_id_mask'): return None
+    stride = 8 + dimension * 4
+    if len(data) % stride: return None
+    count = len(data) // stride
+    if not count: return b''
+    if allowed is not None and not len(allowed): return bytes(count)
+    if pointer is None: pointer, owner = Screen.pointer(data)
+    allowed_pointer = allowed_count = None
+    if allowed is not None and len(allowed):
+        allowed_count = len(allowed)
+        allowed_pointer = (ctypes.c_int64 * allowed_count).from_buffer(allowed)
+    excluded_pointer = excluded_count = None
+    if excluded is not None and len(excluded):
+        excluded_count = len(excluded)
+        excluded_pointer = (ctypes.c_int64 * excluded_count).from_buffer(excluded)
+    result = bytearray(count)
+    output = (ctypes.c_ubyte * count).from_buffer(result)
+    found = lib.mv_id_mask(pointer, len(data), dimension,
+                           allowed_pointer, allowed_count or 0,
+                           excluded_pointer, excluded_count or 0, output)
+    return bytes(result) if found == count else None

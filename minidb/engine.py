@@ -10,7 +10,7 @@ import operator
 import struct
 from dataclasses import dataclass
 
-from .native import Screen
+from .native import Screen, id_mask
 from .graph import GraphCache
 from .filters import ValueGroups
 from .indexio import IndexReader
@@ -338,7 +338,9 @@ class Database:
         pending = {} if mask_key is not None and entry is None and screen.query is not None else None
         pending_cost = len(repr(mask_key)) * 4 + 256
         block_bytes = fmt.size * max(1, (4 << 20) // fmt.size)
+        allowed_ids = None
         for path, excluded in self.store.index_segments(table):
+            excluded_ids = array('q', sorted(excluded)) if excluded else None
             with self.index_reader.blocks(path, block_bytes, INDEX_MAGIC, mapped=screen.query is not None) as blocks:
                 cached = reuse.get(path.name) if reuse is not None else None
                 chunks = [] if pending is not None else None
@@ -352,8 +354,13 @@ class Database:
                             mask = cached[position:position + count]
                             if len(mask) != count: raise OSError('invalid cached predicate mask')
                         else:
-                            mask = bytes(int((allowed is None or ident in allowed) and ident not in excluded)
-                                         for ident in (key_format.unpack_from(data, pos)[0] for pos in range(0, len(data), fmt.size)))
+                            if allowed is not None and allowed_ids is None:
+                                allowed_ids = array('q', sorted(allowed))
+                            mask = id_mask(data, len(query), allowed_ids,
+                                           excluded_ids, pointer)
+                            if mask is None:
+                                mask = bytes(int((allowed is None or ident in allowed) and ident not in excluded)
+                                             for ident in (key_format.unpack_from(data, pos)[0] for pos in range(0, len(data), fmt.size)))
                             if chunks is not None:
                                 pending_cost += len(mask) + 64
                                 if pending_cost > MASK_BYTES: pending, chunks = None, None
