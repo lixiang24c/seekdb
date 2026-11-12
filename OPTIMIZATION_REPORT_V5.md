@@ -2,18 +2,18 @@
 
 - 分支：`minivectordb-opt-v5`
 - 优化基线：`f10eddfdf209b0fd6e374da7d271e39e41b4b2c9`（已计分 rewrite 版本）
-- 优化代码 tip：`e21b23b844b0480b0cf856aaff7be783b217e740`
+- 优化代码 tip：`82947569f`（本报告随后提交在同一分支）
 - 报告日期：2026-11-12
 - 构建/运行环境：未改动。`Dockerfile`、`requirements.lock`、`.dockerignore` 与基线逐字节一致；仍为固定 digest 的 gcc/python 镜像、断网 RUN、Python 标准库 + 自编译 `libscreen.so`。
 
 ## 1. 摘要
 
-本轮在已计分版本上追加 10 个提交，只修改 5 个源码文件，没有新增依赖、系统包或构建步骤：
+本轮在已计分版本上追加 11 个代码提交，只修改 5 个源码文件，没有新增依赖、系统包或构建步骤：
 
 ```text
 minidb/engine.py   41 +-
 minidb/native.py   32 +-
-minidb/sql.py      35 +-
+minidb/sql.py     104 +-
 minidb/storage.py  21 +-
 native/screen.c    39 +-
 ```
@@ -22,16 +22,16 @@ native/screen.c    39 +-
 
 | 阶段 | 指标 | 计分基线 f10eddf | 当前 opt-v5 | 变化 |
 |---|---:|---:|---:|---:|
-| 写入 | T | 7.268 s | **1.718 s** | 4.23×，-76.4% |
+| 写入 | T | 7.268 s | **1.578 s** | 4.61×，-78.3% |
 | 写入 | B | 20.3 MiB | 20.3 MiB | 持平 |
-| 写入 | M | 24.0 MiB | **20.8 MiB** | -13.3% |
-| 查询 | T | 3.230 s | **1.333 s** | 2.42×，-58.7% |
+| 写入 | M | 24.0 MiB | **20.6 MiB** | -14.2% |
+| 查询 | T | 3.230 s | **1.337 s** | 2.42×，-58.6% |
 | 查询 | B | 25.2 MiB | 25.2 MiB | 持平 |
 | 查询 | M | 28.8 MiB | **25.9 MiB** | -10.1% |
 
 所有基准轮次查询结果与全扫真值一致，`bad=0`。
 
-说明：官方 E 分数的 `T_base/B_base/M_base` 未公开，本报告不推算平台绝对分。按官方公式、以 f10eddf 自身为基线做归一化，当前综合 E 为 `0.6505`（基线自比为 `0.5`）；这不是平台成绩。
+说明：官方 E 分数的 `T_base/B_base/M_base` 未公开，本报告不推算平台绝对分。按官方公式、以 f10eddf 自身为基线做归一化，当前综合 E 为 `0.6529`（基线自比为 `0.5`）；这不是平台成绩。
 
 ## 2. 基准口径
 
@@ -111,6 +111,14 @@ T 为驱动侧墙钟；B 为 cgroup `io.stat` 的 rbytes+wbytes；M 为 `memory.
 
 收益：查询中位 1.363→1.338 s，写入中位约 1.752→1.702 s；Pathlib/解析开销从每查询热点中移除。
 
+### 3.8 裸 INSERT VALUES 快速解析
+
+提交：`82947569f`
+
+对严格的 `INSERT INTO <table> VALUES (...), ...`（无列清单、无可变字符串、无注释）增加专用解析器；数字和 JSON 数字向量通过原有 `NUMBER`/`_VECTOR_DECODER` 快速生成 AST，行边界直接扫描。列清单、字符串、注释、非标准数字、旧式向量和任何异常形状全部回退通用 Parser。`Parser` 改为首次 `parse()` 时才 tokenize，避免快速路径白做词法分析。
+
+收益：百行 INSERT 解析约 2.28→1.52 ms/批（本地），完整写 T 1.718→1.553~1.578 s；查询/I/O 基本不变。322 条 INSERT 形状/异常差分与公开用例通过。
+
 ## 4. 正确性与环境验证
 
 - 官方公开用例：20/20 PASS
@@ -139,15 +147,17 @@ T 为驱动侧墙钟；B 为 cgroup `io.stat` 的 rbytes+wbytes；M 为 `memory.
 |---|---|---|
 | round2 磁盘 IVF + 三角不等式剪枝 | 官方同款均匀数据，nlist=32/64/100/128 均需扫描 100% 簇 | 无剪枝收益，反而增加建索引 I/O 和 B/M；不采用 |
 | AVX2 每 64 维部分和提前退出 | 查询中位 1.36→1.50 s | 额外横向汇总/分支更贵；已撤销 |
+| AVX-512 double 距离内核 | 运行时支持 AVX-512 时 Q 1.349 s，对比 AVX2 1.333 s | 没有收益且平台 CPU 不保证支持；已撤销 |
+| 双线程并行扫描索引段 | 纯 native 段扫描 0.20→0.98 ms/查询（含线程池） | 调度开销远大于并行收益；未采用 |
 | 首次过滤扫描即建值组 | 可省约 40 ms，但违反 `value_groups` 的“首查询不建组、第二查询扫描学习”回归约束 | 未采用 |
 | NumPy 批量距离 | float64 1.42 ms/查询、float32 0.77 ms/查询；当前 native 扫描约 0.16 ms | 更慢，且当前镜像无 NumPy；不引入依赖 |
-| SQ/RaBitQ 量化预筛 | 精确下界模拟只需精算 0.1–0.3% 的行；但需要新量化码索引和精确分支定界 | 理论收益大，属于索引格式/查询算法大改；不在本版实施 |
+| SQ/RaBitQ 量化预筛（原型） | 精确下界模拟只需精算 0.1–0.3% 行；C 标量 topm+screen 3.9 ms/查询；SIMD 内核 0.215 ms（float）/0.403 ms（double），加候选精算仍无法超过当前引擎 | 原型未合入；需要新量化码索引和精确分支定界，风险高 |
 | 加载时预建持久倒排过滤索引 | 可省冷过滤全扫，但会改变现有值组缓存契约与索引格式 | 未采用 |
 | 延迟提交/group commit | 协议要求逐请求自动提交确认 | 不可用 |
 
 ## 6. 剩余瓶颈
 
-当前完整 JSONL 查询往返约 1.33 ms/查询，其中：
+当前完整 JSONL 查询往返约 1.34 ms/查询，其中：
 
 - Docker 管道/驱动往返基线约 0.54 ms（用同请求 echo 容器测得，非数据库时间）
 - 引擎直接执行约 0.44 ms/查询
@@ -179,4 +189,18 @@ python3 protocol_check/run.py --image minivectordb:opt-v5 --output protocol-resu
 4a1f25802 Batch native screening blocks to 4 MiB like the C++ 64-page reader
 88ec56a4e Build cold predicate masks natively from sorted ids
 e21b23b84 Reuse bounded path and index-segment lookups across queries
+82947569f Fast-path bare INSERT VALUES parsing
 ```
+
+## 9. 风险与回退
+
+- **Covering TopK**：只在投影恰好是主键时启用；其他投影走完整回表/解码路径。
+- **过滤块内 native TopK**：C 只产生保守候选超集，最终距离仍由 Python `math.fsum` 和主键规则决定；稀疏块回退 `mv_screen`。
+- **4 MiB 块**：C TopK 入口显式限制 4 MiB；已测 dim16×60,000 行和 128 MiB 限额。官方 CPU 不支持 AVX2 时自动回退标量。
+- **SQL 向量快速解析**：只接受严格 JSON 数字数组；`+1`、`.5`、`1.`、前导零、NaN/Infinity、字符串、极值等全部回退旧扫描，公开解析差分 6484 项通过。
+- **裸 INSERT 快速解析**：只匹配无列清单、无字符串、无注释的 `INSERT INTO ... VALUES`；其他形状立即回退通用 Parser。`Parser` 改为首次 `parse()` 时 tokenize；仓库内没有在 parse 前依赖 `Parser.tokens` 的调用。额外 322 条 INSERT 形状/异常差分通过，但极端未覆盖 SQL 形状仍可能走通用路径（性能回退，不是结果错误）。
+- **C 冷过滤掩码**：新增符号是可选能力；旧库/`MINIDB_NATIVE=0` 自动回退 Python 生成；ID 数组必须有序，已由 600 组随机差分和过滤套件覆盖。
+- **Path/段缓存**：缓存以表对象身份失效，表变更会创建新对象；Path 缓存上限 256；事务、回滚、重启、合并测试通过。
+- **已否决的 SQ/AVX-512/并行**：代码未合入主路径；量化原型只保留实验结论，避免把新索引格式和误差界带入平台准入版本。
+- **平台残余风险**：`Dockerfile`/依赖未变，公开 20/20、仿真和崩溃/资源测试通过；但平台隐藏 9 例、硬件、驱动和 `/data` 属主仍无法在本机完全复现。两个已知的 user0700+root `/data` 场景与已计分版本相同，不是本版引入。
+- **成绩风险**：E 的绝对分依赖官方 `T_base/B_base/M_base`，本报告只给出同机相对结果和归一化 E，不承诺平台分数。
