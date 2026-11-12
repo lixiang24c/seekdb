@@ -391,10 +391,19 @@ class Database:
             self.remember_masks(mask_key, pending)
         return {item[2]: -item[0] for item in heap}
 
-    def vector_topk(self, table, expr, k, columns, match, filter_columns, conditions, mode='exact', distance_scores=None):
+    def vector_topk(self, table, expr, k, columns, match, filter_columns, conditions, mode='exact', distance_scores=None, covering=False):
         """Filter scalars first, retain binary candidates, decode only the winners."""
         codec = Codec(table['cols'])
         vc, query = expr[1], expr[2]
+
+        def covering_rows(items):
+            n, pk = len(table['cols']), table['pk']
+            out = []
+            for _, ident, _ in items:
+                row = [None] * n
+                row[pk] = ident
+                out.append(row)
+            return out
         if mode == 'ann' and not filter_columns:
             ids = self.graphs.search(table, query, k, self.store)
             if ids is not None:
@@ -434,6 +443,14 @@ class Database:
                 allowed = self.value_groups.matching(group_key, group_column, len(table['cols']), match)
                 if allowed is not None: self.remember_filter(cache_key, allowed)
         scores = self.flat_topk(table, expr, k, allowed, mask_key, bool(filter_columns)) if table.get('indexes') and (not filter_columns or allowed is not None or has_masks) else None
+        if scores is not None and covering:
+            # Covering query: projection is only the primary key; index candidates
+            # already answer it, so skip row lookup and record decoding.
+            selected = sorted(((distance, ident, None) for ident, distance in scores.items()),
+                              key=lambda item: (item[0], item[1]))
+            if distance_scores is not None:
+                distance_scores.update((ident, distance) for distance, ident, _ in selected)
+            return covering_rows(selected)
         if scores is None and group_key is not None and group_key not in self.value_groups.entries:
             # A single repeated predicate needs only the existing predicate cache.
             # Learn value groups once a different condition on this column occurs.
@@ -485,6 +502,8 @@ class Database:
         selected.sort(key=lambda item: (item[0], item[1]))
         if distance_scores is not None:
             distance_scores.update((ident, distance) for distance, ident, raw in selected)
+        if covering:
+            return covering_rows(selected)
         return [codec.decode_fields(raw, columns) for _, _, raw in selected]
 
     def select(self, table, st, mode='exact'):
@@ -548,7 +567,8 @@ class Database:
                             vc = ordered_expr[1]
                             if all(expr[1] != vc or (expr[0] == 'distance' and expr == ordered_expr) for expr in outs):
                                 columns = needed - {vc}
-                        rows = self.vector_topk(table, ordered_expr, limit, columns, match, filter_columns, st['where'], mode, distance_scores)
+                        rows = self.vector_topk(table, ordered_expr, limit, columns, match, filter_columns, st['where'], mode, distance_scores,
+                                                covering=len(outs) == 1 and outs[0][0] == 'column' and outs[0][1] == table['pk'])
                     else:
                         selected = source()
                         try:
