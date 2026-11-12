@@ -1,0 +1,439 @@
+{
+  "scope": "Local merged-source review; host Python/GCC, no Docker/cgroup isolation; not validation of the previous image or the new remote image",
+  "merged_commit": "1baf49d20a422a542ef6ee853a1b9d46a13fc0fb",
+  "python": "3.11.11 (main, Dec 11 2024, 16:28:39) [GCC 11.2.0]",
+  "tests": [
+    {
+      "id": "native-build",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "id": "vector_text",
+      "exit_code": 0,
+      "status": "PASS",
+      "result": {
+        "status": "PASS",
+        "cases": 1530,
+        "reference_commit": "3c34679e",
+        "coverage": [
+          "bitwise float32 outcomes",
+          "negative zero",
+          "SQL signs/leading zeros/dot forms",
+          "Unicode decimal digits and whitespace",
+          "invalid number syntax",
+          "finite overflow",
+          "error precedence",
+          "4096-element fast-path boundary",
+          "64KiB-text boundary",
+          "empty vectors",
+          "seeded malformed literals"
+        ]
+      }
+    },
+    {
+      "id": "vector_codec",
+      "exit_code": 0,
+      "status": "PASS",
+      "result": {
+        "status": "PASS",
+        "cases": 102,
+        "dimensions": [
+          1,
+          2,
+          3,
+          16,
+          31,
+          32,
+          127,
+          128,
+          129,
+          512,
+          4096
+        ],
+        "coverage": [
+          "bitwise scalar oracle",
+          "list and text inputs",
+          "negative zero",
+          "subnormal rounding",
+          "finite extrema",
+          "mixed signed integers",
+          "NaN/Infinity",
+          "overflow",
+          "invalid types",
+          "dimension precedence",
+          "malformed text"
+        ]
+      }
+    },
+    {
+      "id": "parser_scan",
+      "exit_code": 0,
+      "status": "PASS",
+      "result": {
+        "status": "PASS",
+        "differential_cases": 6484,
+        "reference_commit": "291d4a4a",
+        "coverage": [
+          "exhaustive short quote/backtick/newline strings",
+          "seeded malformed fragments",
+          "doubled quotes/backticks",
+          "empty/Unicode/long literals",
+          "comments and separators inside quotes",
+          "unterminated input",
+          "identical token kinds/values and error code/message"
+        ]
+      }
+    },
+    {
+      "id": "native_screen",
+      "exit_code": 0,
+      "status": "PASS",
+      "result": {
+        "status": "PASS",
+        "backend": "avx2",
+        "screen_checks": 648,
+        "topk_checks": 828,
+        "reference_terms_checks": 891,
+        "distributions": [
+          "uniform",
+          "mixed float32 exponents"
+        ],
+        "dimensions": [
+          16,
+          17,
+          31,
+          32,
+          127,
+          128,
+          129,
+          512,
+          4096
+        ],
+        "coverage": [
+          "bitwise reference terms plus fsum",
+          "near threshold",
+          "zero/ties",
+          "finite extrema/subnormals",
+          "mask/empty mask",
+          "malformed record length",
+          "dimension fallback"
+        ]
+      }
+    },
+    {
+      "id": "bitmap_boundaries",
+      "exit_code": 0,
+      "status": "PASS",
+      "result": {
+        "status": "PASS",
+        "oracle_queries": 32,
+        "rows": 3000,
+        "dimensions": 128,
+        "bitmap_budget": 131072,
+        "reduced_budget_fallback": 2048,
+        "checks": [
+          "group reuse with different query vectors",
+          "compact int64 IDs survive bitmap eviction",
+          "native-off cached-mask fallback",
+          "multiple predicates without ID cache",
+          "transaction mutation visibility",
+          "failed statement",
+          "rollback",
+          "delete-only mask invalidation",
+          "second index",
+          "builder overflow fallback",
+          "LRU eviction without predicate rescan",
+          "delete all rollback",
+          "restart"
+        ]
+      }
+    },
+    {
+      "id": "projection_distances",
+      "exit_code": 0,
+      "status": "PASS",
+      "result": {
+        "status": "PASS",
+        "oracle_queries": 20,
+        "rows": 320,
+        "dimensions": 128,
+        "coverage": [
+          "raw scan before index",
+          "no duplicate Python distance computation",
+          "vector decoding omitted when unused",
+          "same/different query vectors",
+          "explicit vector projection",
+          "alias/expression ordering",
+          "filter cache reuse",
+          "native off",
+          "DESC/range/multi-key plans",
+          "LIMIT0",
+          "large-row heap fallback to sort",
+          "transaction mutation/delete",
+          "rollback",
+          "extreme primary keys",
+          "restart"
+        ]
+      }
+    },
+    {
+      "id": "combined_overlays",
+      "exit_code": 0,
+      "status": "PASS",
+      "result": {
+        "status": "PASS",
+        "rows": 1000,
+        "dimensions": 128,
+        "sequential_updates": 160,
+        "oracle_queries": 165,
+        "events": {
+          "small_merges": 5,
+          "fallbacks": 1,
+          "full_rewrites": 2
+        },
+        "coverage": [
+          "mapped reads after each actual update",
+          "base retained at segment threshold",
+          "small overlay merge",
+          "full excluded-mask compaction",
+          "reduced-cap fallback to full rewrite",
+          "map invalidation",
+          "exact scalar/vector row consistency",
+          "transaction rollback",
+          "restart"
+        ]
+      }
+    },
+    {
+      "id": "overlay_boundaries",
+      "exit_code": 0,
+      "status": "PASS",
+      "result": {
+        "status": "PASS",
+        "updates": 101,
+        "point_deletes": 90,
+        "checks": [
+          "base retained",
+          "overlay compaction",
+          "delete threshold compaction",
+          "ordinary/range/reverse/filtered/unfiltered oracle",
+          "rollback",
+          "general mutation",
+          "deleted key reinsertion",
+          "live duplicate rejection",
+          "second index",
+          "restart"
+        ]
+      }
+    },
+    {
+      "id": "overlay_recovery",
+      "exit_code": 0,
+      "status": "PASS",
+      "result": {
+        "status": "PASS",
+        "scenarios": [
+          {
+            "cut": "before",
+            "compaction": "PASS",
+            "two_restarts": "PASS"
+          },
+          {
+            "cut": "after",
+            "compaction": "PASS",
+            "two_restarts": "PASS"
+          }
+        ]
+      }
+    },
+    {
+      "id": "current-baseline-vector-differential",
+      "exit_code": 0,
+      "status": "PASS",
+      "result": {
+        "status": "PASS",
+        "cases": 5087,
+        "categories": {
+          "numbers_whitespace_dimension": 936,
+          "malformed_error_precedence": 48,
+          "element_count_boundary": 10,
+          "large_text_fallback": 18,
+          "list_types_and_nonfinite": 39,
+          "other_inputs": 36,
+          "seeded_valid": 2000,
+          "seeded_list": 2000
+        },
+        "comparison": "Exact float32 bytes for valid results; DBError.code for invalid inputs",
+        "negative_zero_bits": "00000080"
+      }
+    },
+    {
+      "id": "public-host",
+      "exit_code": 0,
+      "status": "PASS"
+    }
+  ],
+  "source_sha256": {
+    "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+    "minidb/engine.py": "64a1f33b0ef331d1ce418086097bc2c3d388cb931b5c02c0e5ed7e7f333212d9",
+    "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
+    "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+    "minidb/indexio.py": "d071540d69b9dcde3d3333e96f1a25965be2a3d6ef9fab33513868fa9aeb7223",
+    "minidb/native.py": "c0b80e3886c8b3ac845dd74238dbaf28bbcb5495a82397acb3e1bdb8a87172c7",
+    "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+    "minidb/sql.py": "350e024bf88526e5db9f93edabc39c7c217e3fb59cb3054504c445c584d0a1d2",
+    "minidb/storage.py": "e7ffab20cd954a826746e6ff69dbc848f81cb95514f4d860f9232edb8b1677f5",
+    "native/graph.c": "d71041e2b23f25cb6b81c74a060553e086d6c10ca70278c5fd78626966b5a74d",
+    "native/screen.c": "230822112c905a221acdb4e48930971fd237a25a2ecfcba1c0cf56277853d9d7"
+  },
+  "public_host": {
+    "scope": "public-protocol-check",
+    "passed": true,
+    "cases": [
+      {
+        "id": "sql_crud",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 107
+      },
+      {
+        "id": "sql_comparisons",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 74
+      },
+      {
+        "id": "sql_ordering",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 82
+      },
+      {
+        "id": "sql_empty",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 72
+      },
+      {
+        "id": "sql_primary_key",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 82
+      },
+      {
+        "id": "sql_unicode",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 85
+      },
+      {
+        "id": "sql_bigint",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 82
+      },
+      {
+        "id": "sql_unsupported",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 68
+      },
+      {
+        "id": "storage_restart",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 129
+      },
+      {
+        "id": "vector_euclidean",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 70
+      },
+      {
+        "id": "transaction_commit",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 86
+      },
+      {
+        "id": "transaction_rollback",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 76
+      },
+      {
+        "id": "storage_mutations",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 132
+      },
+      {
+        "id": "storage_multiple_tables",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 126
+      },
+      {
+        "id": "vector_ties_and_filter",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 67
+      },
+      {
+        "id": "vector_float32",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 76
+      },
+      {
+        "id": "vector_index_maintenance",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 183
+      },
+      {
+        "id": "transaction_failed_insert",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 145
+      },
+      {
+        "id": "transaction_autocommit_atomic",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 133
+      },
+      {
+        "id": "transaction_shutdown_rollback",
+        "status": "PASS",
+        "message": "",
+        "duration_ms": 126
+      }
+    ],
+    "note": "Local diagnostic only; no performance/Agent scores or platform callbacks."
+  },
+  "status": "PASS",
+  "finished_at": "2026-11-12T11:57:43.538126+00:00",
+  "parser_ast_review": {
+    "scope": "Merged Parser.parse AST/error differential against f10eddf; host Python; includes new bare JSON/INSERT paths",
+    "status": "PASS",
+    "cases": 2344,
+    "failures": []
+  },
+  "local_merge": {
+    "method": "fast-forward",
+    "from": "f10eddfdf209b0fd6e374da7d271e39e41b4b2c9",
+    "to": "1baf49d20a422a542ef6ee853a1b9d46a13fc0fb",
+    "conflicts": false,
+    "conversation_preserved": true
+  },
+  "compiler": "gcc (conda-forge gcc 15.1.0-3) 15.1.0",
+  "review_notes": [
+    "Reviewed all 13 remote commits: bare INSERT/JSON-vector parsing, post-conversion finite checks, covering TopK, filtered native TopK, 4 MiB blocks, native ID masks, bounded path/segment caches, and reports.",
+    "Remote OPTIMIZATION_REPORT_V5.md uses 2 CPU/128 MiB and different workload details; its numbers are not comparable to the archived 2 GiB local measurements.",
+    "Previous verified image 1287f8a69169 and archived tests apply to f10eddf only, not the newly merged runtime source.",
+    "This review compiled the merged C library in an isolated temporary source copy and ran host checks; a fresh Docker build and constrained-container checks remain outstanding."
+  ]
+}
