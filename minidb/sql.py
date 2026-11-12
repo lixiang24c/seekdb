@@ -118,11 +118,11 @@ def vector(value, dim):
         fail('vector dimension mismatch', 'dimension_mismatch')
     try:
         for x in values:
-            if type(x) not in (int, float) or not math.isfinite(x):
+            if type(x) is not int and type(x) is not float:
                 raise ValueError()
         fmt = '<' + str(dim) + 'f'
         result = list(struct.unpack(fmt, struct.pack(fmt, *values)))
-        if not all(math.isfinite(x) for x in result):
+        if not all(map(math.isfinite, result)):
             raise ValueError()
     except (ValueError, OverflowError, struct.error):
         fail('vector element must be finite float32', 'invalid_vector')
