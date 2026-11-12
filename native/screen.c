@@ -122,7 +122,7 @@ size_t mv_screen_topk(const unsigned char *data, size_t bytes, size_t dim,
                       const double *query, double bound, const unsigned char *mask,
                       size_t k, uint32_t *selected) {
     if (!dim || dim > 4096 || !k || k > 1024 || !data || !query || !selected ||
-        isnan(bound) || bound < 0 || bytes > (1u << 20)) return SIZE_MAX;
+        isnan(bound) || bound < 0 || bytes > (4u << 20)) return SIZE_MAX;
     size_t stride = 8 + dim * 4;
     if (bytes % stride) return SIZE_MAX;
     size_t count = bytes / stride;
