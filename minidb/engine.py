@@ -359,7 +359,7 @@ class Database:
                                 if pending_cost > MASK_BYTES: pending, chunks = None, None
                                 else: chunks.append(mask)
                         position += count
-                    positions = screen.select(data, -heap[0][0] if len(heap) == k else math.inf, mask, k=None if filtering else k, pointer=pointer)
+                    positions = screen.select(data, -heap[0][0] if len(heap) == k else math.inf, mask, k=k, pointer=pointer)
                     if positions is not None:
                         candidates = ((key_format.unpack_from(data, pos * fmt.size)[0], pos, None) for pos in positions)
                     else:
