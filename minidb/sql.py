@@ -24,11 +24,14 @@ class Token:
 
 NUMBER = re.compile(r'[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?')
 VECTOR_BODY = re.compile(NUMBER.pattern + r'(?:\s*,\s*' + NUMBER.pattern + r')*')
-JSON_NUMBER = r'-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?'
-VECTOR_JSON = re.compile(
-    r'\[[ \t\n\r]*(?:' + JSON_NUMBER +
-    r'(?:[ \t\n\r]*,[ \t\n\r]*' + JSON_NUMBER + r')*)?[ \t\n\r]*\]')
 IDENT = re.compile(r'[A-Za-z_][A-Za-z_0-9]*')
+
+
+def _reject_constant(value):
+    raise ValueError(value)
+
+
+_VECTOR_DECODER = json.JSONDecoder(parse_constant=_reject_constant)
 
 
 def tokenize(source, _vectors=False):
@@ -59,9 +62,19 @@ def tokenize(source, _vectors=False):
                     continue
                 break
             tokens.append(Token('str' if quote == "'" else 'id', ''.join(buf)))
-        elif _vectors and c == '[' and (m := VECTOR_JSON.match(source, i)) is not None:
-            tokens.append(Token('vec', json.loads(m.group())))
-            i = m.end()
+        elif _vectors and c == '[':
+            try:
+                values, end = _VECTOR_DECODER.raw_decode(source, i)
+            except ValueError:
+                values = None
+            if values is not None and all(
+                    type(v) is int or (type(v) is float and math.isfinite(v))
+                    for v in values):
+                tokens.append(Token('vec', values))
+                i = end
+            else:
+                tokens.append(Token('sym', '['))
+                i += 1
         elif (m := NUMBER.match(source, i)) is not None:
             tokens.append(Token('num', m.group()))
             i = m.end()
