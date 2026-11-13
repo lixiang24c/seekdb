@@ -12,6 +12,10 @@ int main(void) {
     double terms[128];
     assert(mv_squared_terms(rows,sizeof(bytes)-1,128,query,0,terms));
     assert(terms[0]==1 && terms[127]==0);
+    assert(mv_squared_checked(rows,sizeof(bytes)-1,128,query,0,terms)==2 && terms[0]==1);
+    assert(!mv_squared_checked(rows,sizeof(bytes)-2,128,query,0,terms));
+    assert(!mv_squared_checked(rows,sizeof(bytes)-1,128,query,3,terms));
+    assert(!mv_squared_checked(NULL,0,128,query,0,terms));
     assert(!mv_squared_terms(rows,sizeof(bytes)-1,128,query,3,terms));
     assert(!mv_squared_terms(rows,sizeof(bytes)-2,128,query,0,terms));
     assert(!mv_squared_terms(rows,sizeof(bytes)-1,4097,query,0,terms));
@@ -41,8 +45,12 @@ int main(void) {
     memset(dense,0,sizeof(dense));
     assert(mv_screen_topk(dense,sizeof(dense),128,query,INFINITY,0,1,output)==10);
     mv_screen_set_simd(0);
+    assert(choose_distance(128,16)==scalar_distance);
     assert(mv_screen_topk(dense,sizeof(dense),128,query,INFINITY,0,1,output)==10);
     mv_screen_set_simd(1);
+    assert(choose_distance(31,16)==scalar_distance);
+    assert(choose_distance(128,15)==scalar_distance);
+    assert(choose_distance(128,16)==(mv_screen_simd()?avx2_distance:scalar_distance));
     assert(mv_screen_topk(dense,sizeof(dense),128,query,INFINITY,0,1,output)==10);
     return 0;
 }

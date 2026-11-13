@@ -3,7 +3,7 @@ import json
 import math
 import re
 import struct
-from dataclasses import dataclass
+from collections import namedtuple
 
 
 class DBError(Exception):
@@ -16,10 +16,8 @@ def fail(message, code='unsupported_sql'):
     raise DBError(code, message)
 
 
-@dataclass(frozen=True)
-class Token:
-    kind: str
-    value: str
+# Immutable tokens without per-instance dictionaries or dataclasses' import graph.
+Token = namedtuple('Token', ('kind', 'value'))
 
 
 NUMBER = re.compile(r'[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?')
@@ -32,6 +30,7 @@ def _reject_constant(value):
 
 
 _VECTOR_DECODER = json.JSONDecoder(parse_constant=_reject_constant)
+_TEXT_VECTOR_DECODER = json.JSONDecoder(parse_int=float, parse_constant=_reject_constant)
 
 
 def tokenize(source, _vectors=False):
@@ -98,18 +97,27 @@ def vector(value, dim):
         if not text.startswith('[') or not text.endswith(']'):
             fail('invalid vector literal', 'invalid_vector')
         middle = text[1:-1].strip()
-        pieces = middle.split(',') if middle else []
-        if middle and len(pieces) <= 4096 and len(middle) <= 65536:
-            if not VECTOR_BODY.fullmatch(middle):
-                fail('invalid vector element', 'invalid_vector')
-            values = list(map(float, map(str.strip, pieces)))
-        else:
-            values = []
-            for part in pieces:
-                part = part.strip()
-                if not NUMBER.fullmatch(part):
+        values = None
+        if len(text) <= 65536:
+            try:
+                decoded = _TEXT_VECTOR_DECODER.decode(text)
+            except (ValueError, RecursionError):
+                decoded = None
+            if isinstance(decoded, list) and all(type(x) is float for x in decoded):
+                values = decoded
+        if values is None:
+            pieces = middle.split(',') if middle else []
+            if middle and len(pieces) <= 4096 and len(middle) <= 65536:
+                if not VECTOR_BODY.fullmatch(middle):
                     fail('invalid vector element', 'invalid_vector')
-                values.append(float(part))
+                values = list(map(float, map(str.strip, pieces)))
+            else:
+                values = []
+                for part in pieces:
+                    part = part.strip()
+                    if not NUMBER.fullmatch(part):
+                        fail('invalid vector element', 'invalid_vector')
+                    values.append(float(part))
     elif isinstance(value, list):
         values = value
     else:
@@ -117,9 +125,10 @@ def vector(value, dim):
     if len(values) != dim:
         fail('vector dimension mismatch', 'dimension_mismatch')
     try:
-        for x in values:
-            if type(x) is not int and type(x) is not float:
-                raise ValueError()
+        if not isinstance(value, str):
+            for x in values:
+                if type(x) is not int and type(x) is not float:
+                    raise ValueError()
         fmt = '<' + str(dim) + 'f'
         result = list(struct.unpack(fmt, struct.pack(fmt, *values)))
         if not all(map(math.isfinite, result)):
@@ -150,6 +159,41 @@ def convert(col, value):
 
 # SQL keywords are ASCII; surrounding whitespace retains Python's Unicode rules.
 _INSERT_HEAD = re.compile(r'\s*(?ai:INSERT)\s+(?ai:INTO)\s+')
+
+# A complete, narrow SELECT shape; unsupported shapes use the normal parser.
+_SELECT_TOPK = re.compile(
+    r"\s*(?ai:SELECT)\s+(?P<plain>[A-Za-z_][A-Za-z_0-9]*)\s*,\s*"
+    r"(?ai:L2_DISTANCE)\s*\(\s*(?P<vector_col>[A-Za-z_][A-Za-z_0-9]*)\s*,\s*"
+    r"(?:(?P<quoted>'[^']*')|(?P<bare>\[[^\[\]']*\]))\s*\)\s+(?ai:AS)\s+(?P<alias>[A-Za-z_][A-Za-z_0-9]*)"
+    r"\s+(?ai:FROM)\s+(?P<table>[A-Za-z_][A-Za-z_0-9]*)"
+    r"(?:\s+(?ai:WHERE)\s+(?P<filter>[A-Za-z_][A-Za-z_0-9]*)\s*"
+    r"(?P<op><=|>=|=|<|>)\s*(?P<number>[+-]?[0-9]+))?"
+    r"\s+(?ai:ORDER)\s+(?ai:BY)\s+(?P<order>[A-Za-z_][A-Za-z_0-9]*)"
+    r"(?:\s+(?P<direction>(?ai:ASC|DESC)))?"
+    r"\s+(?ai:LIMIT)\s+(?P<limit>\+?[0-9]+)\s*;?\s*")
+
+
+def _fast_select(text):
+    match = _SELECT_TOPK.fullmatch(text)
+    if match is None: return None
+    parts = match.groupdict()
+    if len(parts['limit']) > 128 or (parts['number'] is not None and len(parts['number']) > 128):
+        return None
+    if parts['quoted'] is not None:
+        query = parts['quoted'][1:-1]
+    else:
+        try:
+            query = _VECTOR_DECODER.decode(parts['bare'])
+        except (ValueError, RecursionError):
+            return None
+        if not all(type(x) is int or (type(x) is float and math.isfinite(x)) for x in query):
+            return None
+    where = [(parts['filter'], parts['op'], int(parts['number']))] if parts['filter'] is not None else []
+    return {'op': 'select', 'table': parts['table'],
+            'projection': [(('column', parts['plain']), None),
+                           (('distance', parts['vector_col'], query), parts['alias'])],
+            'where': where, 'order': [(('column', parts['order']), parts['direction'] is not None and parts['direction'].upper() == 'DESC')],
+            'limit': int(parts['limit'])}
 
 
 def _fast_insert(text):
@@ -300,6 +344,7 @@ class Parser:
     def parse(self):
         if self.tokens is None:
             fast = _fast_insert(self.text)
+            if fast is None: fast = _fast_select(self.text)
             if fast is not None: return fast
             self.tokens = tokenize(self.text, True)
         if self.take('CREATE'):

@@ -1,4 +1,4 @@
-"""Optional bounded C screen; all retained distances use the Python reference."""
+"""Optional C screen; exact sums or reference math.fsum for retained distances."""
 import ctypes
 import os
 import math
@@ -7,10 +7,11 @@ from pathlib import Path
 
 _library = None
 _checked = False
+_squared_kernel = None
 
 
 def available():
-    global _library, _checked
+    global _library, _checked, _squared_kernel
     if os.environ.get('MINIDB_NATIVE') == '0': return False
     if not _checked:
         _checked = True
@@ -21,6 +22,9 @@ def available():
             lib.mv_squared_terms.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_double), ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)]
             lib.mv_squared_terms.restype = ctypes.c_int
+            _squared_kernel = getattr(lib, 'mv_squared_checked', lib.mv_squared_terms)
+            _squared_kernel.argtypes = lib.mv_squared_terms.argtypes
+            _squared_kernel.restype = ctypes.c_int
             lib.mv_screen.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_double), ctypes.c_double, ctypes.c_char_p,
                 ctypes.POINTER(ctypes.c_uint32)]
@@ -47,7 +51,9 @@ def available():
 class Screen:
     def __init__(self, query):
         self.dimension = len(query)
-        self.query = (ctypes.c_double * len(query))(*query) if 16 <= len(query) <= 4096 and available() else None
+        self.query_values = array('d', query) if 16 <= len(query) <= 4096 and available() else None
+        self.query = ((ctypes.c_double * len(query)).from_buffer(self.query_values)
+                      if self.query_values is not None else None)
         self.capacity = 0
         self.output = None
         self.terms = self.terms_pointer = None
@@ -67,8 +73,10 @@ class Screen:
             self.terms = array('d', [0.]) * self.dimension
             self.terms_pointer = (ctypes.c_double * self.dimension).from_buffer(self.terms)
         if pointer is None: pointer, owner = self.pointer(data)
-        if not _library.mv_squared_terms(pointer, len(data), self.dimension, self.query, position, self.terms_pointer):
+        status = _squared_kernel(pointer, len(data), self.dimension, self.query, position, self.terms_pointer)
+        if not status:
             return None
+        if status == 2: return self.terms[0]
         return math.fsum(self.terms)
 
     def select(self, data, bound, mask=None, k=None, pointer=None):

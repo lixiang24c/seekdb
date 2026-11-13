@@ -1,4 +1,4 @@
-/* Self-built screening kernel; final distance/ranking stays in Python. */
+/* Screening and reference terms; Python resolves inexact sums and ranking. */
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
@@ -8,14 +8,18 @@
 
 unsigned mv_screen_abi(void) { return 5; }
 
-/* Emit the same binary64 products as Python (x-y)*(x-y); Python fsum
-   remains the authoritative summation, including its final rounding. */
-int mv_squared_terms(const unsigned char *data, size_t bytes, size_t dim,
-                     const double *query, size_t position, double *terms) {
+/* Emit the same binary64 products as Python (x-y)*(x-y), without FMA or
+   fast-math. Return 0 on invalid input, 1 for terms requiring fsum, or
+   (checked entry only) 2 when terms[0] holds their exactly representable sum. */
+static int squared_terms(const unsigned char *data, size_t bytes, size_t dim,
+                         const double *query, size_t position, double *terms,
+                         int checked) {
     if (!data || !query || !terms || !dim || dim > 4096) return 0;
     size_t stride = 8 + dim * 4;
     if (bytes % stride || position >= bytes / stride) return 0;
     const unsigned char *vector = data + position * stride + 8;
+    double sum = 0;
+    int exact = checked;
     for (size_t j = 0; j < dim; ++j) {
         float value; memcpy(&value, vector + j * 4, 4);
         if (!isfinite(value) || !isfinite(query[j])) return 0;
@@ -23,8 +27,31 @@ int mv_squared_terms(const unsigned char *data, size_t bytes, size_t dim,
         double product = delta * delta;
         if (!isfinite(product)) return 0;
         terms[j] = product;
+        if (exact) {
+            /* FastTwoSum: high >= low >= 0. For finite total, Sterbenz's
+               lemma makes total-high exact. Equality with low therefore
+               proves this addition lost no bits. Induction proves the
+               final sum is exact; any failed step retains terms for fsum.
+               Overflow also fails the equality. */
+            double high = sum >= product ? sum : product;
+            double low = sum >= product ? product : sum;
+            double total = high + low;
+            if (low != total - high) exact = 0;
+            sum = total;
+        }
     }
+    if (exact) { terms[0] = sum; return 2; }
     return 1;
+}
+
+int mv_squared_terms(const unsigned char *data, size_t bytes, size_t dim,
+                     const double *query, size_t position, double *terms) {
+    return squared_terms(data, bytes, dim, query, position, terms, 0);
+}
+
+int mv_squared_checked(const unsigned char *data, size_t bytes, size_t dim,
+                       const double *query, size_t position, double *terms) {
+    return squared_terms(data, bytes, dim, query, position, terms, 1);
 }
 
 static int simd_enabled = 1;
@@ -82,9 +109,10 @@ static double avx2_distance(const unsigned char *vector, const double *query,
 }
 
 typedef double (*distance_fn)(const unsigned char *, const double *, size_t, double);
-static distance_fn choose_distance(size_t dim, size_t count, size_t active) {
-    /* Sparse/tiny blocks spend most time in masks and call overhead. */
-    return dim >= 32 && active >= 16 && active >= (count + 1) / 2 && mv_screen_simd()
+static distance_fn choose_distance(size_t dim, size_t active) {
+    /* Masked rows are skipped before calling the distance kernel. Density
+       therefore does not reduce the work available within an active vector. */
+    return dim >= 32 && active >= 16 && mv_screen_simd()
         ? avx2_distance : scalar_distance;
 }
 
@@ -101,7 +129,7 @@ size_t mv_screen(const unsigned char *data, size_t bytes, size_t dim,
         active = 0;
         for (size_t i = 0; i < count; ++i) active += mask[i] != 0;
     }
-    distance_fn distance = choose_distance(dim, count, active);
+    distance_fn distance = choose_distance(dim, active);
     /* Positive-term binary64 summation error is bounded by gamma(dim).
        This deliberately wider band also covers cutoff multiplication rounding.
        No fast-math or FMA contraction; stored/query values are finite float32. */
@@ -135,18 +163,18 @@ size_t mv_screen_topk(const unsigned char *data, size_t bytes, size_t dim,
     /* Sparse or large-k blocks cannot amortize a local heap. */
     if (active <= 4 * k) return mv_screen(data, bytes, dim, query, bound, mask, selected);
     double distances[count], heap[k];
-    distance_fn distance = choose_distance(dim, count, active);
-    size_t used = 0;
+    distance_fn distance = choose_distance(dim, active);
+    size_t used = 0, candidates = 0;
     double error = 64.0 * DBL_EPSILON * (dim + 1);
     double cutoff = bound * (1.0 + error) + DBL_MIN;
     double guard = (1.0 + error) / (1.0 - error);
     for (size_t i = 0; i < count; ++i) {
-        distances[i] = INFINITY;
         if (mask && !mask[i]) continue;
         const unsigned char *vector = data + i * stride + 8;
         double sum = distance(vector, query, dim, cutoff);
         if (!isfinite(sum)) continue;
-        distances[i] = sum;
+        distances[candidates] = sum;
+        selected[candidates++] = (uint32_t)i;
         if (used < k) {
             size_t at = used++;
             while (at && heap[(at - 1) / 2] < sum) {
@@ -169,8 +197,8 @@ size_t mv_screen_topk(const unsigned char *data, size_t bytes, size_t dim,
         }
     }
     size_t found = 0;
-    for (size_t i = 0; i < count; ++i)
-        if (isfinite(distances[i]) && distances[i] <= cutoff) selected[found++] = (uint32_t)i;
+    for (size_t i = 0; i < candidates; ++i)
+        if (distances[i] <= cutoff) selected[found++] = selected[i];
     return found;
 }
 

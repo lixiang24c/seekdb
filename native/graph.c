@@ -159,7 +159,7 @@ static void g_connect(MVGraph *g,uint32_t center,uint32_t other,unsigned level,d
 int mv_graph_build(MVGraph *g) {
     if(!g || g->loaded!=g->n)return 0;
     /* Identical sampled vectors are a poor graph workload; exact scan is safer. */
-    distance_fn fn=choose_distance(g->dim,g->n,g->n);
+    distance_fn fn=choose_distance(g->dim,g->n);
     double q[256];uint32_t chosen[GM0];
     for(size_t j=0;j<g->dim;++j)q[j]=g->vectors[j];
     int varied=0;
@@ -186,7 +186,7 @@ int mv_graph_build(MVGraph *g) {
 size_t mv_graph_search(MVGraph *g,const double *q,size_t k,size_t ef,int64_t *ids) {
     if(!g || g->entry<0 || !q || !ids || !k || k>64 || ef<k+1 || ef>GMAXEF)return SIZE_MAX;
     if(ef>g->n)ef=g->n;
-    distance_fn fn=choose_distance(g->dim,g->n,g->n);
+    distance_fn fn=choose_distance(g->dim,g->n);
     double low=INFINITY, high=0;
     for(size_t i=0;i<16;++i) {
         double d=g_distance(g,(uint32_t)(g->n*i/16),q,fn);

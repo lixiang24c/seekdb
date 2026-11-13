@@ -4,9 +4,53 @@ from contextlib import contextmanager
 import ctypes
 import mmap
 import os
+from pathlib import Path
 
 MAP_BYTES = 8 << 20
 MAP_FILES = 16
+
+
+def file_cache_budget():
+    """Conservative visible cgroup-v2 headroom; None selects bounded streaming.
+
+    Docker's private cgroup namespace normally exposes the group at '/'.
+    With a host namespace, include visible ancestors and their aggregate usage.
+    Unsupported mounts, missing counters, v1 or malformed values fail closed.
+    This is a per-table planning estimate, not a memory reservation.
+    """
+    root = Path('/sys/fs/cgroup')
+    try:
+        memberships = [line[3:] for line in Path('/proc/self/cgroup').read_text().splitlines()
+                       if line.startswith('0::')]
+        if len(memberships) != 1:
+            return None
+        relative = Path(memberships[0])
+        if not relative.is_absolute() or '..' in relative.parts:
+            return None
+        group = root / str(relative).lstrip('/')
+        budgets = []
+        while True:
+            # The host hierarchy root can lack the memory controller files.
+            if group == root and group != root / str(relative).lstrip('/') and not (group / 'memory.max').exists():
+                break
+            limits = []
+            for name in ('memory.max', 'memory.high'):
+                raw = (group / name).read_text().strip()
+                if raw != 'max':
+                    value = int(raw)
+                    if value < 0: return None
+                    limits.append(value)
+            if limits:
+                stats = dict(line.split() for line in (group / 'memory.stat').read_text().splitlines())
+                anon, kernel = int(stats['anon']), int(stats['kernel'])
+                if anon < 0 or kernel < 0: return None
+                budgets.append(max(0, min(limits) - anon - kernel - (1 << 20)))
+            if group == root:
+                break
+            group = group.parent
+        return min(budgets) if budgets else None
+    except (OSError, ValueError, KeyError):
+        return None
 
 
 class MappedIndex:
@@ -40,25 +84,44 @@ class IndexReader:
     def __init__(self):
         self.maps = OrderedDict()
         self.bytes = 0
+        self.profile_table = None
+        self.streaming = False
+
+    def block_size(self, table, segments, record_bytes):
+        if self.profile_table is not table:
+            budget = file_cache_budget()
+            footprint = sum(path.stat().st_size for path, _ in segments)
+            # Unknown/unlimited cgroups do not establish a safe cache budget.
+            self.streaming = budget is None or footprint > budget
+            self.profile_table = table
+        target = (256 << 10) if self.streaming else (4 << 20)
+        return record_bytes * max(1, target // record_bytes)
 
     def clear(self):
         while self.maps:
             _, node = self.maps.popitem(last=False)
             node.close()
         self.bytes = 0
+        self.profile_table = None
+        self.streaming = False
 
     @contextmanager
     def blocks(self, path, block_bytes, magic, mapped=False):
         enabled = mapped and os.environ.get('MINIDB_INDEX_MMAP') != '0'
         key = str(path)
         node = self.maps.get(key) if enabled else None
+        if node is not None and self.streaming and node.cost > block_bytes + 8:
+            self.maps.pop(key)
+            self.bytes -= node.cost
+            node.close()
+            node = None
         if node is not None:
             self.maps.move_to_end(key)
         else:
             with open(path, 'rb') as stream:
                 if stream.read(8) != magic: raise OSError('invalid index header')
                 cost = max(4096, os.fstat(stream.fileno()).st_size)
-                if enabled and cost <= MAP_BYTES:
+                if enabled and cost <= MAP_BYTES and (not self.streaming or cost <= block_bytes + 8):
                     while self.maps and (self.bytes + cost > MAP_BYTES or len(self.maps) >= MAP_FILES):
                         _, old = self.maps.popitem(last=False)
                         self.bytes -= old.cost
@@ -71,7 +134,11 @@ class IndexReader:
                         self.maps[key] = node
                         self.bytes += node.cost
                 if node is None:
-                    yield ((data, None) for data in iter(lambda: stream.read(block_bytes), b''))
+                    blocks = ((data, None) for data in iter(lambda: stream.read(block_bytes), b''))
+                    try:
+                        yield blocks
+                    finally:
+                        blocks.close()
                     return
         blocks = node.blocks(block_bytes)
         try:

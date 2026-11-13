@@ -8,7 +8,6 @@ import json
 import math
 import operator
 import struct
-from dataclasses import dataclass
 
 from .native import Screen, id_mask
 from .graph import GraphCache
@@ -37,11 +36,13 @@ class Worst:
     def __lt__(self, other): return self.key > other.key
 
 
-@dataclass
 class QueryResult:
-    columns: list
-    path: object = None
-    encoded_rows: object = None
+    __slots__ = ('columns', 'path', 'encoded_rows')
+
+    def __init__(self, columns, path=None, encoded_rows=None):
+        self.columns = columns
+        self.path = path
+        self.encoded_rows = encoded_rows
 
 
 class SortCodec:
@@ -337,9 +338,10 @@ class Database:
         reuse = entry[0] if entry is not None else None
         pending = {} if mask_key is not None and entry is None and screen.query is not None else None
         pending_cost = len(repr(mask_key)) * 4 + 256
-        block_bytes = fmt.size * max(1, (4 << 20) // fmt.size)
+        segments = self.store.index_segments(table)
+        block_bytes = self.index_reader.block_size(table, segments, fmt.size)
         allowed_ids = None
-        for path, excluded in self.store.index_segments(table):
+        for path, excluded in segments:
             excluded_ids = array('q', sorted(excluded)) if excluded else None
             with self.index_reader.blocks(path, block_bytes, INDEX_MAGIC, mapped=screen.query is not None) as blocks:
                 cached = reuse.get(path.name) if reuse is not None else None
@@ -451,8 +453,8 @@ class Database:
                 if allowed is not None: self.remember_filter(cache_key, allowed)
         scores = self.flat_topk(table, expr, k, allowed, mask_key, bool(filter_columns)) if table.get('indexes') and (not filter_columns or allowed is not None or has_masks) else None
         if scores is not None and covering:
-            # Covering query: projection is only the primary key; index candidates
-            # already answer it, so skip row lookup and record decoding.
+            # The index supplies primary keys and the exact ordered distance.
+            # No record fields are needed for a covering projection.
             selected = sorted(((distance, ident, None) for ident, distance in scores.items()),
                               key=lambda item: (item[0], item[1]))
             if distance_scores is not None:
