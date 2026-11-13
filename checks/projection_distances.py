@@ -38,7 +38,7 @@ original=engine.squared;original_decode=Codec.decode_fields
 def squared(a,b):calls.append(1);return original(a,b)
 def decode(self,raw,fields):decodes.append(set(fields));return original_decode(self,raw,fields)
 engine.squared=squared;Codec.decode_fields=decode
-check();assert not calls and decodes and all(3 not in fields for fields in decodes)
+check();assert not calls and not decodes
 rows=q('SELECT id,'+distance+' AS d,'+distance+' AS again FROM t ORDER BY d LIMIT 10')
 assert rows==[[i,math.sqrt(d),math.sqrt(d)] for d,i in truth()]
 assert not calls;checks+=1
@@ -64,7 +64,10 @@ fallbacks=[];original_topk=db.vector_topk
 def tracked(*a,**kw):
     result=original_topk(*a,**kw);fallbacks.append(result is None);return result
 db.vector_topk=tracked
-check(k=1024);assert fallbacks==[True]
+check(k=1024);assert fallbacks==[False]
+rows=q('SELECT id,body,'+distance+' AS d FROM t ORDER BY d LIMIT 1024')
+assert rows==[[i,'x'*512,math.sqrt(d)] for d,i in truth(k=1024)]
+assert fallbacks==[False,True];checks+=1
 db.vector_topk=original_topk
 before=copy.deepcopy(state)
 q('BEGIN');q("UPDATE t SET v='"+json.dumps([.25]*128)+f"' WHERE id={ids[0]}");state[ids[0]]=(state[ids[0]][0],[.25]*128)

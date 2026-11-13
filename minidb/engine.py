@@ -575,7 +575,8 @@ class Database:
                             if all(expr[1] != vc or (expr[0] == 'distance' and expr == ordered_expr) for expr in outs):
                                 columns = needed - {vc}
                         rows = self.vector_topk(table, ordered_expr, limit, columns, match, filter_columns, st['where'], mode, distance_scores,
-                                                covering=len(outs) == 1 and outs[0][0] == 'column' and outs[0][1] == table['pk'])
+                                                covering=all(expr == ('column', table['pk']) or
+                                                             expr == ordered_expr for expr in outs))
                     else:
                         selected = source()
                         try:
