@@ -1,6 +1,7 @@
 """Variable-sized immutable row files, atomically published by one manifest."""
 import copy
 import bisect
+from array import array
 import heapq
 import itertools
 import json
@@ -10,6 +11,7 @@ import struct
 import uuid
 from contextlib import ExitStack
 from pathlib import Path
+from .native_storage import NativeStorage
 
 MAGIC = b'MVROW001'
 INDEX_MAGIC = b'MVFLT001'
@@ -19,6 +21,7 @@ KEY_OFFSET = struct.Struct('<qQ')
 U32 = struct.Struct('<I')
 I64 = struct.Struct('<q')
 SMALL_SEGMENT, MAX_SEGMENTS, MAX_EXCLUDED = 64, 32, 128
+MERGE_FANOUT = 4
 
 
 def strict_json(text):
@@ -94,11 +97,18 @@ class Codec:
         raise OSError('invalid field position')
 
 
-def raw_rows(path, codec, pk):
-    with open(path, 'rb') as f:
+def raw_rows(path, codec, pk, count=None, bounded_read=False):
+    with open(path, 'rb', buffering=32768 if bounded_read else -1) as f:
+        if bounded_read:
+            try: os.posix_fadvise(f.fileno(), 0, 0, os.POSIX_FADV_RANDOM)
+            except (AttributeError, OSError): pass
         if f.read(8) != MAGIC:
             raise OSError('invalid row file header')
-        while head := f.read(4):
+        seen = 0
+        while count is None or seen < count:
+            head = f.read(4)
+            if not head: break
+            seen += 1
             if len(head) != 4:
                 raise OSError('incomplete row header')
             size = U32.unpack(head)[0]
@@ -137,6 +147,7 @@ def write_rows(path, codec, rows, durable=False):
 
 class Storage:
     def __init__(self, directory):
+        self.cpp = NativeStorage()
         self.root = Path(directory)
         self.root.mkdir(parents=True, exist_ok=True)
         self.dirfd = os.open(self.root, os.O_RDONLY | os.O_DIRECTORY)
@@ -155,6 +166,7 @@ class Storage:
                     for key, magic in [('file', MAGIC), ('index_file', INDEX_MAGIC), ('keys', KEY_MAGIC)]:
                         if part.get(key):
                             with open(self.path(part[key]), 'rb') as f:
+                                if key == 'keys': f.seek(part.get('key_offset', 0))
                                 if f.read(8) not in ((KEY_MAGIC, OFFSET_MAGIC) if key == 'keys' else (magic,)):
                                     raise OSError('invalid committed file header')
         except FileNotFoundError:
@@ -225,14 +237,95 @@ class Storage:
         # Read the original single-file format without changing its committed files.
         return [{k: table[k] for k in ('file', 'index_file', 'count') if k in table}] if table.get('file') else []
 
+    def scalar_layout(self, table):
+        fields = [i for i, c in enumerate(table['cols']) if c['type'] != 'VECTOR']
+        return fields, Codec([table['cols'][i] for i in fields])
+
+    def restore_vector(self, table, part, raw, position, vectors=None, codec=None):
+        if not part.get('columnar'): return raw
+        codec = codec or Codec(table['cols'])
+        vc = next(i for i, c in enumerate(table['cols']) if c['type'] == 'VECTOR')
+        offset, size = codec.field(raw, vc)
+        stride = size + 8
+        if vectors is None:
+            with open(self.path(part['index_file']), 'rb') as f:
+                data = os.pread(f.fileno(), stride, 8 + position * stride)
+        else:
+            data = vectors.read(stride)
+        if len(data) != stride: raise OSError('incomplete vector column')
+        return raw[:offset] + data[8:] + raw[offset:]
+
     def part_records(self, table, part):
         excluded = set(part.get('excluded', ()))
-        reader = raw_rows(self.path(part['file']), Codec(table['cols']), table['pk'])
+        fields, scalar = self.scalar_layout(table)
+        codec = scalar if part.get('columnar') else Codec(table['cols'])
+        pk = fields.index(table['pk']) if part.get('columnar') else table['pk']
+        reader = raw_rows(self.path(part['file']), codec, pk, part['count'])
+        full_codec = Codec(table['cols'])
+        with ExitStack() as opened:
+            vectors = opened.enter_context(open(self.path(part['index_file']), 'rb')) if part.get('columnar') else None
+            if vectors and vectors.read(8) != INDEX_MAGIC: raise OSError('invalid vector column')
+            try:
+                for position, (ident, raw) in enumerate(reader):
+                    raw = self.restore_vector(table, part, raw, position, vectors, full_codec)
+                    if ident not in excluded: yield ident, raw
+            finally: reader.close()
+
+    def column_records(self, table, part, bounded_read=False):
+        """Merge physical columns without constructing logical vector rows."""
+        vc = next(i for i, c in enumerate(table['cols']) if c['type'] == 'VECTOR')
+        if not part.get('columnar'):
+            codec = Codec(table['cols'])
+            for ident, raw in self.part_records(table, part):
+                offset, size = codec.field(raw, vc)
+                yield ident, raw[:offset] + raw[offset + size:], raw[offset:offset + size]
+            return
+        fields, codec = self.scalar_layout(table)
+        pk = fields.index(table['pk'])
+        excluded = set(part.get('excluded', ()))
+        stride = 8 + table['cols'][vc]['n'] * 4
+        reader = raw_rows(self.path(part['file']), codec, pk, part['count'], bounded_read=bounded_read)
         try:
-            for ident, raw in reader:
-                if ident not in excluded: yield ident, raw
-        finally:
-            reader.close()
+            with open(self.path(part['index_file']), 'rb', buffering=32768 if bounded_read else -1) as vectors:
+                if bounded_read:
+                    try: os.posix_fadvise(vectors.fileno(), 0, 0, os.POSIX_FADV_RANDOM)
+                    except (AttributeError, OSError): pass
+                if vectors.read(8) != INDEX_MAGIC: raise OSError('invalid vector column')
+                for ident, raw in reader:
+                    vector = vectors.read(stride)
+                    if len(vector) != stride or I64.unpack_from(vector)[0] != ident:
+                        raise OSError('misaligned vector column')
+                    if ident not in excluded: yield ident, raw, vector[8:]
+        finally: reader.close()
+
+    def incoming_columns(self, table, rows):
+        fields, codec = self.scalar_layout(table)
+        vc = next(i for i, c in enumerate(table['cols']) if c['type'] == 'VECTOR')
+        vector = struct.Struct('<' + str(table['cols'][vc]['n']) + 'f')
+        for row in rows:
+            value = row[vc]
+            packed = value.tobytes() if isinstance(value, array) and value.typecode == 'f' else vector.pack(*value)
+            yield row[table['pk']], codec.encode([row[i] for i in fields]), packed
+
+    def scalar_ids(self, table, match, columns, budget=4096, builder=None):
+        """Evaluate predicates without touching the canonical vector column."""
+        if not all(p.get('columnar') for p in self.segments(table)): return None
+        fields, codec = self.scalar_layout(table)
+        needed = {fields.index(i) for i in columns}
+        pk = fields.index(table['pk'])
+        ids = set()
+        for part in self.segments(table):
+            excluded = set(part.get('excluded', ()))
+            for ident, raw in raw_rows(self.path(part['file']), codec, pk, part['count']):
+                if ident in excluded: continue
+                scalars = codec.decode_fields(raw, needed)
+                row = [None] * len(table['cols'])
+                for i in needed: row[fields[i]] = scalars[i]
+                if builder is not None: builder.add(ident, row[next(iter(columns))])
+                if match(row):
+                    ids.add(ident)
+                    if len(ids) > budget: return None
+        return ids
 
     def index_segments(self, table):
         cached_table, cached = self._segment_cache
@@ -245,37 +338,70 @@ class Storage:
     def index_paths(self, table):
         return [self.path(part['index_file']) for part in self.segments(table) if part.get('index_file')]
 
-    def write_segment(self, table, records, created):
+    def native_segment(self, table, parts, incoming, created, bounded=False):
+        vc = next((i for i, c in enumerate(table['cols']) if c['type'] == 'VECTOR'), None)
+        if (vc is None or not 1 <= table['cols'][vc]['n'] <= 4096 or len(parts) > 16 or
+                not all(p.get('columnar') for p in parts) or not self.cpp.available()):
+            return None
+        payload = getattr(incoming, 'payload', None)
+        if payload is None:
+            payload = bytearray()
+            for ident, scalar, vector in self.incoming_columns(table, incoming):
+                payload.extend(I64.pack(ident)); payload.extend(U32.pack(len(scalar)))
+                payload.extend(scalar); payload.extend(vector)
+        path, vectors, keys = self.fresh(), self.fresh('index'), self.fresh('keys')
+        sources = [(self.path(p['file']), self.path(p['index_file']), p['count'], sorted(p.get('excluded', ()))) for p in parts]
+        result = self.cpp.merge(sources, payload, table['cols'][vc]['n'], path, vectors, keys, bounded)
+        created.extend((path, vectors))
+        return {'file': path.name, 'keys': path.name, 'index_file': vectors.name,
+                'count': result.count, 'min': result.minimum if result.count else None,
+                'max': result.maximum if result.count else None, 'key_offset': result.key_offset,
+                'level': 0, 'columnar': True}
+
+    def write_segment(self, table, records, created, columns=False):
         path = self.fresh()
         keys = self.fresh('keys')
-        idx = self.fresh('index') if table.get('indexes') else None
         codec = Codec(table['cols'])
         vc = next((i for i, c in enumerate(table['cols']) if c['type'] == 'VECTOR'), None)
+        idx = self.fresh('index') if vc is not None else None
         part = {'file': path.name, 'keys': keys.name, 'index_file': idx.name if idx else None,
-                'count': 0, 'min': None, 'max': None, 'level': 0}
+                'count': 0, 'min': None, 'max': None, 'level': 0, 'columnar': vc is not None}
         opened = []
         try:
             f = open(path, 'xb'); opened.append(f); f.write(MAGIC)
-            k = open(keys, 'xb'); opened.append(k); k.write(OFFSET_MAGIC)
+            k = open(keys, 'x+b'); opened.append(k); k.write(OFFSET_MAGIC)
             v = None
             if idx:
                 v = open(idx, 'xb'); opened.append(v); v.write(INDEX_MAGIC)
-            for ident, raw in records:
+            for record in records:
+                if columns:
+                    ident, stored, vector = record
+                else:
+                    ident, raw = record
+                    stored, vector = raw, None
+                    if vc is not None:
+                        offset, size = codec.field(raw, vc)
+                        stored, vector = raw[:offset] + raw[offset + size:], raw[offset:offset + size]
                 if part['count'] and ident <= part['max']:
                     raise OSError('records must have unique ascending primary keys')
                 row_offset = f.tell()
-                f.write(U32.pack(len(raw))); f.write(raw)
+                f.write(U32.pack(len(stored))); f.write(stored)
                 packed_key = I64.pack(ident)
                 k.write(KEY_OFFSET.pack(ident, row_offset))
                 if v:
-                    offset, size = codec.field(raw, vc)
-                    v.write(packed_key); v.write(memoryview(raw)[offset:offset + size])
+                    v.write(packed_key); v.write(vector)
                 if not part['count']: part['min'] = ident
                 part['max'] = ident
                 part['count'] += 1
+            if vc is not None:
+                part['key_offset'] = f.tell()
+                part['keys'] = path.name
+                k.flush(); k.seek(0)
+                while data := k.read(65536): f.write(data)
+                k.close(); opened.remove(k); keys.unlink()
             for stream in opened:
                 stream.flush(); os.fsync(stream.fileno())
-            created.extend([path, keys] + ([idx] if idx else []))
+            created.extend([path] + ([keys] if vc is None else []) + ([idx] if idx else []))
             return part
         except BaseException:
             path.unlink(missing_ok=True)
@@ -300,7 +426,7 @@ class Storage:
         new, created = copy.deepcopy(table), []
         parts = copy.deepcopy([p for p in self.segments(table) if p['count']])
         codec, pk = Codec(table['cols']), table['pk']
-        ids = [row[pk] for row in incoming]
+        ids = incoming.ids if hasattr(incoming, 'ids') else [row[pk] for row in incoming]
         try:
             for part in parts:
                 if not part.get('keys'):
@@ -309,7 +435,7 @@ class Storage:
                     with open(path, 'xb') as f:
                         f.write(KEY_MAGIC)
                         first = last = None
-                        for ident, _ in raw_rows(self.path(part['file']), codec, pk):
+                        for ident, _ in raw_rows(self.path(part['file']), codec, pk, part['count']):
                             if first is None: first = ident
                             last = ident; f.write(I64.pack(ident))
                         f.flush(); os.fsync(f.fileno())
@@ -320,6 +446,7 @@ class Storage:
                 if lo == hi:
                     continue
                 with open(self.path(part['keys']), 'rb') as f:
+                    f.seek(part.get('key_offset', 0))
                     header = f.read(8)
                     if header not in (KEY_MAGIC, OFFSET_MAGIC): raise OSError('invalid key index header')
                     stride = 16 if header == OFFSET_MAGIC else 8
@@ -328,7 +455,7 @@ class Storage:
                         left, right = 0, part['count']
                         while left < right:
                             mid = (left + right) // 2
-                            raw = os.pread(f.fileno(), 8, 8 + mid * stride)
+                            raw = os.pread(f.fileno(), 8, part.get('key_offset', 0) + 8 + mid * stride)
                             if len(raw) != 8: raise OSError('incomplete key index')
                             found = I64.unpack(raw)[0]
                             if found == ident: fail('duplicate primary key', 'duplicate_key')
@@ -336,18 +463,28 @@ class Storage:
                             else: right = mid
             level = max(0, (len(incoming) // 100).bit_length() - 1)
             merging = []
-            while parts and parts[-1]['level'] <= level:
-                old = parts.pop(); merging.append(old)
-                level = max(old['level'], level) + 1
+            fanout = 2 if table.get('indexes') else MERGE_FANOUT
+            while parts:
+                group = []
+                while parts and parts[-1]['level'] <= level and len(group) < fanout - 1:
+                    group.append(parts.pop())
+                if len(group) < fanout - 1:
+                    parts.extend(reversed(group))
+                    break
+                merging.extend(group)
+                level = max(level, max(p['level'] for p in group)) + 1
             if len(merging) <= 16:
                 # Plan the existing merge cascade first; write only its final run.
-                readers = [self.part_records(table, p) for p in merging]
-                try:
-                    records = ((row[pk], codec.encode(row)) for row in incoming)
-                    if readers: records = heapq.merge(records, *readers, key=lambda item: item[0])
-                    part = self.write_segment(table, records, created)
-                finally:
-                    for reader in readers: reader.close()
+                columns = any(c['type'] == 'VECTOR' for c in table['cols'])
+                part = self.native_segment(table, merging, incoming, created)
+                if part is None:
+                    readers = [(self.column_records(table, p) if columns else self.part_records(table, p)) for p in merging]
+                    try:
+                        records = self.incoming_columns(table, incoming) if columns else ((row[pk], codec.encode(row)) for row in incoming)
+                        if readers: records = heapq.merge(records, *readers, key=lambda item: item[0])
+                        part = self.write_segment(table, records, created, columns=columns)
+                    finally:
+                        for reader in readers: reader.close()
             else:
                 # Keep the old two-reader path for unusually wide overlay cascades.
                 part = self.write_segment(table, ((row[pk], codec.encode(row)) for row in incoming), created)
@@ -373,6 +510,7 @@ class Storage:
             if part.get('min') is not None and not part['min'] <= ident <= part['max']: continue
             if part.get('keys'):
                 with open(self.path(part['keys']), 'rb') as f:
+                    f.seek(part.get('key_offset', 0))
                     header = f.read(8)
                     if header not in (KEY_MAGIC, OFFSET_MAGIC): raise OSError('invalid key index header')
                     stride = 16 if header == OFFSET_MAGIC else 8
@@ -380,7 +518,7 @@ class Storage:
                     found = None
                     while left < right:
                         mid = (left + right) // 2
-                        data = os.pread(f.fileno(), stride, 8 + mid * stride)
+                        data = os.pread(f.fileno(), stride, part.get('key_offset', 0) + 8 + mid * stride)
                         if len(data) != stride: raise OSError('incomplete key index')
                         key = I64.unpack_from(data)[0]
                         if key == ident:
@@ -396,8 +534,8 @@ class Storage:
                             if len(head) != 4: raise OSError('incomplete row header')
                             size = U32.unpack(head)[0]; raw = rows.read(size)
                             if len(raw) != size: raise OSError('incomplete row')
-                            return part, raw
-            for key, raw in raw_rows(self.path(part['file']), codec, table['pk']):
+                            return part, self.restore_vector(table, part, raw, mid)
+            for key, raw in self.part_records(table, part):
                 if key == ident: return part, raw
                 if key > ident: break
         return None, None
@@ -417,6 +555,7 @@ class Storage:
                 offsets = []
                 if part.get('keys'):
                     keys = opened.enter_context(open(self.path(part['keys']), 'rb'))
+                    keys.seek(part.get('key_offset', 0))
                     header = keys.read(8)
                     if header not in (KEY_MAGIC, OFFSET_MAGIC): raise OSError('invalid key index header')
                     if header == OFFSET_MAGIC:
@@ -425,29 +564,29 @@ class Storage:
                             left, right = lower, part['count']
                             while left < right:
                                 mid = (left + right) // 2
-                                data = os.pread(keys.fileno(), 16, 8 + mid * 16)
+                                data = os.pread(keys.fileno(), 16, part.get('key_offset', 0) + 8 + mid * 16)
                                 if len(data) != 16: raise OSError('incomplete key index')
                                 key, offset = KEY_OFFSET.unpack(data)
                                 if key == ident:
-                                    offsets.append((ident, offset)); lower = mid + 1
+                                    offsets.append((ident, offset, mid)); lower = mid + 1
                                     break
                                 if key < ident: left = mid + 1
                                 else: right = mid
                             else: lower = left
                         if offsets:
                             rows = opened.enter_context(open(self.path(part['file']), 'rb'))
-                            for ident, offset in offsets:
+                            for ident, offset, position in offsets:
                                 rows.seek(offset)
                                 head = rows.read(4)
                                 if len(head) != 4: raise OSError('incomplete row header')
                                 raw = rows.read(U32.unpack(head)[0])
                                 if len(raw) != U32.unpack(head)[0]: raise OSError('incomplete row')
                                 pending.remove(ident)
-                                yield ident, raw
+                                yield ident, self.restore_vector(table, part, raw, position)
                         continue
                 # Legacy key-only or unindexed files have no row offsets.
                 wanted = set(wanted)
-                reader = raw_rows(self.path(part['file']), codec, table['pk'])
+                reader = self.part_records(table, part)
                 try:
                     for ident, raw in reader:
                         if ident in wanted:
@@ -462,6 +601,24 @@ class Storage:
         vc = next(i for i, c in enumerate(table['cols']) if c['type'] == 'VECTOR')
         parts = copy.deepcopy(self.segments(table))
         try:
+            from .indexio import file_cache_budget
+            budget = file_cache_budget()
+            dim = table['cols'][vc]['n']
+            code_cost = table['count'] * dim + dim * 2048 + 128
+            footprint = sum(self.path(p['index_file']).stat().st_size for p in parts if p.get('index_file'))
+            compact = (budget is not None and footprint > budget and
+                       512 <= table['count'] <= 20000 and 16 <= dim <= 256 and
+                       code_cost <= (2 << 20) and code_cost + dim * 2048 + table['count'] * 8 + (256 << 10) <= budget)
+            if compact and 1 < len(parts) <= 16 and all(p.get('columnar') for p in parts):
+                packed = self.native_segment(table, parts, (), created, bounded=True)
+                if packed is None:
+                    readers = [self.column_records(table, p, bounded_read=True) for p in parts]
+                    try:
+                        packed = self.write_segment(new, heapq.merge(*readers, key=lambda item: item[0]), created, columns=True)
+                    finally:
+                        for reader in readers: reader.close()
+                packed['level'] = max(p.get('level', 0) for p in parts) + 1
+                parts = [packed]
             for part in parts:
                 if part.get('index_file'): continue
                 path = self.fresh('index'); created.append(path)
@@ -530,11 +687,15 @@ class Storage:
         while start and parts[start - 1]['count'] < SMALL_SEGMENT: start -= 1
         tail = parts[start:]
         if len(tail) < 2 or start + 1 >= MAX_SEGMENTS: return None
-        created, readers = [], [self.part_records(table, p) for p in tail]
-        try:
-            merged = self.write_segment(table, heapq.merge(*readers, key=lambda item: item[0]), created)
-        finally:
-            for reader in readers: reader.close()
+        created = []
+        merged = self.native_segment(table, tail, (), created)
+        if merged is None:
+            columns = any(c['type'] == 'VECTOR' for c in table['cols'])
+            readers = [(self.column_records(table, p) if columns else self.part_records(table, p)) for p in tail]
+            try:
+                merged = self.write_segment(table, heapq.merge(*readers, key=lambda item: item[0]), created, columns=columns)
+            finally:
+                for reader in readers: reader.close()
         new = copy.deepcopy(table)
         new.update(segments=copy.deepcopy(parts[:start]) + ([merged] if merged['count'] else []))
         new.pop('file', None); new.pop('index_file', None)
@@ -568,6 +729,7 @@ class Storage:
             if not part['count']: continue
             if not part.get('keys'): return False
             with open(self.path(part['keys']), 'rb') as f:
+                f.seek(part.get('key_offset', 0))
                 if f.read(8) != OFFSET_MAGIC: return False
         return True
 
@@ -579,10 +741,11 @@ class Storage:
             if part.get('min') is not None and (part['max'] < lower or part['min'] > upper): return
             if part.get('keys'):
                 with open(self.path(part['keys']), 'rb') as keys:
+                    keys.seek(part.get('key_offset', 0))
                     header = keys.read(8)
                     if header == OFFSET_MAGIC:
                         def entry(i):
-                            data = os.pread(keys.fileno(), 16, 8 + i * 16)
+                            data = os.pread(keys.fileno(), 16, part.get('key_offset', 0) + 8 + i * 16)
                             if len(data) != 16: raise OSError('incomplete key index')
                             return KEY_OFFSET.unpack(data)
                         def lower_bound(value):
@@ -602,6 +765,7 @@ class Storage:
                                 if len(head) != 4: raise OSError('incomplete row header')
                                 size = U32.unpack(head)[0]; raw = rows.read(size)
                                 if len(raw) != size: raise OSError('incomplete row')
+                                raw = self.restore_vector(table, part, raw, i)
                                 offset, _ = codec.field(raw, table['pk'])
                                 ident = I64.unpack_from(raw, offset)[0]
                                 if ident not in part.get('excluded', ()): yield ident, raw
@@ -629,6 +793,27 @@ class Storage:
             for reader in readers: reader.close()
 
     def rows(self, table, columns=None, predicate=None, predicate_columns=None, bounds=None, reverse=False, ordered=True):
+        if (bounds is None and columns is not None and
+                all(table['cols'][i]['type'] != 'VECTOR' for i in columns) and
+                all(p.get('columnar') for p in self.segments(table))):
+            fields, scalar = self.scalar_layout(table)
+            pk = fields.index(table['pk'])
+            wanted = set(columns) | set(predicate_columns or ())
+            selected = {fields.index(i) for i in wanted}
+            def scan(part):
+                for ident, raw in raw_rows(self.path(part['file']), scalar, pk, part['count']):
+                    if ident in part.get('excluded', ()): continue
+                    values = scalar.decode_fields(raw, selected)
+                    row = [None] * len(table['cols'])
+                    for i in selected: row[fields[i]] = values[i]
+                    if predicate is None or predicate(row): yield ident, row
+            readers = [scan(p) for p in self.segments(table)]
+            try:
+                source = heapq.merge(*readers, key=lambda item: item[0]) if ordered else itertools.chain.from_iterable(readers)
+                for _, row in source: yield row
+            finally:
+                for reader in readers: reader.close()
+            return
         codec = Codec(table['cols'])
         records = self.range_records(table, *bounds, reverse=reverse) if bounds is not None else self.records(table, ordered=ordered)
         try:

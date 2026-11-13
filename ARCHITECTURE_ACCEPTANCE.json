@@ -1,0 +1,501 @@
+{
+  "schema_version": 1,
+  "decision": "KEEP_COMPLETE_ARCHITECTURE",
+  "selected_version": "final",
+  "decision_by": "user",
+  "recorded_at_utc": "2026-11-13T16:44:23.744515+00:00",
+  "scope": "Record accepted implementation, evidence and rollback points only. No additional optimization, commit, push or rollback executed.",
+  "basis": {
+    "verification_status": "PASS",
+    "full_workload_runs": 12,
+    "runs_per_version_scenario": 1,
+    "recovery_cases": 24,
+    "oom_kills": 0,
+    "output_validation": "Independent float64 byte-exact oracle and equal complete output hashes across four versions within each environment.",
+    "performance_interpretation": "Single-run observations only; no stable-speedup or platform-score claim."
+  },
+  "accepted_tradeoffs": [
+    "12 MiB cgroup peak still reaches its limit.",
+    "12 MiB index preparation increased from 87.4 ms to 315.9 ms.",
+    "Formal no-filter/filter query P99 increased by 55.6%/58.6% relative to b2 in this run.",
+    "Query-group additions increased full-stage time over write-only stage by 3.3% at 12 MiB and 4.1% at 64 MiB.",
+    "Not every stage or query shape is faster; user accepts these costs in favor of overall resource efficiency and low-memory I/O benefits."
+  ],
+  "observed_final_vs_b2": {
+    "mem12": {
+      "schema": {
+        "baseline": 0.006886660004965961,
+        "candidate": 0.004891664000751916,
+        "change_percent": -28.968992265851025
+      },
+      "write": {
+        "baseline": 3.02808666099736,
+        "candidate": 2.0289705460018013,
+        "change_percent": -32.99496437352556
+      },
+      "index": {
+        "baseline": 0.08743830399907893,
+        "candidate": 0.3158671109995339,
+        "change_percent": 261.24569731231435
+      },
+      "first_queries": {
+        "baseline": 0.30425532100343844,
+        "candidate": 0.31690338799671736,
+        "change_percent": 4.157056958466798
+      },
+      "warmup": {
+        "baseline": 0.15369329399982234,
+        "candidate": 0.03545283699349966,
+        "change_percent": -76.93273657499941
+      },
+      "unfiltered": {
+        "baseline": 0.33073091699770885,
+        "candidate": 0.0942307820005226,
+        "change_percent": -71.50832378904106
+      },
+      "filtered": {
+        "baseline": 0.37994228600291535,
+        "candidate": 0.1057391380018089,
+        "change_percent": -72.16968421330246
+      },
+      "query": {
+        "baseline": 0.7106732030006242,
+        "candidate": 0.1999699200023315,
+        "change_percent": -71.86190232613065
+      },
+      "startup": {
+        "baseline": 0.5350650549953571,
+        "candidate": 0.2855457469995599,
+        "change_percent": -46.63345244962078
+      },
+      "full_stage_sum": {
+        "baseline": 4.826098498000647,
+        "candidate": 3.1876012129941955,
+        "change_percent": -33.95076345178714
+      },
+      "full_io_bytes": {
+        "baseline": 690139136,
+        "candidate": 127897600,
+        "change_percent": -81.4678528823498
+      },
+      "query_io_bytes": {
+        "baseline": 403582976,
+        "candidate": 1531904,
+        "change_percent": -99.6204240289858
+      },
+      "memory_peak_bytes": {
+        "baseline": 12582912,
+        "candidate": 12582912,
+        "change_percent": 0.0
+      }
+    },
+    "mem64": {
+      "schema": {
+        "baseline": 0.007042514997010585,
+        "candidate": 0.005509716000233311,
+        "change_percent": -21.764937631342185
+      },
+      "write": {
+        "baseline": 2.052039809001144,
+        "candidate": 1.4103415100034908,
+        "change_percent": -31.271240264583746
+      },
+      "index": {
+        "baseline": 0.05851723900559591,
+        "candidate": 0.019408343003306072,
+        "change_percent": -66.83311903787859
+      },
+      "first_queries": {
+        "baseline": 0.11584005500480998,
+        "candidate": 0.06057415200484684,
+        "change_percent": -47.70880244978161
+      },
+      "warmup": {
+        "baseline": 0.02347802800068166,
+        "candidate": 0.020320894996984862,
+        "change_percent": -13.447181354435456
+      },
+      "filtered": {
+        "baseline": 0.4373266699985834,
+        "candidate": 0.4197204970041639,
+        "change_percent": -4.025863090965043
+      },
+      "unfiltered": {
+        "baseline": 0.5921431219976512,
+        "candidate": 0.5737242439936381,
+        "change_percent": -3.110544954381178
+      },
+      "query": {
+        "baseline": 1.0294697919962346,
+        "candidate": 0.993444740997802,
+        "change_percent": -3.4993791249160133
+      },
+      "startup": {
+        "baseline": 0.43459390199859627,
+        "candidate": 0.44496829000127036,
+        "change_percent": 2.387145322326134
+      },
+      "full_stage_sum": {
+        "baseline": 3.720981340004073,
+        "candidate": 2.9545676470079343,
+        "change_percent": -20.597085095710256
+      },
+      "full_io_bytes": {
+        "baseline": 46133248,
+        "candidate": 32354304,
+        "change_percent": -29.86770842581905
+      },
+      "query_io_bytes": {
+        "baseline": 0,
+        "candidate": 0,
+        "change_percent": null
+      },
+      "memory_peak_bytes": {
+        "baseline": 26468352,
+        "candidate": 23154688,
+        "change_percent": -12.519343856391208
+      }
+    },
+    "formal": {
+      "schema": {
+        "baseline": 0.007094069995218888,
+        "candidate": 0.005615501999272965,
+        "change_percent": -20.842309096786714
+      },
+      "write": {
+        "baseline": 2.107113998994464,
+        "candidate": 1.3369839580045664,
+        "change_percent": -36.549044871678106
+      },
+      "index": {
+        "baseline": 0.054592092004895676,
+        "candidate": 0.03408207800384844,
+        "change_percent": -37.569569598483156
+      },
+      "first_queries": {
+        "baseline": 0.10549839599843835,
+        "candidate": 0.061422158003551885,
+        "change_percent": -41.779059840434826
+      },
+      "warmup": {
+        "baseline": 0.02470421800535405,
+        "candidate": 0.019779410999035463,
+        "change_percent": -19.935085600569312
+      },
+      "unfiltered": {
+        "baseline": 0.5530023429964785,
+        "candidate": 0.5645478229998844,
+        "change_percent": 2.0877813900110898
+      },
+      "filtered": {
+        "baseline": 0.46123669399821665,
+        "candidate": 0.43896544900053414,
+        "change_percent": -4.828593493857758
+      },
+      "query": {
+        "baseline": 1.0142390369946952,
+        "candidate": 1.0035132720004185,
+        "change_percent": -1.057518455024009
+      },
+      "startup": {
+        "baseline": 0.49763381000229856,
+        "candidate": 0.3058365750039229,
+        "change_percent": -38.541841640038434
+      },
+      "full_stage_sum": {
+        "baseline": 3.810875621995365,
+        "candidate": 2.7672329540146166,
+        "change_percent": -27.385902125934503
+      },
+      "full_io_bytes": {
+        "baseline": 46067712,
+        "candidate": 32354304,
+        "change_percent": -29.76793811683115
+      },
+      "query_io_bytes": {
+        "baseline": 0,
+        "candidate": 0,
+        "change_percent": null
+      },
+      "memory_peak_bytes": {
+        "baseline": 26583040,
+        "candidate": 23080960,
+        "change_percent": -13.174114021571647
+      }
+    }
+  },
+  "versions": {
+    "b2": {
+      "description": "验收基线，旧行式布局。",
+      "selected": false,
+      "base_commit": "b2ecc6b5afc98f4d8a317106cea7df570a0b69d9",
+      "git_commit": "b2ecc6b5afc98f4d8a317106cea7df570a0b69d9",
+      "identity_note": "b2 为真实 Git 提交；其他阶段是未提交的冻结源码，以 runtime_tree_sha256 和逐文件指纹标识。",
+      "image_id": "sha256:244401644c1a369319d26b79d49a7c8ebfec815b28c4da081adae153984d8f19",
+      "runtime_tree_sha256": "dce0e3bab6acca1af4e323b3c85963357601aaeb951e54ceae313046175856d9",
+      "source_sha256": {
+        ".dockerignore": "d04e7a34f971bcf973caa86450cc1f243cb6bb9cf31bc25c37c4327a3e7388bf",
+        "Dockerfile": "484f352d37be2c2b9b3cb2510d558de52ae805ebb0db16fb3425d0133bcd3149",
+        "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+        "minidb/engine.py": "cca1a826fcba8a54872563e2e7d364b25d9f649031702afd8469bed7540caa9f",
+        "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
+        "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+        "minidb/indexio.py": "fdbcf7f2358f9d3701b91905492825904662fdab26852a4c6c7453cdd2133c34",
+        "minidb/native.py": "2b16deb16d698712532e15d01925b701b05f84d371464be7028f117f32e3fdb7",
+        "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+        "minidb/sql.py": "3dda548ba4cbafe21bb61f631c909e23fa315a423182b41b33a8abb76d8bf0cf",
+        "minidb/storage.py": "e7ffab20cd954a826746e6ff69dbc848f81cb95514f4d860f9232edb8b1677f5",
+        "native/graph.c": "b3f3d98ad7e51c74b44987217b18883e4e69311c0cbf21c94bc96691370652e7",
+        "native/screen.c": "8ac190e43ddbef915879225624fd527e5393f7325651f0fa87ae1ac326bbbe77",
+        "requirements.lock": "5e1d72d066dd643601e7ed6ca3b8de91953960514013f896eef27f8655ff2ffe"
+      },
+      "archive": "/home/chenyifu/OceanBase/reports/architecture-retained-20261114/b2-runtime.tar.gz",
+      "archive_sha256": "6813f4d4c0fe61b24607a86f8f1aefbedb711248b903a507f0f620748381a2cb",
+      "archive_members_verified": true,
+      "original_context": "/home/chenyifu/OceanBase/reports/architecture-docker-20261113T162603583441Z/contexts/b2",
+      "snapshot_includes": [
+        "Dockerfile",
+        ".dockerignore",
+        "requirements.lock",
+        "minidb Python sources",
+        "native C/C++ sources"
+      ],
+      "snapshot_excludes": [
+        "agent/conversation.json",
+        "database volumes",
+        "host .so binaries",
+        "checks"
+      ],
+      "image_exported": false
+    },
+    "layout": {
+      "description": "布局阶段：Python 预编译、标量/向量分离、嵌入主键目录、Python 列流归并和预算化准备；原生存储强制关闭。",
+      "selected": false,
+      "base_commit": "b2ecc6b5afc98f4d8a317106cea7df570a0b69d9",
+      "git_commit": null,
+      "identity_note": "b2 为真实 Git 提交；其他阶段是未提交的冻结源码，以 runtime_tree_sha256 和逐文件指纹标识。",
+      "image_id": "sha256:20aaeedc7ff00ccffdb1263d9e50149f67f67c911b74c51ae0aaae095b15f1a6",
+      "runtime_tree_sha256": "e2beea93082e2b04489905fb5fd2bd6035474efb103df8c51a7a8cfdd63f750a",
+      "source_sha256": {
+        ".dockerignore": "22a6eb71928cf29e6ad5bc00af7dcc9389134b465cb3031070d3e77003229523",
+        "Dockerfile": "f971b128c1ae58399e9e176e2ef02bd3124953bcd2d9c3ec540632131f6b26bc",
+        "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+        "minidb/engine.py": "cca1a826fcba8a54872563e2e7d364b25d9f649031702afd8469bed7540caa9f",
+        "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
+        "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+        "minidb/indexio.py": "fdbcf7f2358f9d3701b91905492825904662fdab26852a4c6c7453cdd2133c34",
+        "minidb/native.py": "2b16deb16d698712532e15d01925b701b05f84d371464be7028f117f32e3fdb7",
+        "minidb/native_storage.py": "f42191c190ee60d74b14d40a9c5d3ecff2137969ae39dc3f27294383e843ab65",
+        "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+        "minidb/sql.py": "3dda548ba4cbafe21bb61f631c909e23fa315a423182b41b33a8abb76d8bf0cf",
+        "minidb/storage.py": "c1dd0011f50dc57cf2f7ecfb3f54dfb2fdf4c9fe69870dfd705b3bc094701d75",
+        "native/graph.c": "b3f3d98ad7e51c74b44987217b18883e4e69311c0cbf21c94bc96691370652e7",
+        "native/screen.c": "8ac190e43ddbef915879225624fd527e5393f7325651f0fa87ae1ac326bbbe77",
+        "native/storage.cpp": "3535ac3749b927e7bca51d7193036e9366ce3428bed288ceece3e3ae07c3b5ee",
+        "requirements.lock": "bdba5c3692f6beb90021e092fd2eb373d98da24bfaa89f1222c5739663592162"
+      },
+      "archive": "/home/chenyifu/OceanBase/reports/architecture-retained-20261114/layout-runtime.tar.gz",
+      "archive_sha256": "5137f1486cbcf659e74f25456531876cb2e00f5d85f790429f36139d1b745f0d",
+      "archive_members_verified": true,
+      "original_context": "/home/chenyifu/OceanBase/reports/architecture-docker-20261113T162603583441Z/contexts/layout",
+      "snapshot_includes": [
+        "Dockerfile",
+        ".dockerignore",
+        "requirements.lock",
+        "minidb Python sources",
+        "native C/C++ sources"
+      ],
+      "snapshot_excludes": [
+        "agent/conversation.json",
+        "database volumes",
+        "host .so binaries",
+        "checks"
+      ],
+      "image_exported": false
+    },
+    "write": {
+      "description": "原生写入阶段：在 layout 上启用 C++ 段写入/归并、向量转换和整批 INSERT。",
+      "selected": false,
+      "base_commit": "b2ecc6b5afc98f4d8a317106cea7df570a0b69d9",
+      "git_commit": null,
+      "identity_note": "b2 为真实 Git 提交；其他阶段是未提交的冻结源码，以 runtime_tree_sha256 和逐文件指纹标识。",
+      "image_id": "sha256:50fa3f21eaff6d385b9c2962bacaefbc0354e8f1c47b9f28b4bdaba7e691d064",
+      "runtime_tree_sha256": "eae2c49f5594f8dad1507b487fa0b4449387c994c741245027d572ce756882b5",
+      "source_sha256": {
+        ".dockerignore": "22a6eb71928cf29e6ad5bc00af7dcc9389134b465cb3031070d3e77003229523",
+        "Dockerfile": "f971b128c1ae58399e9e176e2ef02bd3124953bcd2d9c3ec540632131f6b26bc",
+        "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+        "minidb/engine.py": "8b4f46c25dc588c8ff654eae38e7fa1084417e7d5dc00321cfe44bcf1726b07a",
+        "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
+        "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+        "minidb/indexio.py": "fdbcf7f2358f9d3701b91905492825904662fdab26852a4c6c7453cdd2133c34",
+        "minidb/native.py": "2b16deb16d698712532e15d01925b701b05f84d371464be7028f117f32e3fdb7",
+        "minidb/native_storage.py": "cb54b2a7a776f0b92d346ac3d568ebb92fd20aee376eec658cd5a4131c1f731d",
+        "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+        "minidb/sql.py": "34f16e9a068dab882ddefd07c9a29520823d7564187237de3c1a3f09ece7bb07",
+        "minidb/storage.py": "c1dd0011f50dc57cf2f7ecfb3f54dfb2fdf4c9fe69870dfd705b3bc094701d75",
+        "native/graph.c": "b3f3d98ad7e51c74b44987217b18883e4e69311c0cbf21c94bc96691370652e7",
+        "native/screen.c": "8ac190e43ddbef915879225624fd527e5393f7325651f0fa87ae1ac326bbbe77",
+        "native/storage.cpp": "3535ac3749b927e7bca51d7193036e9366ce3428bed288ceece3e3ae07c3b5ee",
+        "requirements.lock": "bdba5c3692f6beb90021e092fd2eb373d98da24bfaa89f1222c5739663592162"
+      },
+      "archive": "/home/chenyifu/OceanBase/reports/architecture-retained-20261114/write-runtime.tar.gz",
+      "archive_sha256": "6b864e2f506da1c0e9456edb0dd57c11323add1b156767e5bf26dce22b0fada5",
+      "archive_members_verified": true,
+      "original_context": "/home/chenyifu/OceanBase/reports/architecture-docker-20261113T162603583441Z/contexts/write",
+      "snapshot_includes": [
+        "Dockerfile",
+        ".dockerignore",
+        "requirements.lock",
+        "minidb Python sources",
+        "native C/C++ sources"
+      ],
+      "snapshot_excludes": [
+        "agent/conversation.json",
+        "database volumes",
+        "host .so binaries",
+        "checks"
+      ],
+      "image_exported": false
+    },
+    "final": {
+      "description": "完整架构：在 write 上加入标量过滤、掩码裁剪、预算 VA/按页回读、C++ 精确全局 TopK。用户决定保留此版本。",
+      "selected": true,
+      "base_commit": "b2ecc6b5afc98f4d8a317106cea7df570a0b69d9",
+      "git_commit": null,
+      "identity_note": "b2 为真实 Git 提交；其他阶段是未提交的冻结源码，以 runtime_tree_sha256 和逐文件指纹标识。",
+      "image_id": "sha256:7cb5ff0fcbc35999606fa196bf98351b5810da0e61328eddc2165bcbd13ccc48",
+      "runtime_tree_sha256": "f19d21dff99d7dba334e9e5e6cfdd62d2b18157b159436ab42dd36e205a9dcd0",
+      "source_sha256": {
+        ".dockerignore": "22a6eb71928cf29e6ad5bc00af7dcc9389134b465cb3031070d3e77003229523",
+        "Dockerfile": "f971b128c1ae58399e9e176e2ef02bd3124953bcd2d9c3ec540632131f6b26bc",
+        "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+        "minidb/approx.py": "bc0cb087d9f05238fee363a56480cbc72deb9f0044bf42c7dcd17c1e235f141a",
+        "minidb/engine.py": "f1dd72ee32a36ed03c604a5556114577afc04b9b924085dc7affbccb0464a2a7",
+        "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
+        "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+        "minidb/indexio.py": "43ccadfbab4c0301ea1c43d490845421f373e759f27c2b8ff65d72f427afb319",
+        "minidb/native.py": "2b16deb16d698712532e15d01925b701b05f84d371464be7028f117f32e3fdb7",
+        "minidb/native_storage.py": "cb54b2a7a776f0b92d346ac3d568ebb92fd20aee376eec658cd5a4131c1f731d",
+        "minidb/query_native.py": "2cf0a9a3ea0f103f2befe7f95860ecb9d714167789465bb4d9002a71a6b178f0",
+        "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+        "minidb/sql.py": "34f16e9a068dab882ddefd07c9a29520823d7564187237de3c1a3f09ece7bb07",
+        "minidb/storage.py": "c1dd0011f50dc57cf2f7ecfb3f54dfb2fdf4c9fe69870dfd705b3bc094701d75",
+        "native/approx.c": "a6eef443380d8b83ea40e970abb0e9b766686e2cb2b07d8851eff7af01543d65",
+        "native/graph.c": "b3f3d98ad7e51c74b44987217b18883e4e69311c0cbf21c94bc96691370652e7",
+        "native/screen.c": "475ff78eda1f9c30c5ef8e4162dc8c1c75934f67ca850d8ac91823fa0376f223",
+        "native/storage.cpp": "3535ac3749b927e7bca51d7193036e9366ce3428bed288ceece3e3ae07c3b5ee",
+        "requirements.lock": "bdba5c3692f6beb90021e092fd2eb373d98da24bfaa89f1222c5739663592162"
+      },
+      "archive": "/home/chenyifu/OceanBase/reports/architecture-retained-20261114/final-runtime.tar.gz",
+      "archive_sha256": "a8c2c5a782979e0538f2d2526dd6882f0bc68e6c2f61f2a93bcae19a5026be11",
+      "archive_members_verified": true,
+      "original_context": "/home/chenyifu/OceanBase/reports/architecture-docker-20261113T162603583441Z/contexts/final",
+      "snapshot_includes": [
+        "Dockerfile",
+        ".dockerignore",
+        "requirements.lock",
+        "minidb Python sources",
+        "native C/C++ sources"
+      ],
+      "snapshot_excludes": [
+        "agent/conversation.json",
+        "database volumes",
+        "host .so binaries",
+        "checks"
+      ],
+      "image_exported": false
+    }
+  },
+  "evidence": {
+    "original_report": "/home/chenyifu/OceanBase/reports/architecture-docker-20261113T162603583441Z/report.json",
+    "report_sha256": "8328ba25a6172d00e86a33b6584c7ac7332a2fa9f01e4785809f73496581469f",
+    "retained_report": "/home/chenyifu/OceanBase/reports/architecture-retained-20261114/verification-report.json",
+    "detailed_summary": "/home/chenyifu/OceanBase/reports/architecture-retained-20261114/measurement-summary.zh.txt",
+    "prior_correctness_evidence": {
+      "report": "/home/chenyifu/OceanBase/reports/architecture-docker-20261113T161024471402Z/report.json",
+      "report_sha256": "4c675479e84b443bc2710581ed50740cc95a499398488af42cbc1efc6a536903",
+      "validated_checks_report": "/home/chenyifu/OceanBase/reports/architecture-docker-20261113T154342473957Z/report.json",
+      "evidence_chain": [
+        "/home/chenyifu/OceanBase/reports/architecture-docker-20261113T154342473957Z/report.json"
+      ],
+      "passed_checks": [
+        "architecture-auto",
+        "architecture-off",
+        "architecture-scalar",
+        "b2-audit",
+        "b2-build",
+        "b2-public",
+        "bitmap_boundaries-auto",
+        "combined_overlays-auto",
+        "combined_overlays-scalar",
+        "contract",
+        "docker-version",
+        "fault-build",
+        "final-audit",
+        "final-build",
+        "final-public",
+        "graph_boundaries-auto",
+        "layout-audit",
+        "layout-build",
+        "layout-public",
+        "model",
+        "native_screen-auto",
+        "native_screen-scalar",
+        "native_topk_sql",
+        "parser-fastpaths",
+        "parser_scan-auto",
+        "projection_distances-auto",
+        "runtime_native-auto",
+        "runtime_native-scalar",
+        "sanitizer",
+        "sanitizer-c",
+        "sanitizer-cpp",
+        "vector_codec-auto",
+        "vector_text-auto",
+        "write-audit",
+        "write-build",
+        "write-public"
+      ],
+      "changed_harness_files": [
+        "checks/architecture_recovery.py",
+        "checks/storage_fault.c",
+        "checks/verify_optimization.py"
+      ],
+      "previous_block": "Recovery fixture directory permissions or PID 1 self-signal. Recovery and performance unverified."
+    },
+    "recovery_reports": {
+      "12m": {
+        "path": "/home/chenyifu/OceanBase/reports/architecture-retained-20261114/recovery-12m.json",
+        "sha256": "072b88e58cce258f1d047496aa48996631dde681d898f6fa71dcdc528533ec0b"
+      },
+      "64m": {
+        "path": "/home/chenyifu/OceanBase/reports/architecture-retained-20261114/recovery-64m.json",
+        "sha256": "a537ad4ce03c8de38534e9dfa13ee075ba032569dc0dc25a6c597453b8d66d58"
+      },
+      "2g": {
+        "path": "/home/chenyifu/OceanBase/reports/architecture-retained-20261114/recovery-2g.json",
+        "sha256": "d5a08bfbe1aee7ca058efcc23d9d3ba22539432c6356bc0fc99fba0f2806c794"
+      }
+    }
+  },
+  "rollback": {
+    "preferred_method": "Inspect/extract a stage runtime archive into a NEW isolated directory, or reuse its immutable image ID; preserve the existing working tree and data volume.",
+    "b2_data_compatibility": "b2 cannot directly read the new columnar format. Use a b2-compatible backup or a fresh data volume; no verified new-to-old converter is recorded.",
+    "layout_write_final_data_compatibility": "Same new physical format, with Python/C++ mixed-format checks passed. Full-image downgrade against an entire final-version data volume has not been independently validated; verify a copy before switching.",
+    "source_rebuild": "Pinned base images, linux/amd64, --network=none. A fresh build may have a different image ID; record the new ID and validate it.",
+    "image_backups": "Image IDs recorded; no docker image save archive was created. Runtime source archives are verified and retained.",
+    "executed": false
+  },
+  "preservation": {
+    "runtime_matches_accepted_final": true,
+    "conversation_unchanged": true,
+    "conversation_sha256_at_recording": "0022f840a1a05fb3e0e74cd503266923ddf1df1997422a99fb363ec81e62f829"
+  },
+  "git": {
+    "workspace_head": "b2ecc6b5afc98f4d8a317106cea7df570a0b69d9",
+    "candidate_committed": false,
+    "pushed": false,
+    "status_note": "Snapshot at recorded_at_utc, before the later user-authorized commit/push. Commit identity is provided by Git history; runtime identity remains the recorded file hashes."
+  }
+}

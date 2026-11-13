@@ -1,0 +1,51 @@
+架构保留决定与回退点
+
+用户已决定保留完整 final 架构；接受已测得的低内存建索引、峰值与长尾代价，优先整体资源效率。此记录不触发进一步优化、源码回退、提交或推送。
+以下 Git 提交状态为生成验收记录时的快照；随后获用户授权的提交以 Git 历史为准，四版本源码指纹及镜像 ID 不变。
+权威记录：ARCHITECTURE_ACCEPTANCE.json（含四版本完整镜像 ID、逐文件 SHA256、归档 SHA256、验收证据和用户接受的代价）。
+验收：24 个恢复场景 + 12 个完整负载通过。每种环境/版本仅一轮；不将阶段收益相乘，也不声称稳定收益。
+
+b2（回退/比较点）
+验收基线，旧行式布局。
+Git 提交：b2ecc6b5afc98f4d8a317106cea7df570a0b69d9
+镜像：sha256:244401644c1a369319d26b79d49a7c8ebfec815b28c4da081adae153984d8f19
+源码树 SHA256：dce0e3bab6acca1af4e323b3c85963357601aaeb951e54ceae313046175856d9
+归档：/home/chenyifu/OceanBase/reports/architecture-retained-20261114/b2-runtime.tar.gz
+归档 SHA256：6813f4d4c0fe61b24607a86f8f1aefbedb711248b903a507f0f620748381a2cb
+
+layout（回退/比较点）
+布局阶段：Python 预编译、标量/向量分离、嵌入主键目录、Python 列流归并和预算化准备；原生存储强制关闭。
+Git 提交：无独立提交；使用源码指纹和归档标识
+镜像：sha256:20aaeedc7ff00ccffdb1263d9e50149f67f67c911b74c51ae0aaae095b15f1a6
+源码树 SHA256：e2beea93082e2b04489905fb5fd2bd6035474efb103df8c51a7a8cfdd63f750a
+归档：/home/chenyifu/OceanBase/reports/architecture-retained-20261114/layout-runtime.tar.gz
+归档 SHA256：5137f1486cbcf659e74f25456531876cb2e00f5d85f790429f36139d1b745f0d
+
+write（回退/比较点）
+原生写入阶段：在 layout 上启用 C++ 段写入/归并、向量转换和整批 INSERT。
+Git 提交：无独立提交；使用源码指纹和归档标识
+镜像：sha256:50fa3f21eaff6d385b9c2962bacaefbc0354e8f1c47b9f28b4bdaba7e691d064
+源码树 SHA256：eae2c49f5594f8dad1507b487fa0b4449387c994c741245027d572ce756882b5
+归档：/home/chenyifu/OceanBase/reports/architecture-retained-20261114/write-runtime.tar.gz
+归档 SHA256：6b864e2f506da1c0e9456edb0dd57c11323add1b156767e5bf26dce22b0fada5
+
+final（保留版本）
+完整架构：在 write 上加入标量过滤、掩码裁剪、预算 VA/按页回读、C++ 精确全局 TopK。用户决定保留此版本。
+Git 提交：无独立提交；使用源码指纹和归档标识
+镜像：sha256:7cb5ff0fcbc35999606fa196bf98351b5810da0e61328eddc2165bcbd13ccc48
+源码树 SHA256：f19d21dff99d7dba334e9e5e6cfdd62d2b18157b159436ab42dd36e205a9dcd0
+归档：/home/chenyifu/OceanBase/reports/architecture-retained-20261114/final-runtime.tar.gz
+归档 SHA256：a8c2c5a782979e0538f2d2526dd6882f0bc68e6c2f61f2a93bcae19a5026be11
+
+回退时的使用方式（本轮仅记录，未执行）：
+1. 先保留当前工作区和数据卷。不要对含对话材料修改的工作树执行 git reset --hard / git clean。
+2. 选定阶段，以记录的完整镜像 ID 启动隔离验证；镜像已不存在时，将对应 runtime.tar.gz 解压到新建目录，核对 ARCHITECTURE_ACCEPTANCE.json 中的逐文件 SHA256 后再构建。不要覆盖当前仓库。
+   构建方式：docker build --platform=linux/amd64 --no-cache --network=none --iidfile <新镜像ID文件> <隔离源码目录>
+   基础镜像按 Dockerfile 固定 digest；重建不保证得到原镜像 ID。源码归档不含检查脚本，检查入口及其哈希保存在验收目录的 checks、protocol_check 和 report.json 中。
+3. b2 不支持直接读取新的 columnar 数据。回退到 b2 必须使用其兼容备份或新数据卷，不能只换镜像后直接复用新格式 /data；本轮没有已验证的新格式转旧格式工具。
+4. layout/write/final 采用同一新物理格式，但“混读检查通过”不等同于“完整镜像降级切换通过”。如实际回退，先在数据副本核对可见状态、查询、提交/回滚和重启；确认后再切换。
+5. 本轮未导出 Docker 镜像备份，仅记录实际验收镜像 ID；已保留并核对四份独立运行时源码归档。
+
+已接受的代价：12 MiB 峰值触顶；建索引87.4→315.9ms；正式查询P99增加；最终查询组使12MiB/64MiB全阶段时间比write组高3.3%/4.1%。这些没有被成功状态隐藏。
+完整实测明细：/home/chenyifu/OceanBase/reports/architecture-retained-20261114/measurement-summary.zh.txt
+完整验收报告：/home/chenyifu/OceanBase/reports/architecture-retained-20261114/verification-report.json

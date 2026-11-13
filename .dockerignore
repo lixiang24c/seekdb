@@ -4,3 +4,4 @@
 !minidb/*.py
 !native/
 !native/*.c
+!native/*.cpp

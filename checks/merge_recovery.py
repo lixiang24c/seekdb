@@ -7,6 +7,7 @@ import recovery
 
 recovery.WRAPPER=r'''
 import os,sys
+os.environ['MINIDB_CPP_STORAGE']='0'  # This fixture interrupts Python's iterator.
 from minidb.storage import Storage
 root=sys.argv[1]
 real_replace=os.replace
@@ -18,14 +19,14 @@ def replace(src,dst):
     if target and os.environ['CUT']=='after':os._exit(86)
 os.replace=replace
 original=Storage.write_segment
-def write(self,table,records,created):
+def write(self,table,records,created,**kwargs):
     if armed() and os.environ['CUT']=='during':
         def interrupted(source=records):
             for i,item in enumerate(source):
                 if i==200:os._exit(86)
                 yield item
         records=interrupted()
-    return original(self,table,records,created)
+    return original(self,table,records,created,**kwargs)
 Storage.write_segment=write
 from minidb.server import main
 raise SystemExit(main())

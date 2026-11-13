@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 /* Screening and reference terms; Python resolves inexact sums and ranking. */
 #include <stdint.h>
 #include <stddef.h>
@@ -240,3 +241,5 @@ size_t mv_id_mask(const unsigned char *data, size_t bytes, size_t dim,
 }
 
 #include "graph.c"
+
+#include "approx.c"

@@ -13,6 +13,8 @@ from .native import Screen, id_mask
 from .graph import GraphCache
 from .filters import ValueGroups
 from .indexio import IndexReader
+from .approx import ApproxCache
+from .query_native import NativeTopK
 from .sql import DBError, Parser, convert, fail, vector
 from .storage import Codec, INDEX_MAGIC, Storage, read_rows, write_rows
 
@@ -79,6 +81,7 @@ class Database:
         self.filter_masks_bytes = 0
         self.value_groups = ValueGroups()
         self.index_reader = IndexReader()
+        self.approx = ApproxCache()
         self.graphs = GraphCache()
         if self.graphs.enabled:
             for name, table in sorted(self.store.tables.items()):
@@ -88,6 +91,7 @@ class Database:
         self.store.install(name, table)
         self.graphs.validate(self.store)
         self.index_reader.clear()
+        self.approx.clear()
 
     def column(self, table, name):
         for i, c in enumerate(table['cols']):
@@ -141,6 +145,14 @@ class Database:
     def execute(self, sql, mode='exact'):
         if mode not in ('exact', 'ann'):
             fail('invalid search mode', 'invalid_request')
+        prepared = self.store.cpp.prepare_insert(sql, self.store.tables)
+        if prepared is not None:
+            name, incoming = prepared
+            try:
+                new = self.store.insert(self.store.tables[name], incoming)
+                self.install(name, new)
+                return {'affected_rows': len(incoming)}
+            finally: incoming.close()
         st = Parser(sql).parse()
         op = st['op']
         if op == 'begin':
@@ -152,9 +164,10 @@ class Database:
                 self.store.commit()
                 self.graphs.validate(self.store)
                 self.index_reader.clear()
+                self.approx.clear()
             return {}
         if op == 'rollback':
-            self.store.rollback(); self.graphs.validate(self.store); self.index_reader.clear(); return {}
+            self.store.rollback(); self.graphs.validate(self.store); self.index_reader.clear(); self.approx.clear(); return {}
         name = st['table'].casefold()
         if op == 'create':
             if name in self.store.tables:
@@ -202,7 +215,7 @@ class Database:
                     fail('insert arity mismatch')
                 row = [None] * len(order)
                 for i, v in zip(order, values):
-                    row[i] = convert(table['cols'][i], v)
+                    row[i] = convert(table['cols'][i], v, compact=True)
                 incoming.append(row)
             incoming.sort(key=lambda row: row[pk])
             if any(a[pk] == b[pk] for a, b in zip(incoming, incoming[1:])):
@@ -313,9 +326,19 @@ class Database:
         self.filter_cache_bytes += cost
 
     def remember_masks(self, key, masks):
+        if masks is not None:
+            for name, value in masks.items():
+                first = value.find(b'\x01')
+                if first < 0:
+                    masks[name] = b''  # Exact empty-segment marker, no bitmap to retain.
+                else:
+                    last = value.rfind(b'\x01') + 1
+                    # Keep ordinary masks unchanged; trim only substantial empty edges.
+                    if first + len(value) - last >= 512:
+                        masks[name] = (value[first:last], first)
         budget = MASK_BYTES
         base = len(repr(key)) * 4 + 256
-        cost = base + (sum(len(value) + len(name) * 4 + 128 for name, value in masks.items()) if masks is not None else 128)
+        cost = base + (sum((len(value[0]) + 96 if isinstance(value, tuple) else len(value)) + len(name) * 4 + 128 for name, value in masks.items()) if masks is not None else 128)
         if cost > budget: masks, cost = None, base + 128
         if cost > budget: return
         old = self.filter_masks.pop(key, None)
@@ -333,72 +356,107 @@ class Database:
         if allowed is not None and not allowed: return {}
         key_format = struct.Struct('<q')
         screen = Screen(query)
-        entry = self.filter_masks.get(mask_key) if mask_key is not None else None
-        if entry is not None: self.filter_masks.move_to_end(mask_key)
-        reuse = entry[0] if entry is not None else None
-        pending = {} if mask_key is not None and entry is None and screen.query is not None else None
-        pending_cost = len(repr(mask_key)) * 4 + 256
-        segments = self.store.index_segments(table)
-        block_bytes = self.index_reader.block_size(table, segments, fmt.size)
-        allowed_ids = None
-        for path, excluded in segments:
-            excluded_ids = array('q', sorted(excluded)) if excluded else None
-            with self.index_reader.blocks(path, block_bytes, INDEX_MAGIC, mapped=screen.query is not None) as blocks:
+        native_heap = NativeTopK(screen, k)
+        try:
+            entry = self.filter_masks.get(mask_key) if mask_key is not None else None
+            if entry is not None: self.filter_masks.move_to_end(mask_key)
+            reuse = entry[0] if entry is not None else None
+            pending = {} if mask_key is not None and entry is None and screen.query is not None else None
+            pending_cost = len(repr(mask_key)) * 4 + 256
+            segments = self.store.index_segments(table)
+            block_bytes = self.index_reader.block_size(table, segments, fmt.size)
+            allowed_ids = None
+            for path, excluded in segments:
+                excluded_ids = array('q', sorted(excluded)) if excluded else None
                 cached = reuse.get(path.name) if reuse is not None else None
-                chunks = [] if pending is not None else None
-                position = 0
-                for data, pointer in blocks:
-                    if len(data) % fmt.size: raise OSError('incomplete index record')
-                    mask = None
-                    if (screen.query is not None or cached is not None) and (filtering or excluded):
-                        count = len(data) // fmt.size
-                        if cached is not None:
-                            mask = cached[position:position + count]
-                            if len(mask) != count: raise OSError('invalid cached predicate mask')
+                if cached == b'':
+                    continue
+                positions = (self.approx.positions(path, screen, cached, k,
+                                                    self.index_reader.cache_budget, self.index_reader.streaming)
+                             if k <= 64 and (cached is not None or (not filtering and not excluded)) else None)
+                if positions is not None and native_heap.handle:
+                    self.approx.read_bytes += native_heap.file(path, positions)
+                    continue
+                if positions is not None:
+                    records = self.approx.rows(path, positions, fmt.size)
+                    try:
+                        for raw in records:
+                            ident = key_format.unpack_from(raw)[0]
+                            distance = screen.squared(raw, 0)
+                            if distance is None: distance = squared(query, fmt.unpack(raw)[1:])
+                            item = (-distance, -ident, ident)
+                            if len(heap) < k: heapq.heappush(heap, item)
+                            elif item > heap[0]: heapq.heapreplace(heap, item)
+                    finally:
+                        records.close()
+                    if len(heap) == k:
+                        radius = math.sqrt(-heap[0][0]) * (1.0 + 1e-12) + 1e-300
+                    continue
+                start, stop = 8, None
+                if isinstance(cached, tuple):
+                    cached, first = cached
+                    start, stop = 8 + first * fmt.size, 8 + (first + len(cached)) * fmt.size
+                with self.index_reader.blocks(path, block_bytes, INDEX_MAGIC, mapped=screen.query is not None, start=start, stop=stop) as blocks:
+                    chunks = [] if pending is not None else None
+                    position = 0
+                    for data, pointer in blocks:
+                        if len(data) % fmt.size: raise OSError('incomplete index record')
+                        mask = None
+                        if (screen.query is not None or cached is not None) and (filtering or excluded):
+                            count = len(data) // fmt.size
+                            if cached is not None:
+                                mask = cached[position:position + count]
+                                if len(mask) != count: raise OSError('invalid cached predicate mask')
+                            else:
+                                if allowed is not None and allowed_ids is None:
+                                    allowed_ids = array('q', sorted(allowed))
+                                mask = id_mask(data, len(query), allowed_ids,
+                                               excluded_ids, pointer)
+                                if mask is None:
+                                    mask = bytes(int((allowed is None or ident in allowed) and ident not in excluded)
+                                                 for ident in (key_format.unpack_from(data, pos)[0] for pos in range(0, len(data), fmt.size)))
+                                if chunks is not None:
+                                    pending_cost += len(mask) + 64
+                                    if pending_cost > MASK_BYTES: pending, chunks = None, None
+                                    else: chunks.append(mask)
+                            position += count
+                        if native_heap.handle:
+                            native_heap.scan(data, mask, pointer)
+                            continue
+                        positions = screen.select(data, -heap[0][0] if len(heap) == k else math.inf, mask, k=k, pointer=pointer)
+                        if positions is not None:
+                            candidates = ((key_format.unpack_from(data, pos * fmt.size)[0], pos, None) for pos in positions)
                         else:
-                            if allowed is not None and allowed_ids is None:
-                                allowed_ids = array('q', sorted(allowed))
-                            mask = id_mask(data, len(query), allowed_ids,
-                                           excluded_ids, pointer)
-                            if mask is None:
-                                mask = bytes(int((allowed is None or ident in allowed) and ident not in excluded)
-                                             for ident in (key_format.unpack_from(data, pos)[0] for pos in range(0, len(data), fmt.size)))
-                            if chunks is not None:
-                                pending_cost += len(mask) + 64
-                                if pending_cost > MASK_BYTES: pending, chunks = None, None
-                                else: chunks.append(mask)
-                        position += count
-                    positions = screen.select(data, -heap[0][0] if len(heap) == k else math.inf, mask, k=k, pointer=pointer)
-                    if positions is not None:
-                        candidates = ((key_format.unpack_from(data, pos * fmt.size)[0], pos, None) for pos in positions)
-                    else:
-                        if isinstance(data, memoryview): data = bytes(data)
-                        values_iter = ((fmt.unpack_from(data, pos * fmt.size) for pos in range(len(mask)) if mask[pos]) if mask is not None else
-                                       fmt.iter_unpack(data) if allowed is None else
-                                       (fmt.unpack_from(data, pos) for pos in range(0, len(data), fmt.size)
-                                        if key_format.unpack_from(data, pos)[0] in allowed))
-                        candidates = ((values[0], None, values[1:]) for values in values_iter)
-                    for ident, pos, vec in candidates:
-                        if ident in excluded: continue
-                        distance = screen.squared(data, pos, pointer=pointer) if pos is not None else None
-                        if distance is None:
-                            if vec is None: vec = fmt.unpack_from(data, pos * fmt.size)[1:]
-                            if math.dist(query, vec) > radius: continue
-                            distance = squared(query, vec)
-                        key = (distance, ident)
-                        item = (-key[0], -key[1], ident)
-                        if len(heap) < k:
-                            heapq.heappush(heap, item)
-                        elif item > heap[0]:
-                            heapq.heapreplace(heap, item)
-                        if len(heap) == k:
-                            radius = math.sqrt(-heap[0][0]) * (1.0 + 1e-12) + 1e-300
-                if pending is not None:
-                    pending[path.name] = b''.join(chunks)
-                    pending_cost += len(path.name) * 4 + 128
-        if mask_key is not None and entry is None and screen.query is not None:
-            self.remember_masks(mask_key, pending)
-        return {item[2]: -item[0] for item in heap}
+                            if isinstance(data, memoryview): data = bytes(data)
+                            values_iter = ((fmt.unpack_from(data, pos * fmt.size) for pos in range(len(mask)) if mask[pos]) if mask is not None else
+                                           fmt.iter_unpack(data) if allowed is None else
+                                           (fmt.unpack_from(data, pos) for pos in range(0, len(data), fmt.size)
+                                            if key_format.unpack_from(data, pos)[0] in allowed))
+                            candidates = ((values[0], None, values[1:]) for values in values_iter)
+                        for ident, pos, vec in candidates:
+                            if ident in excluded: continue
+                            distance = screen.squared(data, pos, pointer=pointer) if pos is not None else None
+                            if distance is None:
+                                if vec is None: vec = fmt.unpack_from(data, pos * fmt.size)[1:]
+                                if math.dist(query, vec) > radius: continue
+                                distance = squared(query, vec)
+                            key = (distance, ident)
+                            item = (-key[0], -key[1], ident)
+                            if len(heap) < k:
+                                heapq.heappush(heap, item)
+                            elif item > heap[0]:
+                                heapq.heapreplace(heap, item)
+                            if len(heap) == k:
+                                radius = math.sqrt(-heap[0][0]) * (1.0 + 1e-12) + 1e-300
+                    if pending is not None and chunks:
+                        pending[path.name] = b''.join(chunks)
+                        pending_cost += len(path.name) * 4 + 128
+            if mask_key is not None and entry is None and screen.query is not None:
+                self.remember_masks(mask_key, pending)
+            return native_heap.scores() if native_heap.handle else {item[2]: -item[0] for item in heap}
+
+        finally:
+            native_heap.close()
 
     def vector_topk(self, table, expr, k, columns, match, filter_columns, conditions, mode='exact', distance_scores=None, covering=False):
         """Filter scalars first, retain binary candidates, decode only the winners."""
@@ -436,6 +494,17 @@ class Database:
         entry = self.filter_cache.get(cache_key) if cache_key is not None else None
         if entry is not None: self.filter_cache.move_to_end(cache_key)
         allowed = entry[0] if entry is not None else None
+        if filter_columns and table.get('indexes') and allowed is None:
+            scalar_group = (cache_key[0], next(iter(filter_columns))) if cache_key is not None and len(filter_columns) == 1 else None
+            if scalar_group is not None:
+                allowed = self.value_groups.matching(scalar_group, scalar_group[1], len(table['cols']), match)
+            if allowed is None:
+                scalar_builder = self.value_groups.begin(scalar_group, table['count']) if scalar_group is not None else None
+                allowed = self.store.scalar_ids(table, match, filter_columns, builder=scalar_builder)
+                if scalar_builder is not None and allowed is not None:
+                    self.value_groups.remember(scalar_group, scalar_builder)
+            if allowed is not None and cache_key is not None:
+                self.remember_filter(cache_key, allowed)
         collect_ids = set() if cache_key is not None and entry is None else None
         collect_budget = (512 << 10) - (len(repr(cache_key)) * 4 + 256) if cache_key is not None else 0
         mask_key = cache_key if filter_columns else self.filter_key(table, ()) if any(p.get('excluded') for p in self.store.segments(table)) else None
@@ -613,4 +682,6 @@ class Database:
         try: self.store.close()
         finally:
             try: self.graphs.close()
-            finally: self.index_reader.clear()
+            finally:
+                self.index_reader.clear()
+                self.approx.clear()

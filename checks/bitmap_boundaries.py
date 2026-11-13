@@ -37,7 +37,8 @@ assert all(ids is None or getattr(ids,'typecode',None)=='q' for ids,cost in db.f
 db.filter_cache.clear();db.filter_cache_bytes=0
 os.environ['MINIDB_NATIVE']='0'
 check(1,4)
-assert db.filter_cache_bytes==0
+# Columnar scalar filtering can populate the bounded ID cache without native code.
+assert db.filter_cache_bytes<=512<<10
 del os.environ['MINIDB_NATIVE']
 assert old_groups=={id(entry[0]) for entry in db.filter_masks.values()}
 for category in [0,2]:check(category);check(category,1)
@@ -60,12 +61,13 @@ q('COMMIT');check(1);check(1,1);check(1,2)
 q('CREATE VECTOR INDEX ix2 ON t(v)');check(1)
 # Exercise real builder overflow using a smaller test-only budget.
 saved_budget=engine.MASK_BYTES
-engine.MASK_BYTES=2048;db.filter_masks.clear();db.filter_masks_bytes=0
+reduced_budget=max(len(repr(key))*4+256 for key in db.filter_masks)+1024
+engine.MASK_BYTES=reduced_budget;db.filter_masks.clear();db.filter_masks_bytes=0
 check(1);check(1,1)
 assert any(masks is None for masks,cost in db.filter_masks.values())
 assert db.filter_masks_bytes<=engine.MASK_BYTES
 engine.MASK_BYTES=saved_budget
-for i in range(10):db.remember_masks(('eviction',i),{'test-index':bytes(40000)})
+for i in range(10):db.remember_masks(('eviction',i),{'test-index':b'\x01'*40000})
 assert db.filter_masks_bytes<=saved_budget and len(db.filter_masks)<=3
 original_records,scans=db.store.records,[]
 def counted_records(*args,**kwargs):
@@ -80,7 +82,7 @@ q('BEGIN');q('DELETE FROM t');state_before=state;state={};check(1)
 q('ROLLBACK');state=state_before;check(1)
 db.close();db=Database('/data')
 check(1);check(1,1);check(1,2);db.close()
-print(json.dumps({'status':'PASS','oracle_queries':checks,'rows':3000,'dimensions':128,'bitmap_budget':saved_budget,'reduced_budget_fallback':2048,'checks':['group reuse with different query vectors','compact int64 IDs survive bitmap eviction','native-off cached-mask fallback','multiple predicates without ID cache','transaction mutation visibility','failed statement','rollback','delete-only mask invalidation','second index','builder overflow fallback','LRU eviction without predicate rescan','delete all rollback','restart']}))
+print(json.dumps({'status':'PASS','oracle_queries':checks,'rows':3000,'dimensions':128,'bitmap_budget':saved_budget,'reduced_budget_fallback':reduced_budget,'checks':['group reuse with different query vectors','compact int64 IDs survive bitmap eviction','native-off cached-mask fallback','multiple predicates without ID cache','transaction mutation visibility','failed statement','rollback','delete-only mask invalidation','second index','builder overflow fallback','LRU eviction without predicate rescan','delete all rollback','restart']}))
 '''
 r=subprocess.run(['docker','run','--rm','-i','--network=none','--read-only','--memory=64m','--memory-swap=64m','--tmpfs','/data:rw,size=32m','--entrypoint','python3','minivectordb:bitmap-candidate','-B','-'],input=PROBE,text=True,capture_output=True,timeout=60)
 assert r.returncode==0,(r.stdout,r.stderr)

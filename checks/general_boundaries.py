@@ -33,12 +33,20 @@ with tempfile.TemporaryDirectory() as directory:
     q("INSERT INTO t VALUES ('" + '界'*30000 + "',3,'[2,0]')")
     assert q('SELECT body FROM t WHERE id=3') == [['界'*30000]]
     # Emulate a database produced by the preceding version, without rewriting rows.
+    legacy_rows = {part['file']: list(db.store.part_records(db.store.tables['t'], part))
+                   for part in db.store.segments(db.store.tables['t'])}
     db.close()
     manifest = json.loads((Path(directory)/'manifest.json').read_text())
     for part in manifest['tables']['t']['segments']:
-        p = Path(directory)/part['keys']; data = p.read_bytes()
-        assert data[:8] == b'MVKEY002'
-        p.write_bytes(b'MVKEY001'+b''.join(struct.pack('<q', key) for key, offset in struct.iter_unpack('<qQ', data[8:])))
+        # Materialize the actual legacy full-row format, including a separate
+        # key-only directory. Never overwrite a columnar file with key bytes.
+        records = legacy_rows[part['file']]
+        p = Path(directory)/part['file']
+        p.write_bytes(b'MVROW001'+b''.join(struct.pack('<I',len(raw))+raw for _,raw in records))
+        part['keys'] = part['file']+'.legacy-keys'
+        (Path(directory)/part['keys']).write_bytes(b'MVKEY001'+b''.join(struct.pack('<q',key) for key,_ in records))
+        part.pop('columnar',None);part.pop('key_offset',None)
+    (Path(directory)/'manifest.json').write_text(json.dumps(manifest))
     db = Database(directory)
     assert q('SELECT id FROM t WHERE id=-9') == [[-9]]
     assert q("SELECT id,L2_DISTANCE(v,'[0,0]') AS d FROM t ORDER BY d LIMIT 2") == [[-9,1.0],[2,1.0]]

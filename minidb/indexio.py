@@ -53,6 +53,14 @@ def file_cache_budget():
         return None
 
 
+def read_range(stream, block_bytes, remaining):
+    while remaining:
+        data = stream.read(min(block_bytes, remaining))
+        if not data: raise OSError('incomplete index range')
+        remaining -= len(data)
+        yield data, None
+
+
 class MappedIndex:
     def __init__(self, stream):
         # Kernels borrow a writable address but only read it. MAP_PRIVATE
@@ -71,9 +79,10 @@ class MappedIndex:
         self.owner = None
         self.mapping.close()
 
-    def blocks(self, block_bytes):
-        for offset in range(8, len(self.mapping), block_bytes):
-            view = memoryview(self.mapping)[offset:offset + block_bytes]
+    def blocks(self, block_bytes, start=8, stop=None):
+        stop = len(self.mapping) if stop is None else stop
+        for offset in range(start, stop, block_bytes):
+            view = memoryview(self.mapping)[offset:min(offset + block_bytes, stop)]
             try:
                 yield view, ctypes.c_char_p(self.address + offset)
             finally:
@@ -86,10 +95,12 @@ class IndexReader:
         self.bytes = 0
         self.profile_table = None
         self.streaming = False
+        self.cache_budget = None
 
     def block_size(self, table, segments, record_bytes):
         if self.profile_table is not table:
             budget = file_cache_budget()
+            self.cache_budget = budget
             footprint = sum(path.stat().st_size for path, _ in segments)
             # Unknown/unlimited cgroups do not establish a safe cache budget.
             self.streaming = budget is None or footprint > budget
@@ -104,9 +115,10 @@ class IndexReader:
         self.bytes = 0
         self.profile_table = None
         self.streaming = False
+        self.cache_budget = None
 
     @contextmanager
-    def blocks(self, path, block_bytes, magic, mapped=False):
+    def blocks(self, path, block_bytes, magic, mapped=False, start=8, stop=None):
         enabled = mapped and os.environ.get('MINIDB_INDEX_MMAP') != '0'
         key = str(path)
         node = self.maps.get(key) if enabled else None
@@ -119,6 +131,9 @@ class IndexReader:
             self.maps.move_to_end(key)
         else:
             with open(path, 'rb') as stream:
+                if self.streaming:
+                    try: os.posix_fadvise(stream.fileno(), 0, 0, os.POSIX_FADV_RANDOM)
+                    except (AttributeError, OSError): pass
                 if stream.read(8) != magic: raise OSError('invalid index header')
                 cost = max(4096, os.fstat(stream.fileno()).st_size)
                 if enabled and cost <= MAP_BYTES and (not self.streaming or cost <= block_bytes + 8):
@@ -134,13 +149,15 @@ class IndexReader:
                         self.maps[key] = node
                         self.bytes += node.cost
                 if node is None:
-                    blocks = ((data, None) for data in iter(lambda: stream.read(block_bytes), b''))
+                    if start != 8: stream.seek(start)
+                    blocks = (read_range(stream, block_bytes, stop - start) if stop is not None else
+                              ((data, None) for data in iter(lambda: stream.read(block_bytes), b'')))
                     try:
                         yield blocks
                     finally:
                         blocks.close()
                     return
-        blocks = node.blocks(block_bytes)
+        blocks = node.blocks(block_bytes, start, stop)
         try:
             yield blocks
         finally:

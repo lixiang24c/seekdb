@@ -3,6 +3,8 @@ import json
 import math
 import re
 import struct
+from array import array
+from .native_storage import vector_parser
 from collections import namedtuple
 
 
@@ -91,7 +93,10 @@ def tokenize(source, _vectors=False):
     return tokens
 
 
-def vector(value, dim):
+def vector(value, dim, compact=False):
+    if compact and isinstance(value, str):
+        parsed = vector_parser.parse_vector(value, dim)
+        if parsed is not None: return parsed
     if isinstance(value, str):
         text = value.strip()
         if not text.startswith('[') or not text.endswith(']'):
@@ -130,7 +135,12 @@ def vector(value, dim):
                 if type(x) is not int and type(x) is not float:
                     raise ValueError()
         fmt = '<' + str(dim) + 'f'
-        result = list(struct.unpack(fmt, struct.pack(fmt, *values)))
+        packed = struct.pack(fmt, *values)
+        if compact:
+            result = array('f')
+            result.frombytes(packed)
+        else:
+            result = list(struct.unpack(fmt, packed))
         if not all(map(math.isfinite, result)):
             raise ValueError()
     except (ValueError, OverflowError, struct.error):
@@ -138,7 +148,7 @@ def vector(value, dim):
     return result
 
 
-def convert(col, value):
+def convert(col, value, compact=False):
     kind = col['type']
     if kind == 'BIGINT':
         if type(value) is not int or not -(1 << 63) <= value < (1 << 63):
@@ -154,7 +164,7 @@ def convert(col, value):
         if len(value) > col['n']:
             fail('VARCHAR value too long', 'value_too_long')
         return value
-    return vector(value, col['n'])
+    return vector(value, col['n'], compact=compact)
 
 
 # SQL keywords are ASCII; surrounding whitespace retains Python's Unicode rules.
