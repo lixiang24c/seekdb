@@ -2,10 +2,10 @@
  "synthetic": false,
  "scope": "真实学习记录，按主题归组而非完整时间线；早期经历为事后复盘，实验按各自记录版本解释。",
  "engineering_summary": {
-  "content": "所用参考文档由学生亲手撰写，文档中的设计与实现方案归于学生。材料记录覆盖段阈值调整、重启查询分析、独立可见性验证、向量解析撤回及迁移取舍。48轮迁移保留cover；144轮内存边界实验后，学生解释OOM/I/O收益并接受回退。随后提出原生架构分阶段迁移，24个恢复场景与12个负载通过后，结合整体收益、索引与查询长尾代价决定保留，并澄清实际资源限额仍需分组验证。各主题按原版本区分学生判断、Agent实现和实测结果。 最新独立C++链路采用日志同步确认提交，冻结镜像完成16次配对负载；学生据结果接受重启和极端延迟代价，保留原始数据并冻结后续基线。"
+  "content": "所用参考文档由学生亲手撰写，文档中的设计与实现方案归于学生。材料记录覆盖段阈值调整、重启查询分析、独立可见性验证、向量解析撤回及迁移取舍。48轮迁移保留cover；144轮内存边界实验后，学生解释OOM/I/O收益并接受回退。随后提出原生架构分阶段迁移，24个恢复场景与12个负载通过后，结合整体收益、索引与查询长尾代价决定保留，并澄清实际资源限额仍需分组验证。各主题按原版本区分学生判断、Agent实现和实测结果。 最新独立C++链路采用日志同步确认提交，冻结镜像完成16次配对负载；学生据结果接受重启和极端延迟代价，保留原始数据并冻结后续基线。 后续可查询日志消除双份存储，经开关对照默认关闭候选列表；学生确认取舍并要求最终镜像补验，60公开用例、75恢复组通过。"
  },
  "reading_guide": {
-  "how_to_read": "主题按开发阶段排列：早期覆盖段及重启查询实验→独立可见性验证→向量解析撤回→48轮迁移→144轮内存取舍→原生架构迁移→独立C++及日志验收。主题内按判断、修改、结果及反馈阅读；共享实验不代表两次运行，早期材料未补造逐条时间戳。student_evidence与result_evidence分别定位学生原话和实际结果。",
+  "how_to_read": "主题按开发阶段排列：早期覆盖段及重启查询实验→独立可见性验证→向量解析撤回→48轮迁移→144轮内存取舍→原生架构迁移→独立C++及日志验收→可查询日志与交付冻结。主题内按判断、修改、结果及反馈阅读；共享实验不代表两次运行，早期材料未补造逐条时间戳。student_evidence与result_evidence分别定位学生原话和实际结果。",
   "not_included": "主题块不代表完整逐轮对话。U4与U5共享查询原始样本，集中于U5的exp-B-shared-samples；整理者事后统计排在学生解释之后，不作为当时已提供给学生的反馈。"
  },
  "role_legend": {
@@ -647,6 +647,86 @@
    "not_shown": "CRC日志帧与恢复设计来自学生文档；物化文件正文CRC校验是Agent针对复现损坏追加的修正，大整数请求ID修复及本轮验证脚本也由Agent完成。1c2g三对，其余仅一对；写入降幅44.2%低于文档57.7%，原因未剖析。4097候选正确性通过不代表性能倍率复现，历史单项收益未逐项复现。LeakSanitizer未运行，未清全局缓存，平台分数未知。旧新格式不兼容为历史实测边界，e5已弃用，无回退计划。",
    "version_boundary": "以N7最终提交e5ad115b为基线；此轮新增独立入口和日志提交语义，与前轮Python控制+C++热点迁移区分。同一冻结候选统一验收，CRC修正、配对、取舍及数据格式核对不拆分实例。",
    "authorship": "e5-full-native-optimization.zh.md由学生亲手撰写；其中的架构设计、优化机制和随附实现方案归于学生。Agent负责按文档迁入、执行验证，以及修复本轮实际发现的问题。"
+  },
+  {
+   "unit_id": "N9-queryable-log-default-delivery",
+   "topic": "可查询日志与提交delta：开关消融取舍、默认组合确认及最终镜像验收",
+   "authorship": "current-vs-remote-latest.zh.md由学生亲手撰写，文档中的架构设计、优化机制及补丁方案归于学生；Agent负责迁入、补齐验证和修复实际缺口。",
+   "summary": "学生要求查询直接访问日志数据帧，以共享分页目录、提交delta及下推/裁剪减少重复存储与访问，并要求补齐大于内存、长事务、回收与反复强杀验证；同二进制开关用于区分优化收益。\n\n21次负载及21000条查询复核通过。候选列表开启未见稳定收益，查询中位数反而增加5.69%；Agent依预设要求默认关闭。已测默认组合在1核384MiB下写入、查询均约降13.5%，I/O降35.3%、峰值内存降14.6%；保留索引变慢、某轮全阶段变慢和全开2c2g长尾回退。\n\n学生确认保留架构与MINIDB_POSTINGS=0，要求对最终根配置镜像补验。交付镜像60公开用例、75恢复组及三档事务检查通过，默认/显式开启的posting_scans为0/140。",
+   "records": [
+    {
+     "id": "queryable-preceding-crc-boundary",
+     "role": "tool",
+     "record_type": "selected_original_fields",
+     "provenance": {"artifact_source": "A20"},
+     "scope": "N8后撤去物化正文CRC，保留日志帧CRC、fsync及大小/头部检查；同大小正文损坏保障明确放弃。Agent纠正了混同进程强杀与整机掉电的解释。宿主检查通过，Docker与性能未测；仅作版本边界。",
+     "output": "{\"status\":\"HOST_CHECKS_PASS_CONTAINER_NOT_RUN\",\"public_cases\":20,\"journal_groups\":34,\"performance\":\"UNKNOWN; no before/after measurement\",\"known_withdrawn_body_corruption_probe\":{\"observed\":\"FAIL\",\"counted_in_regression_pass\":false}}"
+    },
+    {
+     "id": "queryable-4141",
+     "role": "user",
+     "record_type": "verbatim",
+     "content": "参照current-vs-remote-latest.zh.md，在当前分支复现相对 122b5764 的架构改造与实验成果。这次我的思路是进一步消除“提交日志加独立物化文件”的重复数据和维护成本，让查询直接访问日志中的数据帧；同时用共享分页目录和提交 delta 减少事务快照复制与目录重复写入，再通过谓词下推、列裁剪和延迟物化减少实际读取。先核对当前代码与文档基线的差异，按依赖迁入文末完整补丁，注意包含尚未跟踪的新增源码（就是你上面做的去crc操作），不要只看普通 git diff（可以在没去crc的版本上进行修改确认diff一致之后再在更改后的版本去crc）。优先把可查询日志、事务可见性、提交同步、恢复和 checkpoint 跑通，再接入整数辅助筛选、紧凑向量解析、资源探测及过滤候选直接访问。整数表示只能作带保守误差界的筛选，最终仍用原始 float32 向量精算；缓存必须有预算、正确失效并保留回退。先保留旧引擎和旧数据，不直接覆盖，待验收通过后再完全抛弃旧数据引擎做直接覆盖。验收先补齐文档尚未闭环的大于内存数据、长事务、频繁更新回收、恢复中反复强杀及 checkpoint 中断与清理，再验证 cgroup v1/v2、命名空间变化、低预算和禁用优化的路径确实生效。性能按文档种子和负载做最终版本对 122b 的同环境配对，并用同一二进制开关区分各项收益；不再复现两种服务器环境。最终报告完整时间、I/O、可取得的峰值内存及正确性结果，缺失指标不拿其他值替代；失败实验不带入，不动对话材料，不自行提交、推送或正式提测。",
+     "provenance": {"source_id": "S3", "line": 4141, "timestamp": "2026-11-14T10:27:21.517Z"}
+    },
+    {
+     "id": "queryable-performance-and-selection",
+     "role": "tool",
+     "record_type": "selected_report_fields_and_derived_comparison",
+     "provenance": {"artifact_source": "A21", "source_id": "S3", "user_report_line": 4591},
+     "review_source": {"artifact_source": "A22"},
+     "scope": "1核384MiB、种子42/43/44：基线、全开及同二进制三个单项关闭共15轮；另三规格单对，共21轮。按用户4392行许可使用仓库生成器。默认为no-postings；时间秒，I/O和内存字节。full含启动至查询，重启另计；I/O含最终回写。",
+     "output": "{\"status\":\"PASS\",\"completed_runs\":21,\"default_vs_baseline_reported_medians\":{\"write\":{\"baseline\":0.8771016319951741,\"no-postings\":0.7589516860025469},\"query\":{\"baseline\":0.5301423060009256,\"no-postings\":0.4586270500003593},\"full\":{\"baseline\":1.8145665080082836,\"no-postings\":1.5950708339805715},\"io_bytes\":{\"baseline\":17276928,\"no-postings\":11186176},\"peak_memory_bytes\":{\"baseline\":16130048,\"no-postings\":13783040}},\"postings_on_vs_off_query\":{\"medians\":{\"no-postings\":0.4586270500003593,\"candidate\":0.48470591400109697}},\"all_enabled_2c2g_full\":{\"baseline\":1.6842042910138844,\"candidate\":1.7806508149806177},\"all_enabled_2c2g_unfiltered_max\":{\"baseline\":0.0013188929879106581,\"candidate\":0.007508776005124673},\"default_full_slower_pair_seconds\":{\"baseline\":1.5955033299978822,\"no-postings\":1.661927317007212}}",
+     "review_excerpt": "源码/检查脚本与验收冻结指纹完全匹配；21000 次保存查询的主键和 binary64 距离重新对独立真值核对。",
+     "organizer_summary": {
+      "basis": "整理者从原runs计算中位数、较慢配对数，并摘录唯一全阶段变慢配对；非新增实验或学生解释。",
+      "default_index_median_seconds": {
+       "baseline": 0.007477064995327964,
+       "no-postings": 0.02889204799430445
+      },
+      "default_slower_full_rounds": 1,
+      "stress_scope": "约94MB日志在16/64MiB限额下正确性通过；未记录峰值内存和完整I/O。",
+      "resource_scope": "实际cgroup v2/private+host；v1仅文件布局模拟。",
+      "postings_on_slower_query_pairs": 2
+     }
+    },
+    {
+     "id": "queryable-4666",
+     "role": "user",
+     "record_type": "verbatim",
+     "content": "根据这轮结果，我确认保留可查询日志架构，并采用已测的 MINIDB_POSTINGS=0 默认组合，不再继续优化。理由是三轮中位数下，写入和查询均减少 13.5%，完整 I/O 减少 35.3%，峰值内存减少 14.6%，支持了减少重复存储、目录复制和数据访问的改造方向；21 次负载及 21,000 次查询逐位核对也提供了正确性依据。候选列表没有稳定收益，全开配置还有明显长尾回退，因此保持默认关闭，不为了“全部启用”牺牲已测表现。下一步只做交付确认：用根 Dockerfile 和最终默认配置构建镜像，记录镜像 ID、源码及配置指纹，确认入口和开关实际生效，再对这一个最终镜像补跑公开检查与关键提交、回滚、重启及 checkpoint 恢复检查。同步更新运行说明。报告中继续保留建索引回退、个别轮次变慢和压力场景指标缺失，不宣称所有环境都提速。完成后冻结版本，不动对话材料，不自行提交、推送或正式提测。",
+     "provenance": {"source_id": "S3", "line": 4666, "timestamp": "2026-11-14T12:13:04.605Z"}
+    },
+    {
+     "id": "queryable-final-delivery",
+     "role": "tool",
+     "record_type": "selected_original_fields",
+     "provenance": {"artifact_source": "A23", "source_id": "S3", "user_report_line": 4743},
+     "scope": "按4666行要求，以根Dockerfile新构建最终默认镜像，在1c2g、2c2g、1c16MiB补做公开、事务和恢复检查；未重测性能。",
+     "output": "{\"status\":\"PASS\",\"image\":\"sha256:541777658fa67770dcd8c8de07e1bd36556e1b22530bce8a0ffe36eb44d20a57\",\"frozen\":true,\"performance_runs\":0,\"public_cases\":60,\"recovery_groups\":75,\"transaction_profiles\":3,\"configuration\":{\"entrypoint\":[\"/app/minivectordb-log\"],\"environment\":{\"MINIDB_POSTINGS\":\"0\"}},\"default_path_diagnostics\":{\"posting_scans\":0},\"positive_control_diagnostics\":{\"posting_scans\":140}}"
+    }
+   ],
+   "candidate_dimension": "实验与反馈迭代",
+   "student_evidence": [
+    {"pointer": "/topics/8/records/1/content", "quote": "让查询直接访问日志中的数据帧；同时用共享分页目录和提交 delta 减少事务快照复制与目录重复写入"},
+    {"pointer": "/topics/8/records/1/content", "quote": "整数表示只能作带保守误差界的筛选，最终仍用原始 float32 向量精算；缓存必须有预算、正确失效并保留回退。"},
+    {"pointer": "/topics/8/records/1/content", "quote": "用同一二进制开关区分各项收益"},
+    {"pointer": "/topics/8/records/1/content", "quote": "缺失指标不拿其他值替代"},
+    {"pointer": "/topics/8/records/3/content", "quote": "候选列表没有稳定收益，全开配置还有明显长尾回退，因此保持默认关闭，不为了“全部启用”牺牲已测表现。"},
+    {"pointer": "/topics/8/records/3/content", "quote": "用根 Dockerfile 和最终默认配置构建镜像，记录镜像 ID、源码及配置指纹，确认入口和开关实际生效，再对这一个最终镜像补跑公开检查与关键提交、回滚、重启及 checkpoint 恢复检查。"},
+    {"pointer": "/topics/8/records/3/content", "quote": "报告中继续保留建索引回退、个别轮次变慢和压力场景指标缺失，不宣称所有环境都提速。"}
+   ],
+   "result_evidence": [
+    {"pointer": "/topics/8/records/0/output", "quote": "\"counted_in_regression_pass\":false"},
+    {"pointer": "/topics/8/records/2/output", "quote": "\"baseline\":0.8771016319951741,\"no-postings\":0.7589516860025469"},
+    {"pointer": "/topics/8/records/2/output", "quote": "\"baseline\":0.5301423060009256,\"no-postings\":0.4586270500003593"},
+    {"pointer": "/topics/8/records/2/output", "quote": "\"no-postings\":0.4586270500003593,\"candidate\":0.48470591400109697"},
+    {"pointer": "/topics/8/records/2/review_excerpt", "quote": "源码/检查脚本与验收冻结指纹完全匹配；21000 次保存查询的主键和 binary64 距离重新对独立真值核对。"},
+    {"pointer": "/topics/8/records/4/output", "quote": "\"performance_runs\":0,\"public_cases\":60,\"recovery_groups\":75,\"transaction_profiles\":3"},
+    {"pointer": "/topics/8/records/4/output", "quote": "\"default_path_diagnostics\":{\"posting_scans\":0},\"positive_control_diagnostics\":{\"posting_scans\":140}"}
+   ],
+   "not_shown": "验证脚本、数值门槛、实际缺陷修复及候选列表机制解释由Agent完成。主规格三个种子非同输入重复，其他规格仅单对；压力峰值/I/O未知，v1仅模拟，未复现全部文档输入和历史单项收益。",
+   "version_boundary": "N8冻结版122b5764→撤去物化正文CRC→迁入queryable.log→按实测默认关闭候选列表→最终镜像正确性验收，随de2e2822提交。性能与交付镜像分开：默认组合仅有主规格性能样本，其他规格全开结果不能代替，最终镜像未重测性能。CRC撤回不另计实例。"
   }
  ],
  "history_sources": [
@@ -667,6 +747,10 @@
   {"id": "A16", "description": "16000条查询独立真值复核"},
   {"id": "A17", "description": "1c2g日志故障恢复34组"},
   {"id": "A18", "description": "1c12MiB日志故障恢复34组"},
-  {"id": "A19", "description": "完整C++冻结决定与历史格式核对"}
+  {"id": "A19", "description": "完整C++冻结决定与历史格式核对"},
+  {"id": "A20", "description": "物化CRC撤回后的宿主结果及放弃保障"},
+  {"id": "A21", "description": "可查询日志21次整版与开关对照"},
+  {"id": "A22", "description": "可查询日志结果复核与默认组合取舍"},
+  {"id": "A23", "description": "最终根配置镜像交付与冻结验收"}
  ]
 }
