@@ -1,6 +1,7 @@
 #pragma once
 #include "common.hpp"
 namespace cppdb {
+inline uint64_t compact_vector_accepts=0;
 struct Token {enum Kind{End,Identifier,String,Number,Symbol}kind=End;std::string text;};
 class Lexer {
     std::string_view input;size_t pos=0;bool comments;
@@ -25,6 +26,22 @@ class Lexer {
 public:
     explicit Lexer(std::string_view text,bool allow_comments=true):input(text),comments(allow_comments){}
     size_t position()const{return pos;}
+    bool compact_vector(std::string &out){
+        static const bool enabled=!std::getenv("MINIDB_COMPACT_VECTOR")||std::string(std::getenv("MINIDB_COMPACT_VECTOR"))!="0";
+        if(!enabled)return false;
+        size_t at=pos,start=pos-1;
+        auto space=[&](){while(at<input.size()&&std::string_view(" \t\n\r\f\v").find(input[at])!=std::string_view::npos)++at;};
+        auto digits=[&](){size_t begin=at;while(at<input.size()&&input[at]>='0'&&input[at]<='9')++at;return at-begin;};
+        space();if(at<input.size()&&input[at]==']'){out=std::string(input.substr(start,++at-start));pos=at;++compact_vector_accepts;return true;}
+        while(at<input.size()){
+            if(input[at]=='+'||input[at]=='-')++at;
+            size_t n=digits();if(at<input.size()&&input[at]=='.'){++at;n+=digits();}if(!n)return false;
+            if(at<input.size()&&(input[at]=='e'||input[at]=='E')){++at;if(at<input.size()&&(input[at]=='+'||input[at]=='-'))++at;if(!digits())return false;}
+            space();if(at==input.size())return false;
+            if(input[at]==']'){out=std::string(input.substr(start,++at-start));pos=at;++compact_vector_accepts;return true;}
+            if(input[at++]!=',')return false;space();
+        }return false;
+    }
     Token next(){
         spaces();if(pos==input.size())return {};
         char c=input[pos];
@@ -64,7 +81,7 @@ struct Value {
     }
     Json json()const{
         if(kind==Text)return text;
-        if(kind==Vector){Json out=Json::array();for(auto &v:elements)out.push(v.json());return out;}
+        if(kind==Vector){Json out=Json::array();if(!text.empty()){Lexer lex(text);lex.next();for(auto t=lex.next();t.text!="]";t=lex.next())if(t.text!=",")out.push(Value::number(t.text).json());}else for(auto &v:elements)out.push(v.json());return out;}
         if(integral){const char *start=text.data();if(*start=='+')++start;int64_t out;auto r=std::from_chars(start,text.data()+text.size(),out);if(r.ec==std::errc()&&r.ptr==text.data()+text.size())return out;Json tagged=Json::object();tagged["__integer"]=text;return tagged;}
         return real_value("unsupported_sql");
     }
@@ -102,15 +119,21 @@ struct Statement {
 class Parser {
     Lexer lexer;std::optional<Token> look;
     const Token &peek(){if(!look)look=lexer.next();return *look;}
-    Token pop(){Token out=peek();look.reset();return out;}
+    Token pop(){peek();Token out=std::move(*look);look.reset();return out;}
 public:
     explicit Parser(std::string_view text):lexer(text){}
     size_t position()const{return lexer.position();}
-    bool take(std::string_view text){auto &t=peek();if(t.kind!=Token::String&&t.kind!=Token::End&&fold(t.text)==fold(text)){pop();return true;}return false;}
+    bool take(std::string_view text){
+        auto &t=peek();if(t.kind==Token::String||t.kind==Token::End)return false;
+        bool ascii=true;for(unsigned char c:t.text)if(c>=128){ascii=false;break;}
+        if(!ascii){if(fold(t.text)!=fold(text))return false;}
+        else {if(t.text.size()!=text.size())return false;for(size_t i=0;i<text.size();i++){unsigned char a=t.text[i],b=text[i];if(a>='A'&&a<='Z')a+=32;if(b>='A'&&b<='Z')b+=32;if(a!=b)return false;}}
+        look.reset();return true;
+    }
     void need(std::string_view text){if(!take(text))fail("expected "+std::string(text));}
     std::string ident(){if(peek().kind!=Token::Identifier)fail("expected identifier");return pop().text;}
     Value value(){
-        if(take("[")){Value out;out.kind=Value::Vector;if(!take("]")){do{Value v=value();if(v.kind!=Value::Numeric)fail("invalid vector element","invalid_vector");out.elements.push_back(std::move(v));if(take("]"))return out;need(",");}while(true);}return out;}
+        if(take("[")){Value out;out.kind=Value::Vector;if(lexer.compact_vector(out.text))return out;if(!take("]")){do{Value v=value();if(v.kind!=Value::Numeric)fail("invalid vector element","invalid_vector");out.elements.push_back(std::move(v));if(take("]"))return out;need(",");}while(true);}return out;}
         Token t=pop();if(t.kind==Token::String){Value out;out.text=std::move(t.text);return out;}if(t.kind==Token::Number)return Value::number(std::move(t.text));fail("unsupported value");
     }
     size_t integer(bool positive=false){

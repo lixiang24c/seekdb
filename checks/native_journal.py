@@ -155,7 +155,9 @@ def materialization(args):
     s=Fixture(args,'materialization')
     try:
         setup(s);expected=rows(s);s.shutdown()
-        for damage in ('same-size-body','missing-files','truncated-vector'):
+        damages=['missing-files','truncated-vector']
+        if args.materialization_policy=='checksum':damages.insert(0,'same-size-body')
+        for damage in damages:
             if damage=='missing-files':
                 for p in s.root.glob('mv-*'):p.unlink()
             else:
@@ -173,7 +175,8 @@ def materialization(args):
         path=s.root/'commit.log'
         replace_fixture_file(s,path,path.read_bytes()+struct.pack('<QI',1000,500)+b'partial')
         recovered(s,[expected]);assert (s.root/'commit.log').stat().st_size==size
-        return {'damage_cases':3,'replay_kill':True,'partial_tail':True}
+        return {'damage_cases':damages,'replay_kill':True,'partial_tail':True,
+                'excluded_guarantees':[] if args.materialization_policy=='checksum' else ['same-size-body-corruption','machine-power-loss']}
     finally:s.close()
 
 
@@ -214,8 +217,11 @@ def legacy_boundary(args):
 def main():
     p=argparse.ArgumentParser();g=p.add_mutually_exclusive_group(required=True);g.add_argument('--image');g.add_argument('--binary')
     p.add_argument('--fault-library',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--materialization-policy',choices=['size-header','checksum'],default='size-header',
+                   help='Current process-crash policy; checksum also tests body corruption on historical CRC builds.')
     p.add_argument('--cpus',default='1');p.add_argument('--memory',default='2g');args=p.parse_args();args.output.mkdir(parents=True,exist_ok=False)
-    report={'status':'RUNNING','host_only':bool(args.binary),'target':args.image or args.binary,'cases':[]}
+    report={'status':'RUNNING','host_only':bool(args.binary),'target':args.image or args.binary,
+            'materialization_policy':args.materialization_policy,'cases':[]}
     try:
         for variant in ('auto','single','multi','encoded'):
             for point in ('write-1','write-2','write-3','write-4','sync-before','sync-after','sync-eio'):

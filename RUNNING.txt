@@ -1,145 +1,52 @@
-MiniVectorDB 完整重写版本
+MiniVectorDB：可查询日志 C++ 引擎
 
-开发分支：minivectordb-rewrite
-官方协议基点：f4d4e26653af823a7601668802f80e374ad6643c
-协议与检查器：STDIO_PROTOCOL.md、protocol_check/、mysqltest/ 保留官方原文件。
-语言：Python 3.12.8 + 自编译C筛选内核；Python仅使用标准库。基础镜像按Dockerfile中的digest锁定。
-构建阶段使用自带GCC的固定digest镜像编译，RUN不访问网络，不运行apt/pip，不依赖本地二进制；运行时不联网。
+分支 minivectordb-rewrite。默认入口 /app/minivectordb-log，默认数据目录 /data。
+原始 float32 向量用于最终精算；exact/ann 当前均返回精确结果。
+协议保持 JSONL：启动输出 {"type":"ready"}，每次响应立即刷新，诊断写 stderr。
+完整提交目录帧写入 queryable.log 并 fsync 成功后才确认提交。
+EOF/shutdown 回滚未提交事务。checkpoint 同步新日志、原子替换并同步目录。
 
-构建与正式入口
-docker build --platform linux/amd64 -t minivectordb:rewrite-complete .
-docker run --rm -i --network=none --cpus=2 --memory=2g --memory-swap=2g --pids-limit=128 --read-only --cap-drop=ALL --security-opt=no-new-privileges -v minivectordb-rewrite-data:/data minivectordb:rewrite-complete
+构建
+固定 GCC 12 / Python slim 基础镜像摘要，依赖源码与哈希随仓库交付。
+RUN 不执行 apt/pip 或联网下载；首次使用前需缓存 Dockerfile 指定的基础镜像。
+docker build --platform=linux/amd64 --no-cache --network=none -t minivectordb:queryable .
 
-默认前台入口为 python3 -B -u -m minidb.server /data，不需要补充启动参数。
-启动先读取并校验已提交目录和数据文件，然后主动输出 {"type":"ready"}。
-stdin/stdout为UTF-8 JSONL；每次响应立即flush；诊断只写stderr。
-shutdown回滚未提交事务，返回原id和ok:true，以退出码0结束。EOF同样回滚并正常退出。
-所有数据、目录、索引、事务暂存及查询临时文件都在/data。
-默认以root运行。官方绑定目录示例要求宿主数据目录chmod777；命名卷使用镜像/data权限。
+运行（使用空数据卷）
+docker volume create minivectordb-queryable-data
+docker run --rm -i --network=none --cpus=1 --memory=2g --memory-swap=2g --pids-limit=128 --read-only --cap-drop=ALL --security-opt=no-new-privileges --mount type=volume,src=minivectordb-queryable-data,dst=/data minivectordb:queryable
+也可设置 2 CPU；实际测评的内存限额可能更小，已补测 16/64 MiB。
 
-SQL与检索
-支持CREATE TABLE、BIGINT主键、VARCHAR(n)、每表最多一个VECTOR(n)，INSERT多行及列清单、SELECT投影、UPDATE、DELETE。
-支持比较=、<、<=、>、>=，AND、ORDER BY多键与ASC/DESC、LIMIT，以及L2_DISTANCE和过滤后精确TopK。
-VARCHAR按Unicode码点计数和排序；BIGINT保留有符号64位精度；向量入库及查询参数均转为有限float32。
-并列排序按主键升序；不支持的语句在执行前拒绝。UPDATE affected_rows按匹配行数返回。
-CREATE VECTOR INDEX建立自实现磁盘平面索引，保存主键与float32向量；默认exact和ann均得到精确结果；可选图模式见本文末尾。
-无过滤的距离TopK可以使用平面索引；有过滤时先过滤再检索。索引和记录由同一提交发布，回滚及重启状态一致。
-错误返回ok:false及非空error.code；语法/类型/主键错误后继续接收请求。持久化I/O失败记录stderr并退出，重启重新读取提交状态。
+当前默认组合
+整数辅助筛选与紧凑解析开启；MINIDB_POSTINGS=0 关闭候选列表，使用已验证位图路径。
+列表在本次三对实验中没有稳定收益，因此不默认启用。保留代码供显式开关复核。
+MINIDB_QUANT_SCREEN=0、MINIDB_COMPACT_VECTOR=0 分别禁用整数筛选、紧凑解析；
+MINIDB_INDEX_MMAP=0 禁用映射，MINIDB_SIMD=0 禁用 SIMD，MINIDB_FLOAT_SCREEN=0 禁用浮点筛选。
+MINIDB_DIAGNOSTICS=1 输出实际路径计数。优化不适用、预算不足时回退到原始向量精算。
 
-从空目录使用
-启动后发送以下每行一个JSON对象：
-{"id":1,"op":"execute","sql":"CREATE TABLE docs(id BIGINT PRIMARY KEY,content VARCHAR(1024),embedding VECTOR(4))"}
-{"id":2,"op":"execute","sql":"INSERT INTO docs VALUES(1,'事务与恢复','[1,0,0,0]'),(2,'向量索引','[0,1,0,0]')"}
-{"id":3,"op":"execute","sql":"SELECT id,content FROM docs ORDER BY id"}
-{"id":4,"op":"execute","sql":"CREATE VECTOR INDEX ix ON docs(embedding)"}
-{"id":5,"op":"execute","sql":"SELECT id,L2_DISTANCE(embedding,'[1,0,0,0]') AS d FROM docs ORDER BY d LIMIT 2","search_mode":"ann"}
-{"id":6,"op":"execute","sql":"BEGIN"}
-{"id":7,"op":"execute","sql":"UPDATE docs SET content='已提交' WHERE id=1"}
-{"id":8,"op":"execute","sql":"COMMIT"}
-{"id":9,"op":"execute","sql":"BEGIN"}
-{"id":10,"op":"execute","sql":"DELETE FROM docs WHERE id=2"}
-{"id":11,"op":"execute","sql":"ROLLBACK"}
-{"id":12,"op":"shutdown"}
-再次运行同一docker run命令复用命名卷，然后SELECT应保留两行，id=1的content为“已提交”。
+验收与证据
+QUERYABLE_LOG_ACCEPTANCE.zh.txt：本轮完整阶段、I/O、峰值、长尾、消融及已知回退。
+QUERYABLE_LOG_MIGRATION_RESULT.json：原始报告、冻结镜像、源码指纹和默认组合。
+QUERYABLE_LOG_MIGRATION.zh.txt：迁移细节和验收脚本。
+历史 standalone/e5 说明不再描述默认入口；历史代码与原始记录只用于复核。
+新格式使用独立 queryable.log，不执行旧数据的原地迁移。
 
-存储与提交设计
-记录文件按主键排序，使用长度前缀和变长二进制字段；无单页行长度限制。向量保存为小端float32。
-INSERT先校验批内及已有主键，再写独立有序数据段；主键范围不重叠时跳过查重扫描，否则用磁盘定宽主键索引二分查找。
-数据段按层级归并，避免每批都重写全表；归并直接复制记录二进制，并同步写向量索引段。段数随写入批次数按对数增长。
-主键等值查询通过磁盘主键/记录偏移二分定位；主键修改只重写命中段。普通条件修改保留未命中段，命中段中未改动记录直接复制二进制。语句失败时删除该语句的新文件，保留事务此前成功语句。
-显式事务使用私有目录视图，读取自己的记录和索引版本；ROLLBACK恢复已提交视图。
-COMMIT先fsync全部新文件及文件名，再fsync新manifest，原子替换manifest.json并fsync目录，然后回复成功。
-多表修改一次发布。自动提交使用相同机制。进程强杀后只需读取完整旧manifest或完整新manifest，未引用的文件回收；回收中再次退出可以重做。
-查询使用流式扫描、受内存预算约束的TopK堆；普通排序或大K使用/data分段归并。响应先完成查询；小结果在64KiB估算预算内缓存编码行，大结果转入/data临时文件并流式输出JSON。
-查询只解码实际使用的列，先检查普通列过滤条件再处理向量；TopK候选保留二进制记录，确定结果后才解码输出字段。
-距离候选使用math.dist做带宽余量的排除检查，入选候选仍按原math.fsum平方距离和主键排序；不是近似剪枝。
-主键升序读取直接使用数据段的有序归并，LIMIT满足后停止，不再扫描全部记录维护排序堆。
+最终交付确认（不重跑性能）
+python3 /home/chenyifu/OceanBase/competition_seekdb/checks/verify_queryable_delivery.py
+脚本按根 Dockerfile 构建唯一最终镜像，验证镜像自身默认开关，无需手工添加关闭参数。
+公开、事务及恢复检查全部通过后，自动更新本文镜像 ID，并生成 QUERYABLE_LOG_DELIVERY.json 和冻结源码归档。
+未通过时保留 FAILED_OR_BLOCKED 状态，不生成交付通过结论。可用 --resume /绝对路径/report.json 续跑。
 
-本地复现
-python3 protocol_check/run.py --image minivectordb:rewrite-complete --output protocol-results/public
-python3 checks/contract.py --image minivectordb:rewrite-complete --output protocol-results/contract
-python3 checks/recovery.py
-python3 checks/resource.py
-python3 checks/model.py
-输出目录按脚本要求保持未使用；官方检查器拒绝覆盖已有结果目录。
+最终交付镜像：
+sha256:541777658fa67770dcd8c8de07e1bd36556e1b22530bce8a0ffe36eb44d20a57
+由根 Dockerfile 断网、无缓存构建。默认入口 /app/minivectordb-log；
+镜像自身默认 MINIDB_POSTINGS=0，无需额外覆盖。默认关闭及显式开启的路径计数已核验。
+源码指纹：8717e2b64b1703bb986ddcc043437822ed00c7c81f17a28a542b3b4063ebec8b
+配置指纹：8d03071cac74a57ea7d69d9f7b3e43d212076253450bff7254983697c9ac63dd
+二进制 SHA256：239b754a7a743a89e89c4a9f17175d17f5c565348b6438d374091015ff765a2e
+本次交付报告：/home/chenyifu/OceanBase/reports/queryable-delivery-20261114T121920995915Z/report.json
+三档资源（1c2g、2c2g、1c16m）共 60 个公开用例、75 组恢复检查及事务检查通过。
+同一最终镜像完成这些检查；未重跑性能，不扩大历史性能结论。
+建索引回退、个别轮次变慢、已知长尾和压力场景峰值/I/O缺失继续保留。
+实验 Dockerfile 仅供历史消融复核，生产构建使用根 Dockerfile。
 
-当前取舍
-INSERT采用分段写入及分层归并；UPDATE/DELETE重写受影响的分段，磁盘需容纳提交前后版本及归并临时段。
-默认索引采用精确线性扫描，不作近似剪枝。索引TopK通过记录偏移只读取获选行。建索引只生成向量侧文件，保留原数据段；新版本可读取旧版主键索引，旧版程序不能读取新偏移索引。
-本地64MiB压力条件与官方公开2GiB配置分开记录。正式成绩由平台对指定提交评测产生。
-
-通用优化补充
-主键范围条件通过偏移索引二分定位，倒序主键排序从区间末尾读取，LIMIT满足即停；旧主键文件保留顺序读取/外排序路径。
-普通排序省去无用主键归并。向量索引约64KiB分块解包，候选距离与并列主键规则不变。
-主键同值UPDATE保持matched affected_rows口径，直接保留当前记录。
-
-通用版收尾
-带过滤向量检索可复用512KiB预算内的版本化候选ID集合，候选过多使用原流式路径。
-无条件DELETE直接发布空段视图；同值UPDATE保留文件，仍返回匹配行数。
-外排序临时文件仅保存查询需要的字段，大响应按块输出。
-本轮详细复核与取舍见COMMON_REVIEW.txt，单轮本地对比见COMMON_BENCHMARK.json。
-
-存储迁移候选
-本提交启用有界增量覆盖：主键修改追加替代段，删除记录失效主键；达到128个失效主键后，下次主键修改前全量归并；达到32段时优先归并尾部小覆盖段，无法降低段数才全量归并。
-所有扫描和向量索引屏蔽旧版本，过滤缓存键包含失效主键。设计与代价见STORAGE_MIGRATION.txt。
-可读取旧format=1；新写入manifest为format=2，旧程序不能读取升级目录。需要回退程序时，应使用旧版本数据目录副本。
-
-向量计算内核
-16至4096维索引块可使用自编译C筛选，保留候选仍按原精确距离/主键规则排名。默认自动加载；MINIDB_NATIVE=0可关闭对照。
-当前运行镜像的libscreen.so约87KiB；GCC仅在构建阶段存在。依赖、冷构建与数值验证见NATIVE_MIGRATION.txt。
-
-RUN断网构建复现
-docker build --platform linux/amd64 --network=none --no-cache -t minivectordb:rewrite-complete .
---network=none限制构建RUN步骤；FROM镜像仍由Docker引擎拉取，或由平台预置。
-
-块内原生TopK
-无普通列过滤的向量TopK可在C内收紧块级候选范围，保留误差带/距离并列，最终仍用Python精确排序；过滤查询沿用原筛选。
-本阶段ABI为2（当前为5），构建继续RUN断网，细节见TOPK_MIGRATION.txt，实验与最终对比见TOPK_BENCHMARK.json。
-
-SIMD调度
-SIMD阶段ABI为3（当前为5）；支持AVX2且块足够密集时自动向量化，否则使用标量。MINIDB_SIMD=0可强制标量进行对照，正常启动不需要参数。
-没有新增依赖；构建仍RUN断网。细节见SIMD_MIGRATION.txt。
-
-过滤缓存
-候选ID采用紧凑int64数组，预算512KiB；另用128KiB缓存索引顺序字节掩码，按数据/索引版本隔离。超预算回到原路径。
-没有新的依赖或持久化文件；详见FILTER_MASK_MIGRATION.txt。
-
-可选图索引
-新增自实现分层邻近图，默认关闭。MINIDB_ANN_GRAPH=1且search_mode=ann时，符合范围的无过滤TopK可使用图；exact及带过滤查询保持精确。
-查询宽度默认512；变更使图失效，返回精确路径。构图和重启成本、召回验证及启用方式见GRAPH_MIGRATION.txt。
-
-TopK批量回表
-默认按数据段复用主键/记录文件句柄，排序定位候选，减少逐行重新打开文件。旧主键格式、事务可见性和回退路径保持原规则。详见LOOKUP_MIGRATION.txt。
-后续未完成项见OPTIMIZATION_BACKLOG.txt。
-
-批量写入归并
-INSERT沿用原层级规则，最多16个旧段直接生成最终段，超过则保留原有界归并。最终文件及目录同步不变。
-三轮10000x128写入耗时中位5.15秒→4.67秒，详细I/O、内存和故障检查见INSERT_MIGRATION.txt、INSERT_BENCHMARK.json。
-
-同列跨条件缓存
-出现第二种同列过滤条件时，可从已有扫描学习有界列值分组；后续新值复用，不增加持久化或启动步骤。估算预算256KiB，超限退回原路径。
-十类轮换查询三轮中位1.050秒→0.625秒，单一类别基本持平。详见VALUE_GROUPS_MIGRATION.txt、VALUE_GROUPS_BENCHMARK.json。
-
-向量输入批量转换
-逐元素float32转换改为标准库整段转换，原校验规则保留。三轮写入中位4.828秒→4.647秒。公开20例和102项输入边界通过。
-主键页缓存实验无收益，代码已撤回；迁移完成项、实验与剩余方向见MIGRATION_MATRIX.txt。
-
-SQL字符串扫描
-按引号边界整段提取，重复引号、Unicode与错误规则保持原行为。6484个差分片段及公开20例通过。
-完整三轮负载：写入中位4.557秒→2.784秒，1000查询4.664秒→4.548秒；I/O和内存基本持平。详见PARSER_MIGRATION.txt与PARSER_WORKLOAD_BENCHMARK.json。
-
-向量数字文本
-限定大小的文本按原数字语法整段校验，map批量转换；大输入保留原路径。官方公开20例、1530项文本差分及102项float32检查通过。
-完整三轮写入中位2.881秒→2.571秒，查询/I/O/内存基本持平。见VECTOR_TEXT_MIGRATION.txt、VECTOR_TEXT_BENCHMARK.json。
-
-精确距离乘积
-当前ABI5：C生成逐坐标binary64乘积，原math.fsum求和；避免原生候选在Python逐元素计算。缺库回退不变。
-1000查询三轮中位4.639秒→3.902秒（减少15.88%），写入/I/O/内存基本持平。见EXACT_TERMS_MIGRATION.txt。
-
-TopK结果距离复用
-结果投影复用当前SELECT已有的精确分数，省略未输出向量解码；不同查询向量与排序回退保持独立。无新增依赖或ABI变化。
-查询专项三轮约快5.65%，完整负载中位约快2.18%且有波动，完整数据见PROJECTION_DISTANCE_MIGRATION.txt。
-
-有界索引映射
-默认对原生路径复用最多8MiB/16个不可变索引映射，按块借地址；大索引仍缓冲读取。MINIDB_INDEX_MMAP=0可关闭对照，正常启动不用参数。
-数据修改、提交/回滚和关闭释放缓存。三轮1000查询中位3.653→2.969秒（减少18.72%），资源基本持平。公开20例、64MiB大于内存数据/索引检查通过；详见MMAP_MIGRATION.txt。
+版本冻结。未提交、未推送、未正式提测。

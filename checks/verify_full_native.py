@@ -64,7 +64,7 @@ def main():
              'Platform E formula/hidden workload unknown; no extrapolation to score.',
              'Independent oracle and resource observer stay outside measured cgroup and request timing.',
              'Restart startup/first-query metrics are separate supplementary windows; OS page cache is not claimed cold.',
-             'Runtime differs from document by materialization CRC validation; its cost is included.']}
+             'Materialization reuse checks size/header only; same-size body corruption and machine power loss are outside the recovery guarantee. WAL CRC/fsync remain enabled.']}
     r['status']='STARTED'
     r.pop('error',None);r.pop('traceback',None)
     def persist():save(out/'report.json',r)

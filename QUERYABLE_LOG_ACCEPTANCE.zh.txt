@@ -1,0 +1,55 @@
+可查询日志验收结论（所有百分比仅对应本地负载）
+
+原始报告：/home/chenyifu/OceanBase/reports/queryable-docker-20261114T111835996073Z/report.json
+冻结镜像：sha256:4eb0ad0d1af5aad62b91189e2906ff9d3fd992f62e620dc9f70ad76f7a931590
+源码/检查脚本与验收冻结指纹完全匹配；21000 次保存查询的主键和 binary64 距离重新对独立真值核对。
+默认生产入口切到 minivectordb-log，MINIDB_POSTINGS=0；原生源码未改变。未提交、未推送、未提测。
+
+1 CPU / 384 MiB，种子 42/43/44，三轮各自指标中位数：
+指标 | 122b | 全开候选 | 默认关闭候选列表
+startup 秒 | 0.350355 | 0.302540 | 0.286356
+schema 秒 | 0.011396 | 0.023474 | 0.025918
+write 秒 | 0.877102 | 0.736293 | 0.758952
+index 秒 | 0.007477 | 0.027815 | 0.028892
+first_queries 秒 | 0.026785 | 0.019574 | 0.022096
+warmup 秒 | 0.011309 | 0.010972 | 0.010206
+query 秒 | 0.530142 | 0.484706 | 0.458627
+full 秒 | 1.814567 | 1.580220 | 1.595071
+io_bytes MiB | 16.4766 | 10.6680 | 10.6680
+peak_memory_bytes MiB | 15.3828 | 13.1562 | 13.1445
+query_cpu_seconds | 0.190213 | 0.107435 | 0.108604
+unfiltered total ms | 287.9025 | 256.3534 | 236.5764
+unfiltered p99 ms | 0.9773 | 0.9790 | 0.8211
+unfiltered max ms | 1.4988 | 1.9731 | 1.1643
+filtered total ms | 241.5566 | 227.5907 | 221.4468
+filtered p99 ms | 0.8038 | 0.8497 | 0.8198
+filtered max ms | 1.2290 | 2.2263 | 1.0006
+各阶段中位数之和不等于 full 中位数；full 先按每轮完整阶段相加，再取中位数。
+默认关闭候选列表相对 122b：
+write: -13.47%
+query: -13.49%
+full: -12.10%
+
+分项：整数筛选查询耗时中位数 -11.96%，查询 CPU -33.50%，峰值内存 +6.41%。
+紧凑解析查询耗时中位数 -0.79%，查询 CPU -18.83%；三对 CPU 均改善，端到端并非稳定下降。
+候选列表开启查询耗时中位数 +5.69%，两对变慢；查询 CPU 中位数 -1.08%，方向不一致。默认关闭，不作为复现收益。
+上述消融的写入波动不是这些查询优化的写入收益，不据此归因。
+
+全开候选的单对补测（不能冒充默认关闭候选列表的完整规格复验）：
+1c2g: write -42.36%, query -19.53%, full -30.03%, I/O -35.25%, peak -16.04%
+2c2g: write +21.84%, query -15.74%, full +5.73%, I/O -35.25%, peak -14.66%
+1c16m: write -6.29%, query -11.95%, full -5.06%, I/O -66.07%, peak -21.04%
+
+不能隐藏的代价与范围：
+1c384m all-enabled index median 7.477ms -> 27.815ms; shutdown/restart measured separately.
+2c2g single pair write +21.84%, full time +5.73%; unfiltered max 1.319ms -> 7.509ms despite P99 improvement.
+1c384m all-enabled filtered P99 0.804ms -> 0.850ms; maxima retained.
+Warm query I/O equals zero in both versions: full I/O reduction is not evidence of reduced physical I/O in the warm-query window.
+Large-data stress has enforced limits and successful correctness checks but no recorded memory peak or comparative performance measurement.
+Real cgroup v2/private+host tested; cgroup v1 validated by injectable file layouts only.
+
+Resource efficiency and core architecture reproduced; document write/query percentages not reproduced exactly. Different generator/environment and baseline variation prevent causal attribution. Postings benefit not reproduced.
+21 次测量的 oom / oom_kill 均为 0。大数据 94 MB 日志在 16/64 MiB 限额下正确性通过，实际缓冲扫描计数 360；没有该压力场景的峰值/I/O测量，不用预算值代替。
+75 组恢复检查（三档限额）通过，含 108 次强杀、9 次同步 EIO；每次 checkpoint 中断后恢复中再连续强杀三次。
+根 Dockerfile 只替换构建/启动入口并添加已测的环境开关；根构建产生的新镜像 ID 未获取。使用上述冻结镜像加 -e MINIDB_POSTINGS=0 可运行已测组合。
+历史基线源码、原始报告和测试证据保留，不再是生产默认引擎；没有扫描并删除用户既有目录。

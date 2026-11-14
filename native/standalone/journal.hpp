@@ -21,13 +21,6 @@ struct Recipe {Part output;size_t dimension=0;std::vector<Part> sources;Bytes pa
 class Journal {
     std::filesystem::path root,path;int fd=-1,dirfd=-1;
     static constexpr size_t HEADER=12,TRAILER=12,CHUNK=65536;
-    // Immutable materializations are not individually fsynced. Size/header alone
-    // cannot distinguish a complete file from missing or torn body pages.
-    std::map<std::string,std::pair<uint64_t,uint32_t>> checksums;
-    static uint32_t checksum(int source,uint64_t size){
-        unsigned char block[CHUNK];uint32_t crc=0;uint64_t at=0;
-        while(at<size){size_t n=std::min(uint64_t(CHUNK),size-at);read_at(source,block,n,at);crc=crc_bytes(crc,block,n);at+=n;}return crc;
-    }
     std::filesystem::path safe(const std::string &name)const{
         if(name.rfind("mv-",0)||std::filesystem::path(name).filename()!=name)throw std::runtime_error("invalid segment path");return root/name;
     }
@@ -38,14 +31,11 @@ class Journal {
             Json j=Json::object();j["row"]=r.output.file;j["vector"]=r.output.vectors;j["dimension"]=r.dimension;j["bytes"]=r.payload.size();if(!r.encoding.empty())j["encoding"]=r.encoding;Json sources=Json::array();
             for(auto &p:r.sources){Json x=Json::array();x.push(p.file);x.push(p.vectors);x.push(p.count);Json ex=Json::array();for(auto id:p.excluded)ex.push(id);x.push(ex);sources.push(x);}j["sources"]=sources;described.push(j);covered.insert(r.output.file);covered.insert(r.output.vectors);
         }
-        Json files=Json::array(),sizes=Json::object(),digests=Json::object();uint64_t payload_bytes=0,live=0;
-        for(auto it=checksums.begin();it!=checksums.end();)if(!names.count(it->first))it=checksums.erase(it);else ++it;
+        Json files=Json::array(),sizes=Json::object();uint64_t payload_bytes=0,live=0;
         for(auto &name:names){size_t n=std::filesystem::file_size(safe(name));sizes[name]=n;live+=n;
-            auto cached=checksums.find(name);
-            if(cached==checksums.end()||cached->second.first!=n){Descriptor input(::open(safe(name).c_str(),O_RDONLY));if(input.fd<0)::error("open checksum segment");checksums[name]={n,checksum(input.fd,n)};}
-            digests[name]=int64_t(checksums.at(name).second);if(!old.count(name)&&!covered.count(name)){Json x=Json::array();x.push(name);x.push(n);files.push(x);payload_bytes+=n;}}
+            if(!old.count(name)&&!covered.count(name)){Json x=Json::array();x.push(name);x.push(n);files.push(x);payload_bytes+=n;}}
         for(auto &j:described.items())payload_bytes+=j.at("bytes").integer();
-        Json doc=Json::object();doc["tables"]=catalog_json(tables);doc["files"]=files;doc["recipes"]=described;doc["sizes"]=sizes;doc["checksums"]=digests;std::string meta=doc.dump();
+        Json doc=Json::object();doc["tables"]=catalog_json(tables);doc["files"]=files;doc["recipes"]=described;doc["sizes"]=sizes;std::string meta=doc.dump();
         if(meta.size()>UINT32_MAX||payload_bytes>UINT64_MAX-meta.size())throw std::runtime_error("commit frame too large");
         uint64_t size=payload_bytes+meta.size();uint32_t meta_size=meta.size();unsigned char head[12];std::memcpy(head,&size,8);std::memcpy(head+8,&meta_size,4);
         uint32_t crc=crc_bytes(0,head,12);write_all(target,head,12);write_all(target,meta.data(),meta.size());crc=crc_bytes(crc,meta.data(),meta.size());
@@ -59,14 +49,16 @@ class Journal {
         unsigned char tail[12];std::memcpy(tail,&crc,4);std::memcpy(tail+4,"MVCMT001",8);write_all(target,tail,12);
         if(::fsync(target))::error("commit sync");::posix_fadvise(target,0,0,POSIX_FADV_DONTNEED);return live;
     }
+    // Process-crash recovery reuses complete materializations by size/header.
+    // Same-size body corruption and loss of dirty pages on machine failure are
+    // outside this policy; WAL frame CRC and commit fsync remain mandatory.
     bool materialized(const Json &doc){
-        if(!doc.contains("sizes")||!doc.contains("checksums"))return false;
+        if(!doc.contains("sizes"))return false;
         for(auto &[name,size]:doc.at("sizes").fields()){
             Descriptor file(::open(safe(name).c_str(),O_RDONLY));if(file.fd<0){if(errno==ENOENT)return false;::error("open committed segment");}
             struct stat st;if(::fstat(file.fd,&st))::error("stat committed segment");if(st.st_size!=size.integer())return false;
             char magic[8];if(::pread(file.fd,magic,8,0)!=8)return false;
             if(std::memcmp(magic,"MVROW001",8)&&std::memcmp(magic,"MVFLT001",8)&&std::memcmp(magic,"MVKEY001",8)&&std::memcmp(magic,"MVKEY002",8))return false;
-            if(!doc.at("checksums").contains(name)||checksum(file.fd,st.st_size)!=uint32_t(doc.at("checksums").at(name).integer()))return false;
         }return true;
     }
     void collect(const Catalog &tables){
@@ -119,7 +111,6 @@ public:
                 offset=0;while(offset<valid){unsigned char head[12];read_at(fd,head,12,offset);uint64_t size;uint32_t n;std::memcpy(&size,head,8);std::memcpy(&n,head+8,4);std::string meta(n,'\0');read_at(fd,meta.data(),n,offset+HEADER);Json doc=Json::parse(meta);restore(doc,offset+HEADER+n);collect(catalog_from(doc.at("tables")));offset+=HEADER+size+TRAILER;}
             }
             tables=catalog_from(latest.at("tables"));
-            checksums.clear();if(latest.contains("checksums"))for(auto &[name,size]:latest.at("sizes").fields())checksums[name]={uint64_t(size.integer()),uint32_t(latest.at("checksums").at(name).integer())};
         }
         if(::ftruncate(fd,valid))::error("truncate partial commit");
         std::filesystem::remove(root/"commit.next");std::filesystem::remove(root/"journal-recovery.keys");collect(tables);

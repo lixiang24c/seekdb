@@ -10,9 +10,12 @@ using Cell=std::variant<int64_t,std::string,std::vector<float>>;
 using Row=std::vector<Cell>;
 inline std::vector<float> vector_value(const Value &value,size_t dimension){
     std::vector<Value> numbers;
-    if(value.kind==Value::Text){
+    if(value.kind==Value::Text||(value.kind==Value::Vector&&!value.text.empty())){
         if(dimension<=4096){std::vector<float> fast(dimension);
-            if(!mv_vector_parse(value.text.data(),value.text.size(),dimension,fast.data()))return fast;}
+            if(!mv_vector_parse(value.text.data(),value.text.size(),dimension,fast.data())){
+                if(value.kind==Value::Vector){size_t at=1;for(float &v:fast){bool integer=true;while(at<value.text.size()&&value.text[at]!=','&&value.text[at]!=']'){if(value.text[at]=='.'||value.text[at]=='e'||value.text[at]=='E')integer=false;++at;}if(integer&&v==0)v=0.0f;++at;}}
+                return fast;
+            }}
         try {
         Lexer lex(value.text,false);Token token=lex.next();if(token.text!="[")fail("invalid vector literal","invalid_vector");
         token=lex.next();if(token.text!="]")while(true){
@@ -88,16 +91,17 @@ struct Codec {
             else{auto &s=std::get<std::string>(row[i]);if(s.size()>UINT32_MAX)fail("VARCHAR value too large","invalid_value");uint32_t size=s.size();::put(out,size);out.insert(out.end(),s.begin(),s.end());}
         }return out;
     }
-    Row decode(const Bytes &scalar,const Bytes &vector,const std::vector<bool> *wanted=nullptr)const{
+    Row decode_view(const unsigned char *scalar,size_t scalar_size,const unsigned char *vector,size_t vector_size,const std::vector<bool> *wanted=nullptr)const{
         Row out(table.columns.size());size_t pos=0;
         for(size_t i=0;i<table.columns.size();i++){
             auto &c=table.columns[i];bool keep=!wanted||wanted->at(i);
-            if(c.type=="BIGINT"){if(pos>scalar.size()||scalar.size()-pos<8)throw std::runtime_error("incomplete integer");if(keep){int64_t x;std::memcpy(&x,scalar.data()+pos,8);out[i]=x;}pos+=8;}
-            else if(c.type=="VARCHAR"){if(pos>scalar.size()||scalar.size()-pos<4)throw std::runtime_error("incomplete text size");uint32_t n;std::memcpy(&n,scalar.data()+pos,4);pos+=4;if(n>scalar.size()-pos)throw std::runtime_error("incomplete text");if(keep)out[i]=std::string(reinterpret_cast<const char*>(scalar.data()+pos),n);pos+=n;}
-            else if(keep){if(c.n>SIZE_MAX/4||vector.size()!=c.n*4)throw std::runtime_error("invalid vector stream");std::vector<float> v(c.n);std::memcpy(v.data(),vector.data(),vector.size());out[i]=std::move(v);}
+            if(c.type=="BIGINT"){if(pos>scalar_size||scalar_size-pos<8)throw std::runtime_error("incomplete integer");if(keep){int64_t x;std::memcpy(&x,scalar+pos,8);out[i]=x;}pos+=8;}
+            else if(c.type=="VARCHAR"){if(pos>scalar_size||scalar_size-pos<4)throw std::runtime_error("incomplete text size");uint32_t n;std::memcpy(&n,scalar+pos,4);pos+=4;if(n>scalar_size-pos)throw std::runtime_error("incomplete text");if(keep)out[i]=std::string(reinterpret_cast<const char*>(scalar+pos),n);pos+=n;}
+            else if(keep){if(c.n>SIZE_MAX/4||vector_size!=c.n*4)throw std::runtime_error("invalid vector stream");std::vector<float> v(c.n);std::memcpy(v.data(),vector,vector_size);out[i]=std::move(v);}
         }
-        if(pos!=scalar.size())throw std::runtime_error("extra scalar bytes");return out;
+        if(pos!=scalar_size)throw std::runtime_error("extra scalar bytes");return out;
     }
+    Row decode(const Bytes &scalar,const Bytes &vector,const std::vector<bool> *wanted=nullptr)const{return decode_view(scalar.data(),scalar.size(),vector.data(),vector.size(),wanted);}
     int64_t primary(const Bytes &scalar)const{
         size_t pos=0;for(size_t i=0;i<table.columns.size();i++){
             auto &c=table.columns[i];if(c.type=="VECTOR")continue;

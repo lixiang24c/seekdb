@@ -7,5 +7,9 @@
 !native/*.cpp
 !native/standalone/
 !native/standalone/**
+!native/queryable_log/
+!native/queryable_log/**
 !native/vendor/
 !native/vendor/**
+
+!native/*.inc
