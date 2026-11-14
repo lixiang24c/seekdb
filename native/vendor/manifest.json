@@ -1,0 +1,58 @@
+[
+  {
+    "package": "yyjson",
+    "commit": "6447536015f3d600f3d65323b10976103b337ca7",
+    "path": "yyjson/yyjson.c",
+    "url": "https://raw.githubusercontent.com/ibireme/yyjson/6447536015f3d600f3d65323b10976103b337ca7/src/yyjson.c",
+    "sha256": "d2d58ef0a3b2267862dc363832c4f3185fd375aea933d5d3419d1a940d6ece2e",
+    "bytes": 424765
+  },
+  {
+    "package": "yyjson",
+    "commit": "6447536015f3d600f3d65323b10976103b337ca7",
+    "path": "yyjson/yyjson.h",
+    "url": "https://raw.githubusercontent.com/ibireme/yyjson/6447536015f3d600f3d65323b10976103b337ca7/src/yyjson.h",
+    "sha256": "ef803cda5c06b8962face6dfa39c3284b3bcf3e73f4d7317664690cc779679ca",
+    "bytes": 330896
+  },
+  {
+    "package": "yyjson",
+    "commit": "6447536015f3d600f3d65323b10976103b337ca7",
+    "path": "yyjson/LICENSE",
+    "url": "https://raw.githubusercontent.com/ibireme/yyjson/6447536015f3d600f3d65323b10976103b337ca7/LICENSE",
+    "sha256": "45e384d3d52c73cba3a64d6e6c25d47cd738cd8a55c30629e3201046eda62947",
+    "bytes": 1084
+  },
+  {
+    "package": "utf8proc",
+    "commit": "1cb28a66ca79a0845e99433fd1056257456cef8b",
+    "path": "utf8proc/utf8proc.c",
+    "url": "https://raw.githubusercontent.com/JuliaStrings/utf8proc/1cb28a66ca79a0845e99433fd1056257456cef8b/utf8proc.c",
+    "sha256": "fdcc214d140a526b0de3ad22d816823c3e7940c017568c046e40f444060e7a51",
+    "bytes": 31070
+  },
+  {
+    "package": "utf8proc",
+    "commit": "1cb28a66ca79a0845e99433fd1056257456cef8b",
+    "path": "utf8proc/utf8proc.h",
+    "url": "https://raw.githubusercontent.com/JuliaStrings/utf8proc/1cb28a66ca79a0845e99433fd1056257456cef8b/utf8proc.h",
+    "sha256": "3ac6bcc03716a8af82ad91d8287186a846209b3aadab04f001004d33bdb7314e",
+    "bytes": 31001
+  },
+  {
+    "package": "utf8proc",
+    "commit": "1cb28a66ca79a0845e99433fd1056257456cef8b",
+    "path": "utf8proc/utf8proc_data.c",
+    "url": "https://raw.githubusercontent.com/JuliaStrings/utf8proc/1cb28a66ca79a0845e99433fd1056257456cef8b/utf8proc_data.c",
+    "sha256": "57a774e8b9b5ae6b2bca3927adee178c20ffcc1986d7e2eff8f39a015f464c88",
+    "bytes": 1937396
+  },
+  {
+    "package": "utf8proc",
+    "commit": "1cb28a66ca79a0845e99433fd1056257456cef8b",
+    "path": "utf8proc/LICENSE.md",
+    "url": "https://raw.githubusercontent.com/JuliaStrings/utf8proc/1cb28a66ca79a0845e99433fd1056257456cef8b/LICENSE.md",
+    "sha256": "3b510150d34f248a221bb88e1d811238d6c6c18b51231822c42974c39bb07256",
+    "bytes": 5125
+  }
+]

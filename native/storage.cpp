@@ -17,6 +17,8 @@ extern "C" {
 struct mv_source { const char *rows; const char *vectors; uint64_t count; const int64_t *excluded; size_t excluded_count; };
 struct mv_segment { uint64_t count; uint64_t key_offset; int64_t minimum; int64_t maximum; };
 }
+static bool durable_segments=true;
+extern "C" void mv_storage_set_durable(int value) noexcept {durable_segments=value!=0;}
 namespace {
 [[noreturn]] void error(const char *s) { throw std::runtime_error(std::string(s)+": "+std::strerror(errno)); }
 struct File {
@@ -30,7 +32,7 @@ struct File {
     void read(void *p,size_t n){if(n && ::fread_unlocked(p,1,n,f)!=n)throw std::runtime_error("incomplete column stream");}
     void write(const void *p,size_t n){if(n && ::fwrite_unlocked(p,1,n,f)!=n)error("write segment");}
     void close(){if(f){FILE *old=f;f=nullptr;if(std::fclose(old))error("close segment");}}
-    void sync(){if(std::fflush(f)||::fsync(::fileno(f)))error("sync segment");}
+    void sync(){if(std::fflush(f)||(durable_segments&&::fsync(::fileno(f))))error("sync segment");}
     uint64_t tell(){auto n=::ftello(f);if(n<0)error("tell segment");return static_cast<uint64_t>(n);}
 };
 struct Cursor {
@@ -169,6 +171,12 @@ struct InsertParser {
         while(p<end){char c=*p++;if(c=='\''){if(p<end&&*p=='\'')++p;else return result;}result+=c;}
         throw std::runtime_error("quoted value");
     }
+    bool plain_string(const char *&value,size_t &length){
+        space();if(p==end||*p!='\'')return false;
+        const char *first=p+1,*quote=static_cast<const char*>(std::memchr(first,'\'',end-first));
+        if(!quote||(quote+1<end&&quote[1]=='\''))return false;
+        value=first;length=quote-first;p=quote+1;return true;
+    }
 };
 template<class T> void put(std::vector<unsigned char>& data,const T &value){const auto *p=reinterpret_cast<const unsigned char*>(&value);data.insert(data.end(),p,p+sizeof(T));}
 }
@@ -203,15 +211,16 @@ extern "C" void *mv_insert_prepare(const char *text,size_t size,const mv_column 
                     if(parsed.ec!=std::errc()||parsed.ptr!=in.p)return nullptr;
                     put(fields[c],value);if(c==pk)row.id=value;
                 }else if(cols[c].kind==1){
-                    std::string value=in.string();size_t chars=0;
-                    for(unsigned char ch:value)if((ch&0xc0)!=0x80)++chars;
-                    if(chars>cols[c].width||value.size()>UINT32_MAX)return nullptr;
-                    put(fields[c],static_cast<uint32_t>(value.size()));fields[c].insert(fields[c].end(),value.begin(),value.end());
+                    std::string decoded;const char *value=nullptr;size_t length=0,chars=0;
+                    if(!in.plain_string(value,length)){decoded=in.string();value=decoded.data();length=decoded.size();}
+                    for(size_t i=0;i<length;i++)if((static_cast<unsigned char>(value[i])&0xc0)!=0x80)++chars;
+                    if(chars>cols[c].width||length>UINT32_MAX)return nullptr;
+                    put(fields[c],static_cast<uint32_t>(length));fields[c].insert(fields[c].end(),value,value+length);
                 }else if(cols[c].kind==2){
                     if(!cols[c].width||cols[c].width>4096)return nullptr;
                     std::string quoted;const char *v=nullptr;size_t length=0;
                     bool is_quoted=in.p<in.end&&*in.p=='\'';
-                    if(is_quoted){quoted=in.string();v=quoted.data();length=quoted.size();}
+                    if(is_quoted){if(!in.plain_string(v,length)){quoted=in.string();v=quoted.data();length=quoted.size();}}
                     else{
                         const char *start=in.p;in.need('[');while(in.p<in.end&&*in.p!=']')++in.p;
                         if(in.p==in.end)return nullptr;++in.p;v=start;length=in.p-start;
@@ -314,6 +323,7 @@ struct TopK {
     std::vector<double> query;
     size_t k;
     std::vector<std::pair<double,int64_t>> heap;
+    std::vector<uint32_t> positions;
     TopK(const double *q,size_t d,size_t count):query(q,q+d),k(count){heap.reserve(k);}
     double bound()const{return heap.size()==k?heap.front().first:INFINITY;}
     void offer(const unsigned char *record){
@@ -323,6 +333,11 @@ struct TopK {
             double delta=double(value)-query[d];sum.add(delta*delta);
         }
         auto item=std::make_pair(sum.result(),id);
+        if(heap.size()<k){heap.push_back(item);std::push_heap(heap.begin(),heap.end());}
+        else if(item<heap.front()){std::pop_heap(heap.begin(),heap.end());heap.back()=item;std::push_heap(heap.begin(),heap.end());}
+    }
+    void offer_score(double score,int64_t id){
+        auto item=std::make_pair(score,id);
         if(heap.size()<k){heap.push_back(item);std::push_heap(heap.begin(),heap.end());}
         else if(item<heap.front()){std::pop_heap(heap.begin(),heap.end());heap.back()=item;std::push_heap(heap.begin(),heap.end());}
     }
@@ -340,7 +355,8 @@ extern "C" int mv_topk_scan(void *p,const unsigned char *data,size_t bytes,const
     try{
         auto *ctx=static_cast<TopK*>(p);if(!ctx||!data)return -1;
         size_t stride=8+ctx->query.size()*4;if(bytes%stride)return -1;
-        std::vector<uint32_t> positions(bytes/stride);
+        ctx->positions.resize(bytes/stride);
+        auto &positions=ctx->positions;
         size_t n=mv_screen_topk(data,bytes,ctx->query.size(),ctx->query.data(),ctx->bound(),mask,ctx->k,positions.data());
         if(n==SIZE_MAX||n>positions.size())return -1;
         for(size_t i=0;i<n;i++)ctx->offer(data+positions[i]*stride);

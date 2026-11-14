@@ -1,3 +1,5 @@
-# Runtime: Python 3.12.8 standard library and self-built libscreen.so / libstorage.so (C++ runtime statically linked).
-# No pip dependencies. Builder and runtime images pinned by digest in Dockerfile.
-# Compiler preinstalled in gcc:12-bookworm builder; no RUN step accesses network.
+# Runtime entry: standalone C++ executable; libstdc++ and libgcc statically linked.
+# Vendored yyjson and utf8proc: native/vendor/manifest.json pins commits and SHA256.
+# System libc/libm/zlib come from the fixed base images in Dockerfile.
+# Python remains in the base image for compatibility/tools, not database execution.
+# No pip, apt or network download in build RUN steps; base images must be cached/pulled.

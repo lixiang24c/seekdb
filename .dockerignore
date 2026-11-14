@@ -5,3 +5,7 @@
 !native/
 !native/*.c
 !native/*.cpp
+!native/standalone/
+!native/standalone/**
+!native/vendor/
+!native/vendor/**

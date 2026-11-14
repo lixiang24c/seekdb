@@ -109,12 +109,87 @@ static double avx2_distance(const unsigned char *vector, const double *query,
     return sum > cutoff ? INFINITY : sum;
 }
 
+/* Experimental float32 screening only; final ranking remains exact. */
+static int float_screen_enabled=0, float_screen_selected=0;
+static float float_query[4096];
+static double broad_query[256];
+static size_t broad_dimension=0;
+static double broad_radius=0;
+void mv_screen_set_float(int enabled){float_screen_enabled=enabled!=0;broad_dimension=0;}
+__attribute__((target("avx2"), noinline))
+static double avx2_float_distance(const unsigned char *vector,const double *query,size_t dim,double cutoff){
+    __m256 a=_mm256_setzero_ps(),b=a;size_t j=0;
+    for(;j+16<=dim;j+=16){
+        __m256 x=_mm256_sub_ps(_mm256_loadu_ps((const float*)(vector+j*4)),_mm256_loadu_ps(float_query+j));
+        __m256 y=_mm256_sub_ps(_mm256_loadu_ps((const float*)(vector+(j+8)*4)),_mm256_loadu_ps(float_query+j+8));
+        a=_mm256_add_ps(a,_mm256_mul_ps(x,x));b=_mm256_add_ps(b,_mm256_mul_ps(y,y));
+    }
+    /* Convert float lanes before reducing: binary64 addition keeps the
+       existing conservative screening bound, with a shorter dependency chain. */
+    __m256 total=_mm256_add_ps(a,b);
+    __m256d pairs=_mm256_add_pd(_mm256_cvtps_pd(_mm256_castps256_ps128(total)),_mm256_cvtps_pd(_mm256_extractf128_ps(total,1)));
+    __m128d halves=_mm_add_pd(_mm256_castpd256_pd128(pairs),_mm256_extractf128_pd(pairs,1));
+    double sum=_mm_cvtsd_f64(_mm_add_sd(halves,_mm_unpackhi_pd(halves,halves)));
+    for(;j<dim;j++){float value;memcpy(&value,vector+j*4,4);double delta=(double)value-query[j];sum+=delta*delta;}
+    if(!isfinite(sum))return avx2_distance(vector,query,dim,cutoff);
+    return sum>cutoff?INFINITY:sum;
+}
+
+/* Fixed-width dispatch retains the generic arithmetic order and guard. */
+__attribute__((target("avx2"), noinline))
+static double avx2_float_distance128(const unsigned char *vector,const double *query,size_t ignored_dimension,double cutoff){
+    __m256 a=_mm256_setzero_ps(),b=a;size_t j=0;
+    for(;j<128;j+=16){
+        __m256 x=_mm256_sub_ps(_mm256_loadu_ps((const float*)(vector+j*4)),_mm256_loadu_ps(float_query+j));
+        __m256 y=_mm256_sub_ps(_mm256_loadu_ps((const float*)(vector+(j+8)*4)),_mm256_loadu_ps(float_query+j+8));
+        a=_mm256_add_ps(a,_mm256_mul_ps(x,x));b=_mm256_add_ps(b,_mm256_mul_ps(y,y));
+    }
+    /* Convert float lanes before reducing: binary64 addition keeps the
+       existing conservative screening bound, with a shorter dependency chain. */
+    __m256 total=_mm256_add_ps(a,b);
+    __m256d pairs=_mm256_add_pd(_mm256_cvtps_pd(_mm256_castps256_ps128(total)),_mm256_cvtps_pd(_mm256_extractf128_ps(total,1)));
+    __m128d halves=_mm_add_pd(_mm256_castpd256_pd128(pairs),_mm256_extractf128_pd(pairs,1));
+    double sum=_mm_cvtsd_f64(_mm_add_sd(halves,_mm_unpackhi_pd(halves,halves)));
+    if(!isfinite(sum))return avx2_distance(vector,query,128,cutoff);
+    return sum>cutoff?INFINITY:sum;
+}
+
 typedef double (*distance_fn)(const unsigned char *, const double *, size_t, double);
-static distance_fn choose_distance(size_t dim, size_t active) {
+static distance_fn choose_screen_distance(size_t dim, size_t active, const double *query, const unsigned char *data,size_t bytes) {
+    float_screen_selected=0;
+    if(float_screen_enabled && dim>=32 && dim<=256 && active>=16 && mv_screen_simd() && (_mm_getcsr() & 0x8040)==0){
+        // Cache only a precision-planning decision, never neighbors or scores.
+        // Repeated queries with broad numerical boundaries should not pay for
+        // the unsuccessful float pass again on every block and execution.
+        if(broad_dimension==dim){
+            size_t j=0;double delta2=0;
+            for(;j<dim;j++){
+                double delta=query[j]-broad_query[j];delta2+=delta*delta;
+                if(delta2>broad_radius*broad_radius)break;
+            }
+            if(j==dim)return avx2_distance;
+        }
+        size_t stride=8+dim*4,count=bytes/stride;
+        size_t samples[3]={0,count/2,count-1};double scale=0;
+        for(size_t sample=0;sample<3;sample++)for(size_t d=0;d<dim;d++){
+            float value;memcpy(&value,data+samples[sample]*stride+8+d*4,4);
+            double delta=fabs((double)value-query[d]);if(delta>scale)scale=delta;
+        }
+        if(scale<0x1p-60 || scale>0x1p60)return avx2_distance;
+        size_t i=0;for(;i<dim;i++){
+            float_query[i]=(float)query[i];
+            if(!isfinite(float_query[i])||(double)float_query[i]!=query[i])break;
+        }
+        if(i==dim){float_screen_selected=1;return dim==128?avx2_float_distance128:avx2_float_distance;}
+    }
     /* Masked rows are skipped before calling the distance kernel. Density
        therefore does not reduce the work available within an active vector. */
     return dim >= 32 && active >= 16 && mv_screen_simd()
         ? avx2_distance : scalar_distance;
+}
+
+static distance_fn choose_distance(size_t dim,size_t active){
+    return dim>=32&&active>=16&&mv_screen_simd()?avx2_distance:scalar_distance;
 }
 
 size_t mv_screen(const unsigned char *data, size_t bytes, size_t dim,
@@ -130,11 +205,15 @@ size_t mv_screen(const unsigned char *data, size_t bytes, size_t dim,
         active = 0;
         for (size_t i = 0; i < count; ++i) active += mask[i] != 0;
     }
-    distance_fn distance = choose_distance(dim, active);
-    /* Positive-term binary64 summation error is bounded by gamma(dim).
-       This deliberately wider band also covers cutoff multiplication rounding.
-       No fast-math or FMA contraction; stored/query values are finite float32. */
-    double cutoff = bound * (1.0 + 64.0 * DBL_EPSILON * (dim + 1)) + DBL_MIN;
+    distance_fn distance = choose_screen_distance(dim, active, query, data, bytes);
+    /* The float kernel has ceil(dim/16) terms per lane, one pairwise
+       lane add, and a binary64 final reduction. (ceil(dim/16)+8)*FLT_EPSILON
+       covers subtraction, squaring and accumulation relative error; the
+       additive band covers gradual underflow. FTZ/DAZ disable this path.
+       Binary64 retains the original wider gamma(dim) band. No FMA/fast-math. */
+    double error=(float_screen_selected?((dim+15)/16+8)*FLT_EPSILON:64.0*DBL_EPSILON*(dim+1));
+    double slack=float_screen_selected?64.0*FLT_TRUE_MIN*(dim+1):DBL_MIN;
+    double cutoff = bound * (1.0 + error) + slack;
     for (size_t i = 0; i < count; ++i) {
         if (mask && !mask[i]) continue;
         const unsigned char *vector = data + i * stride + 8;
@@ -164,10 +243,11 @@ size_t mv_screen_topk(const unsigned char *data, size_t bytes, size_t dim,
     /* Sparse or large-k blocks cannot amortize a local heap. */
     if (active <= 4 * k) return mv_screen(data, bytes, dim, query, bound, mask, selected);
     double distances[count], heap[k];
-    distance_fn distance = choose_distance(dim, active);
+    distance_fn distance = choose_screen_distance(dim, active, query, data, bytes);
     size_t used = 0, candidates = 0;
-    double error = 64.0 * DBL_EPSILON * (dim + 1);
-    double cutoff = bound * (1.0 + error) + DBL_MIN;
+    double error = (float_screen_selected?((dim+15)/16+8)*FLT_EPSILON:64.0*DBL_EPSILON*(dim+1));
+    double slack=float_screen_selected?64.0*FLT_TRUE_MIN*(dim+1):DBL_MIN;
+    double cutoff = bound * (1.0 + error) + slack;
     double guard = (1.0 + error) / (1.0 - error);
     for (size_t i = 0; i < count; ++i) {
         if (mask && !mask[i]) continue;
@@ -193,13 +273,22 @@ size_t mv_screen_topk(const unsigned char *data, size_t bytes, size_t dim,
             heap[at] = sum;
         }
         if (used == k) {
-            double local = heap[0] * guard + DBL_MIN;
+            double local = heap[0] * guard + 2*slack;
             if (local < cutoff) cutoff = local;
         }
     }
     size_t found = 0;
     for (size_t i = 0; i < candidates; ++i)
         if (distances[i] <= cutoff) selected[found++] = selected[i];
+    // A tight cluster may make the conservative float boundary too broad.
+    // Re-screen in binary64 before expensive exact accumulation explodes.
+    if(float_screen_selected && found>4*k && found>active/256){
+        broad_dimension=dim;memcpy(broad_query,query,dim*sizeof(double));
+        broad_radius=sqrt(heap[0])*sqrt(error)*0.01;
+        int enabled=float_screen_enabled;float_screen_enabled=0;
+        size_t result=mv_screen_topk(data,bytes,dim,query,bound,mask,k,selected);
+        float_screen_enabled=enabled;return result;
+    }
     return found;
 }
 

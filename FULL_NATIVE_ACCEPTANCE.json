@@ -1,0 +1,482 @@
+{
+  "schema_version": 1,
+  "decision": "KEEP_FULL_CPP_AS_DEVELOPMENT_BASELINE",
+  "decision_by": "explicit user instruction",
+  "recorded_at_utc": "2026-11-14T06:20:24.500508+00:00",
+  "freeze_scope": "Runtime and verification harness fingerprints frozen. Stop expanded optimization; future changes only for identified defects. The user subsequently authorized commit and push; official submission remains unauthorized.",
+  "baseline_commit": "e5ad115b0ca35776a44cd6ec31b52e9efe2af01f",
+  "images": {
+    "e5": "sha256:e015e69e782749faed155c8c74fb07db8d7a090edbee68efc4945d6e2e0e06eb",
+    "candidate": "sha256:d1d2d64a54cf6503b3073ccf31e1edff088e7fc19807edab54c40db5158f1bb8"
+  },
+  "source_sha256": {
+    "Dockerfile": "a0906ba0ee601abacd4b5bf716b721a4cc0fa7fcadbecfd7d4823b14bd0e5c50",
+    ".dockerignore": "e147cb8285469727087d2a45e3993210803fe7488e4da3758249b8ad70d2703f",
+    "requirements.lock": "b3f124ceebcf5f477a8d47b1396fcec3fc88d1b1464555cf5f7d6c344b14a15b",
+    "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+    "minidb/approx.py": "bc0cb087d9f05238fee363a56480cbc72deb9f0044bf42c7dcd17c1e235f141a",
+    "minidb/engine.py": "f1dd72ee32a36ed03c604a5556114577afc04b9b924085dc7affbccb0464a2a7",
+    "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
+    "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+    "minidb/indexio.py": "43ccadfbab4c0301ea1c43d490845421f373e759f27c2b8ff65d72f427afb319",
+    "minidb/native.py": "2b16deb16d698712532e15d01925b701b05f84d371464be7028f117f32e3fdb7",
+    "minidb/native_storage.py": "cb54b2a7a776f0b92d346ac3d568ebb92fd20aee376eec658cd5a4131c1f731d",
+    "minidb/query_native.py": "2cf0a9a3ea0f103f2befe7f95860ecb9d714167789465bb4d9002a71a6b178f0",
+    "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+    "minidb/sql.py": "34f16e9a068dab882ddefd07c9a29520823d7564187237de3c1a3f09ece7bb07",
+    "minidb/storage.py": "c1dd0011f50dc57cf2f7ecfb3f54dfb2fdf4c9fe69870dfd705b3bc094701d75",
+    "native/approx.c": "a6eef443380d8b83ea40e970abb0e9b766686e2cb2b07d8851eff7af01543d65",
+    "native/graph.c": "b3f3d98ad7e51c74b44987217b18883e4e69311c0cbf21c94bc96691370652e7",
+    "native/screen.c": "e9b21aa93db17ad2cf46d558eaf99334ad8ee1734179d6ed5cb3777b0831c4a0",
+    "native/standalone/common.hpp": "6f3f99ad2dbc9c903a207a505a2eba348b2db97807f11fce5918107c10a4e945",
+    "native/standalone/engine.hpp": "ddf30722149b040c460b54f9eaf2cdfaba8f0ff163ac22b2cab52dd141b0d5b5",
+    "native/standalone/journal.hpp": "c25917f0b765a8c594e28c1439b402f4ddba2b92071b9269b55d8329f8dfea89",
+    "native/standalone/main.cpp": "d6f0cf744f65d9d24c9a7bff736c2c5c93cad58ba4ac75e75aeaac9adb741172",
+    "native/standalone/recipe_codec.hpp": "e462dd3dd78e5421f830438501bf47574ae6fd0b354bddc5f4a0a32028ee7d16",
+    "native/standalone/sql.hpp": "c63c92ee82b595a6babb3d4fcb07661b7f1cfe04d226fd545ed48ae17ed6b1d0",
+    "native/standalone/storage.hpp": "6f1d61974d2df75b1d0e00950c9b444e06933bdcde13f49f7defc50aebefd51a",
+    "native/standalone/store.hpp": "06e0a5c1a269a36ca01924090a554aa2e6ebc25d1876153697c487d8c40c3e14",
+    "native/storage.cpp": "e0b0262074d1f5107e77e4000668650aee85ca0d5e44d598a40bd6d216f4e463",
+    "native/vendor/SHA256SUMS": "4a6c3d833902949c881787a5087258dc751d2919cff6ed10137f5703e634fb75",
+    "native/vendor/manifest.json": "502061b39d91365540a22ee1c5b4407c9552bae9a689302f198f1259409ef3ba",
+    "native/vendor/utf8proc/LICENSE.md": "3b510150d34f248a221bb88e1d811238d6c6c18b51231822c42974c39bb07256",
+    "native/vendor/utf8proc/utf8proc.c": "fdcc214d140a526b0de3ad22d816823c3e7940c017568c046e40f444060e7a51",
+    "native/vendor/utf8proc/utf8proc.h": "3ac6bcc03716a8af82ad91d8287186a846209b3aadab04f001004d33bdb7314e",
+    "native/vendor/utf8proc/utf8proc_data.c": "57a774e8b9b5ae6b2bca3927adee178c20ffcc1986d7e2eff8f39a015f464c88",
+    "native/vendor/yyjson/LICENSE": "45e384d3d52c73cba3a64d6e6c25d47cd738cd8a55c30629e3201046eda62947",
+    "native/vendor/yyjson/yyjson.c": "d2d58ef0a3b2267862dc363832c4f3185fd375aea933d5d3419d1a940d6ece2e",
+    "native/vendor/yyjson/yyjson.h": "ef803cda5c06b8962face6dfa39c3284b3bcf3e73f4d7317664690cc779679ca"
+  },
+  "harness_sha256": {
+    "checks/benchmark_insert.py": "4f6f0f863c6dec4c9e2adcecc0674a8e46bb421e4406bdf4d0ca58202d25e165",
+    "checks/optimization_resources.py": "196590c71a8c66088a7ec8f5395656868e18f0b7d3a45963506e9b4698338fde",
+    "checks/verify_optimization.py": "052beb9de5700104e360419c14eab2ea1552ed9fcf8b4001d4d1c8afb09680ef",
+    "checks/benchmark_ranges.py": "405bc079ddad27742141c112149deeeb1a046da1f0a28388c024d882faf4ad07",
+    "checks/native_fixed128.c": "1400fca4f9a7a3e25387255469ec82c7f0480ee3dfff1829192cf2be8832a0b5",
+    "checks/runtime_native.py": "cef8db804ae9431902e707982ab475ba6f8d3787d96f07536858195500e47553",
+    "checks/verify_full_native.py": "469734778aa4c40d7e3b17555f785033566e01ad4ddc7f230b361c5a656776ce",
+    "checks/native_codec.cpp": "2fe30416de401e4ea2fca58464c8d5059847098aa68b1ed7ca323657e422f41e",
+    "checks/mapped_views.py": "f1c4a78cc9657e48192d8fefb3114fbc1b3e44c1992ef95be3024536eb004311",
+    "checks/graph_sanitizer.c": "345fc4c8d90c3d618036486712a45c9759cd2a885ba236ce176814b2776be664",
+    "checks/native_screen.py": "602d79ff09f8db3183ceb8243fbb36b495fa13b6be91451b355cb52b2abc6007",
+    "checks/index_mapping.py": "790cd6d5df15a972aaed0c8816d12cac434f2e82f523897d01242a376e305649",
+    "checks/benchmark_workload.py": "a435139cdd4775d53996a8779afc6892914fe23c99f249233c1ebc6546470ab1",
+    "checks/value_groups.py": "be9b53cdcc4f45edd85ad8e6de4c8de34250a7348cabe21b9c857f29d0a625d7",
+    "checks/native_journal_fault.c": "681132951286253fe3341b1bdf9865ae53638011813c54ae21f631e50e4d4bb0",
+    "checks/overlay_boundaries.py": "a6635578b212bbd87557dbcdb765aae20123c89626b9890f74d1c13f0e8b20fe",
+    "checks/contract.py": "daae6b43df6fc2c7e289240f3e15c3bfe0faf9ff82d60bf5250dcc6957ed6b5f",
+    "checks/resource.py": "2783ec62945a6cefee80893e6d592115701805167af6d82e07f9c2002d08e91e",
+    "checks/native_sanitizer.c": "58ef56105ea58e8d5605129ac9a353d0b1db088dbf43bf7301f701b6f96068e3",
+    "checks/vector_text.py": "f2f30da9bba7d99f50568d66e8860e947624dc6daa3bc92ce6815e527d889017",
+    "checks/general_boundaries.py": "8152cf96460e78d02bb5a6a7fe0b86ed0345a2261ea23a5bff22c65c81a61639",
+    "checks/parser_fastpaths.py": "ca2853b3ca687449dfc9b5a7e4daa9376ea931fed703b2c885df4ba07d1444cf",
+    "checks/parser_scan.py": "84afcd789d9f8955154ddb1ad5558237990cc4bb92e481373dda240e6597fda1",
+    "checks/lookup_boundaries.py": "93a2872186ee819287894253d16a50e74b77797af199f88d7eed8dc0aac41a4f",
+    "checks/vector_codec.py": "48a0903cd9492bf692bb57a9513a6286ae724841dc5f69a4abc2eebf6c195294",
+    "checks/runtime_reader.py": "a9b3af9a91941608130df424a5a79500e1a77daaa4588b60982063c3e8f54df5",
+    "checks/merge_recovery.py": "05db13342c860ce3b3642089e98f1a55bcf0fc064c5a43cdc328ce1c71874c63",
+    "checks/recovery.py": "93b566e8b603beafc45ef7d239639a7e48bfa6478930bd3f4d115437c8c1d67f",
+    "checks/experiment_overlay_groups.py": "c6a45c2216b5d7c3c1cf4de4791bae513a37b2d85a2986c1310249a9bae26605",
+    "checks/optimization_observer.py": "4a2a4980b5c90a490f16cb9bc031620a48d52a60d196ad81c6084cd390e56419",
+    "checks/native_validation.py": "167507fe278fd67c47645cc377f80416b8c0ff6c31fcdf40734adae021b083b0",
+    "checks/runtime_fastpaths.py": "e3ec7736c65110be618c755fc497840c5921760ade042c57e72ac59e68a360eb",
+    "checks/native_journal.py": "72d1154b2064fffb7e2f9f9658c3f41fa7f86b172af205d631075a8585d0ad00",
+    "checks/combined_overlays.py": "e9f7f0c34802594030fbc653c36f7b71d7002e4be252f66ac777a6263296b882",
+    "checks/architecture_recovery.py": "c779aa2258cde28df0f5d6dc9d1fb38ba0702c8933c3ad83c59105dc62f41aaf",
+    "checks/large_vector_scan.py": "ad23bb7ea54c05cf6032804561478bc65031496751463548dc97e8980cf5bd44",
+    "checks/architecture_probe.py": "9f7e74368182a87bbb138a31880451113992e4aea2b33d852c1512a1fe661992",
+    "checks/graph_boundaries.py": "9dae608d0821149a49db861313cc730511600b0e0ce29aa3299501e3fa517d22",
+    "checks/benchmark_graph.py": "0c4aceb582de833d9e15241279f0f2c1e9f10358c82ac765beb0bbe7b39835fe",
+    "checks/bitmap_boundaries.py": "b06892a7f4820af2b24f3ec9180858d35a89d5108fd995591c09228ceabdf5fb",
+    "checks/benchmark_general.py": "21f2ca0b09102dfff9b6d7e6b6e91a988fc95117c8dbcb79e05c0cc8e2cffa25",
+    "checks/optimization_workload.py": "5e15edc579f1b3bba2d8f0370cd579e5b8fb5a48a36c13060b01d729061f4ecb",
+    "checks/overlay_recovery.py": "1c5ed933f0676c0a488a7e6b284cbddbdcd19efefee993545f03d6f51290ef2c",
+    "checks/native_topk_sql.py": "97e99132b3ec2430670c67e555711f15bf8f76cd7355923d6ac98bc5368e8ca7",
+    "checks/benchmark_queries.py": "bcca0072cb89fc2142df11ceb0bec4bed896c35f106ef3fc5b98a457bd0b9d1d",
+    "checks/model.py": "71511e853ea4586529abbe46bedd017ad976766bb25167a4a2647044a8c708d3",
+    "checks/common_boundaries.py": "5e990b334d51d776f164ef6ce5b356113509de351dda0747c33d8666b50cac2d",
+    "checks/projection_distances.py": "d3a4ddf14a78583baabd6b0b07bce5eca472c6e9d29fee18e27ec9dd7296a82c",
+    "checks/storage_sanitizer.cpp": "86eddfc1ec756f357fb0d8c67ba474c76d32dda26facd31570b10c73f8632867",
+    "checks/storage_fault.c": "9e48ebff058b75f9d582356cde223da4f67ffe5cc9c7c5e5a4445309d5ec9878",
+    "checks/merge_boundaries.py": "2977df90bb6fc01156bdc71586e69c97bdc815a6e43489b4650203f03d580824",
+    "protocol_check/README.md": "9044224f625f3e5ab2948755aefc624084d70f0d6ebe1c37a7bdb408f799cb3f",
+    "protocol_check/config.json": "63fe51cac3aaaf45c3739b53b1de8420e5d001e8abb6cf88532d9f190d72d904",
+    "protocol_check/example_stdio.py": "b37cb26ff9a4253d6785c2e63ebb3139e4817949368291360ab5ca12b569216a",
+    "protocol_check/_assertions.py": "e39367c70d689b2cd7927df6d10296127ff8f2f5fed0763ca6262881d5ea4a28",
+    "protocol_check/_transport.py": "fb3a820105e6e94fc348167c7644ce23a270c63f57b026065f4b563d6ef0674f",
+    "protocol_check/run.py": "4e8c6ead177da7f9222b36bc04e819c777507e21f6adbe24eb679e238f02f513",
+    "mysqltest/README.md": "be0f15ff7ce4cce4ff2b9fae4992a8dc4f34f7c2cc998172764c2f8fbb0284c9",
+    "mysqltest/manifest.json": "a05fc8ff810affb8c899df4a2c1e31c35450178635d62b3efd6ae6ac15056aae",
+    "mysqltest/cases/storage_restart.result": "eb8eeb26f8b3db5c9d2da07340679dd4b1ae1fdc02bb83e9df8b493544577881",
+    "mysqltest/cases/vector_index_maintenance.test": "d8315fc0147cc4c389a1f1b1d4a8d9376c8d4ff51df5356b4f9d66835218bfb9",
+    "mysqltest/cases/storage_multiple_tables.result": "6a97f61f52656e83d07ea14781dbf1348d5c751411899fdf9a360173ab79fdb8",
+    "mysqltest/cases/vector_euclidean.test": "6a5981471416a5cc2ce9ba73ceaa3e714bead80ff767f8f89f15e0dac3c5c39d",
+    "mysqltest/cases/sql_ordering.test": "8f6cf80f87365799cfd43604dfa987bb83a450dcef1e5ef815ac59a74633cefd",
+    "mysqltest/cases/vector_ties_and_filter.test": "2b0ebf0f09eddf7caa20fa2acc1a90196d0380695e2a3d42663607eff6605296",
+    "mysqltest/cases/transaction_shutdown_rollback.result": "feca1c43740cc2dac0c5f7b178611cf255ef5022f4479d00dfb65c3386e181d3",
+    "mysqltest/cases/storage_restart.test": "700f0026d5fef88421a303454d837fa22011dc3e8759f72b3449cd6046045f80",
+    "mysqltest/cases/vector_float32.test": "f7bceae16b250b1cb2ac69108633819352126b8c6b2a6d1d46381572a1885b87",
+    "mysqltest/cases/vector_float32.result": "77866950b550e15ee08b57b73a052aa34a97cc2b82586fce062661ae2a731452",
+    "mysqltest/cases/sql_empty.result": "1f7145867144221c28ac55035b4732866e351e18c49f3776726fa541ffe408c3",
+    "mysqltest/cases/transaction_autocommit_atomic.test": "d976bfaa3dbad67f0a6b515103ada46b985cdbaf79a53f0c367210910c5263e8",
+    "mysqltest/cases/sql_bigint.result": "ec2f19a62ffeb7241142324f9ba46855e3d5046204274d5d2b7627f52937864b",
+    "mysqltest/cases/sql_unsupported.test": "6cf9a1de73a4e8eafa4595874908c26d8d795b53270211b2e5acbf620434e3f6",
+    "mysqltest/cases/sql_comparisons.result": "91042d560debd503a0499a39febcb736bc032d3c502cfee6a3513712de76a829",
+    "mysqltest/cases/storage_mutations.test": "6ddc9d796c7c76f3987e388cb04674475c85967bb60d20450053f8b4e39e0c6a",
+    "mysqltest/cases/storage_mutations.result": "6c9c49dc99f3e07937d5d2155694289734c85b7d3564f52763e104a51c69808b",
+    "mysqltest/cases/vector_euclidean.result": "548b1ec06db7aaa97c62c775ce03b47d219915f6cb484722c8fb303f95d1fde8",
+    "mysqltest/cases/sql_crud.result": "241a4249157f7674dcb08d38d444b36aaa930581495d9ee909302f38bbe7eb98",
+    "mysqltest/cases/sql_ordering.result": "43824b4e189a5551d0d5f53095a0d8901e235ee3e3a646e826554d409ae2d645",
+    "mysqltest/cases/vector_index_maintenance.result": "080799d103aa68b3674042278db499c29c8a759cdffd30453b43094b66b05f97",
+    "mysqltest/cases/transaction_failed_insert.test": "3fdf65810ba864714dc67abb6142452eb944bdab09c86728e5a69a6d76f3532c",
+    "mysqltest/cases/transaction_rollback.result": "f8d6992bc3e0d62fe4a3e77d62305693840a29fc9685cde7adb2951acccd2e60",
+    "mysqltest/cases/sql_primary_key.result": "1749b095cfc531e2ecf6ccce06747058930e7eed14c526c99d1170768cea3170",
+    "mysqltest/cases/sql_empty.test": "91c62c80dd6ff9ff1169603b21fb813e96b1ba7ed855946716b8c63f6be04edd",
+    "mysqltest/cases/transaction_commit.test": "873543181bbaa96b4b3cced4cf8e9a3fba5b447522644d98be7509490dce9cd3",
+    "mysqltest/cases/transaction_rollback.test": "7fd2bf54a143d248f4f6c727fb79f79aab9c4490119730ee22c45f97f5dc4df2",
+    "mysqltest/cases/sql_comparisons.test": "bfff03b3f18ca0012369730cd202d2313eab305e819b5d577f9158a701effb60",
+    "mysqltest/cases/sql_unsupported.result": "7b003c2f63419fccd23c981beefcf8e7c36ff6d8051ad5bc823f614934e41dbe",
+    "mysqltest/cases/sql_unicode.result": "9b6c4b01f9a753f4b0e87dd6531e5df40614cfd31c2e6c92d795815bdffcc70b",
+    "mysqltest/cases/transaction_shutdown_rollback.test": "6f72115a099d8dfee36255e09beafbacd96df03f2f04e107dcd28d493e193f54",
+    "mysqltest/cases/sql_crud.test": "2dbdc8c792d0a137c4d9654d24e758edc4c07287e5561151d78e9efec87667ae",
+    "mysqltest/cases/sql_primary_key.test": "76296f841f5a5105fffbe0985ae2a7e847e2291f75ea86cdf8d9e624d551ef04",
+    "mysqltest/cases/transaction_autocommit_atomic.result": "7df96d20e24bbd6361544cc1b01c905288d41e3c51e2de33cc526ae2a305fb12",
+    "mysqltest/cases/sql_unicode.test": "5de827789e19e96bb22bfaf65f06d14647e444baa7589318e6ba139e5a3bd520",
+    "mysqltest/cases/vector_ties_and_filter.result": "44bed5f7f34874c13846a75089b185a9aeb778ac0c7cf32368817762bd6f02b0",
+    "mysqltest/cases/sql_bigint.test": "85131b29d94827de64c31055bd4e4169c65639ee86a2fda2efda2fb62db839bf",
+    "mysqltest/cases/transaction_failed_insert.result": "1f29ab65a1589d3aced189c6ffdeaa0dd4dad14d107a589b3da54a30f52f4964",
+    "mysqltest/cases/storage_multiple_tables.test": "e4343a4644c4f5ff1033ab013ad0c254dc4b1cf24b12d6fe65c948adfe1d7144",
+    "mysqltest/cases/transaction_commit.result": "8641156ace82031439b95cafae6a78bce6256b96c11a9e41b95220c0a2cb8832"
+  },
+  "source_and_harness_match_accepted_report": true,
+  "runtime_archives": {
+    "e5": {
+      "path": "/home/chenyifu/OceanBase/reports/full-native-retained-20261114/e5-runtime.tar.gz",
+      "sha256": "7c15a1fa54f6fab80a5a32c34fbfb69f9e2e9864d928d0f4d672d6d537e88621",
+      "contents_verified": true,
+      "source_sha256": {
+        "Dockerfile": "f971b128c1ae58399e9e176e2ef02bd3124953bcd2d9c3ec540632131f6b26bc",
+        ".dockerignore": "22a6eb71928cf29e6ad5bc00af7dcc9389134b465cb3031070d3e77003229523",
+        "requirements.lock": "bdba5c3692f6beb90021e092fd2eb373d98da24bfaa89f1222c5739663592162",
+        "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+        "minidb/approx.py": "bc0cb087d9f05238fee363a56480cbc72deb9f0044bf42c7dcd17c1e235f141a",
+        "minidb/engine.py": "f1dd72ee32a36ed03c604a5556114577afc04b9b924085dc7affbccb0464a2a7",
+        "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
+        "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+        "minidb/indexio.py": "43ccadfbab4c0301ea1c43d490845421f373e759f27c2b8ff65d72f427afb319",
+        "minidb/native.py": "2b16deb16d698712532e15d01925b701b05f84d371464be7028f117f32e3fdb7",
+        "minidb/native_storage.py": "cb54b2a7a776f0b92d346ac3d568ebb92fd20aee376eec658cd5a4131c1f731d",
+        "minidb/query_native.py": "2cf0a9a3ea0f103f2befe7f95860ecb9d714167789465bb4d9002a71a6b178f0",
+        "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+        "minidb/sql.py": "34f16e9a068dab882ddefd07c9a29520823d7564187237de3c1a3f09ece7bb07",
+        "minidb/storage.py": "c1dd0011f50dc57cf2f7ecfb3f54dfb2fdf4c9fe69870dfd705b3bc094701d75",
+        "native/approx.c": "a6eef443380d8b83ea40e970abb0e9b766686e2cb2b07d8851eff7af01543d65",
+        "native/graph.c": "b3f3d98ad7e51c74b44987217b18883e4e69311c0cbf21c94bc96691370652e7",
+        "native/screen.c": "475ff78eda1f9c30c5ef8e4162dc8c1c75934f67ca850d8ac91823fa0376f223",
+        "native/storage.cpp": "3535ac3749b927e7bca51d7193036e9366ce3428bed288ceece3e3ae07c3b5ee"
+      }
+    },
+    "accepted": {
+      "path": "/home/chenyifu/OceanBase/reports/full-native-retained-20261114/accepted-runtime.tar.gz",
+      "sha256": "d9c14c011cd501353b57e84a571189f3db47209cee185dfd8d4c0d96bf487f10",
+      "contents_verified": true,
+      "source_sha256": {
+        "Dockerfile": "a0906ba0ee601abacd4b5bf716b721a4cc0fa7fcadbecfd7d4823b14bd0e5c50",
+        ".dockerignore": "e147cb8285469727087d2a45e3993210803fe7488e4da3758249b8ad70d2703f",
+        "requirements.lock": "b3f124ceebcf5f477a8d47b1396fcec3fc88d1b1464555cf5f7d6c344b14a15b",
+        "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+        "minidb/approx.py": "bc0cb087d9f05238fee363a56480cbc72deb9f0044bf42c7dcd17c1e235f141a",
+        "minidb/engine.py": "f1dd72ee32a36ed03c604a5556114577afc04b9b924085dc7affbccb0464a2a7",
+        "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
+        "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+        "minidb/indexio.py": "43ccadfbab4c0301ea1c43d490845421f373e759f27c2b8ff65d72f427afb319",
+        "minidb/native.py": "2b16deb16d698712532e15d01925b701b05f84d371464be7028f117f32e3fdb7",
+        "minidb/native_storage.py": "cb54b2a7a776f0b92d346ac3d568ebb92fd20aee376eec658cd5a4131c1f731d",
+        "minidb/query_native.py": "2cf0a9a3ea0f103f2befe7f95860ecb9d714167789465bb4d9002a71a6b178f0",
+        "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+        "minidb/sql.py": "34f16e9a068dab882ddefd07c9a29520823d7564187237de3c1a3f09ece7bb07",
+        "minidb/storage.py": "c1dd0011f50dc57cf2f7ecfb3f54dfb2fdf4c9fe69870dfd705b3bc094701d75",
+        "native/approx.c": "a6eef443380d8b83ea40e970abb0e9b766686e2cb2b07d8851eff7af01543d65",
+        "native/graph.c": "b3f3d98ad7e51c74b44987217b18883e4e69311c0cbf21c94bc96691370652e7",
+        "native/screen.c": "e9b21aa93db17ad2cf46d558eaf99334ad8ee1734179d6ed5cb3777b0831c4a0",
+        "native/standalone/common.hpp": "6f3f99ad2dbc9c903a207a505a2eba348b2db97807f11fce5918107c10a4e945",
+        "native/standalone/engine.hpp": "ddf30722149b040c460b54f9eaf2cdfaba8f0ff163ac22b2cab52dd141b0d5b5",
+        "native/standalone/journal.hpp": "c25917f0b765a8c594e28c1439b402f4ddba2b92071b9269b55d8329f8dfea89",
+        "native/standalone/main.cpp": "d6f0cf744f65d9d24c9a7bff736c2c5c93cad58ba4ac75e75aeaac9adb741172",
+        "native/standalone/recipe_codec.hpp": "e462dd3dd78e5421f830438501bf47574ae6fd0b354bddc5f4a0a32028ee7d16",
+        "native/standalone/sql.hpp": "c63c92ee82b595a6babb3d4fcb07661b7f1cfe04d226fd545ed48ae17ed6b1d0",
+        "native/standalone/storage.hpp": "6f1d61974d2df75b1d0e00950c9b444e06933bdcde13f49f7defc50aebefd51a",
+        "native/standalone/store.hpp": "06e0a5c1a269a36ca01924090a554aa2e6ebc25d1876153697c487d8c40c3e14",
+        "native/storage.cpp": "e0b0262074d1f5107e77e4000668650aee85ca0d5e44d598a40bd6d216f4e463",
+        "native/vendor/SHA256SUMS": "4a6c3d833902949c881787a5087258dc751d2919cff6ed10137f5703e634fb75",
+        "native/vendor/manifest.json": "502061b39d91365540a22ee1c5b4407c9552bae9a689302f198f1259409ef3ba",
+        "native/vendor/utf8proc/LICENSE.md": "3b510150d34f248a221bb88e1d811238d6c6c18b51231822c42974c39bb07256",
+        "native/vendor/utf8proc/utf8proc.c": "fdcc214d140a526b0de3ad22d816823c3e7940c017568c046e40f444060e7a51",
+        "native/vendor/utf8proc/utf8proc.h": "3ac6bcc03716a8af82ad91d8287186a846209b3aadab04f001004d33bdb7314e",
+        "native/vendor/utf8proc/utf8proc_data.c": "57a774e8b9b5ae6b2bca3927adee178c20ffcc1986d7e2eff8f39a015f464c88",
+        "native/vendor/yyjson/LICENSE": "45e384d3d52c73cba3a64d6e6c25d47cd738cd8a55c30629e3201046eda62947",
+        "native/vendor/yyjson/yyjson.c": "d2d58ef0a3b2267862dc363832c4f3185fd375aea933d5d3419d1a940d6ece2e",
+        "native/vendor/yyjson/yyjson.h": "ef803cda5c06b8962face6dfa39c3284b3bcf3e73f4d7317664690cc779679ca"
+      }
+    }
+  },
+  "evidence": {
+    "original_report": "/home/chenyifu/OceanBase/reports/full-native-docker-20261114T060456747532Z/report.json",
+    "report_sha256": "aef9a9cc3dea037230d15cc7eb539c452cf4513b047b0c14c776ba9ad795fbcc",
+    "raw_archive": "/home/chenyifu/OceanBase/reports/full-native-retained-20261114/accepted-docker-evidence.tar.gz",
+    "archive_sha256": "41181102b78708429f7661d85baaaec7982c5eb0a71fe37d36a1514166b204e2",
+    "archive_members_verified": true,
+    "file_manifest": "/home/chenyifu/OceanBase/reports/full-native-retained-20261114/evidence-files.json",
+    "file_manifest_sha256": "f106505f4374b85102d89d7f0ff79467fac84620f0356ff3cde5eb9392edc441",
+    "review": "/home/chenyifu/OceanBase/reports/full-native-docker-20261114T060456747532Z/review.json"
+  },
+  "measurements": {
+    "1c2g": {
+      "pairs": 3,
+      "medians": {
+        "write": {
+          "e5": 1.4216032629992696,
+          "candidate": 0.793260222999379,
+          "change_percent": -44.19960592058752
+        },
+        "query": {
+          "e5": 0.9317245190031826,
+          "candidate": 0.4803978760028258,
+          "change_percent": -48.43992336739345
+        },
+        "full": {
+          "e5": 2.7119975659879856,
+          "candidate": 1.5521701220059185,
+          "change_percent": -42.7665370547462
+        },
+        "io_bytes": {
+          "e5": 32354304,
+          "candidate": 17276928,
+          "change_percent": -46.600835548803644
+        },
+        "peak_memory_bytes": {
+          "e5": 23330816,
+          "candidate": 16199680,
+          "change_percent": -30.565308988764038
+        }
+      },
+      "single_pair_only": false
+    },
+    "2c2g": {
+      "pairs": 1,
+      "medians": {
+        "write": {
+          "e5": 1.4935733050006093,
+          "candidate": 0.7225228579991381,
+          "change_percent": -51.62454661046293
+        },
+        "query": {
+          "e5": 0.9594212840020191,
+          "candidate": 0.48809987000277033,
+          "change_percent": -49.12559496629396
+        },
+        "full": {
+          "e5": 2.795434014995408,
+          "candidate": 1.4900408839966985,
+          "change_percent": -46.69733300790696
+        },
+        "io_bytes": {
+          "e5": 32354304,
+          "candidate": 17276928,
+          "change_percent": -46.600835548803644
+        },
+        "peak_memory_bytes": {
+          "e5": 23105536,
+          "candidate": 16203776,
+          "change_percent": -29.870590320865098
+        }
+      },
+      "single_pair_only": true
+    },
+    "1c12m": {
+      "pairs": 1,
+      "medians": {
+        "write": {
+          "e5": 1.6563682429987239,
+          "candidate": 0.7755691270067473,
+          "change_percent": -53.17652760580336
+        },
+        "query": {
+          "e5": 2.0157062420039438,
+          "candidate": 0.5108467419995577,
+          "change_percent": -74.6566870035739
+        },
+        "full": {
+          "e5": 4.33328742300364,
+          "candidate": 1.5836497300042538,
+          "change_percent": -63.45384980471618
+        },
+        "io_bytes": {
+          "e5": 150253568,
+          "candidate": 48578560,
+          "change_percent": -67.6689474688548
+        },
+        "peak_memory_bytes": {
+          "e5": 12582912,
+          "candidate": 12582912,
+          "change_percent": 0.0
+        }
+      },
+      "single_pair_only": true
+    },
+    "2c12m": {
+      "pairs": 1,
+      "medians": {
+        "write": {
+          "e5": 1.63879164300306,
+          "candidate": 0.8149052529988694,
+          "change_percent": -50.27401704919801
+        },
+        "query": {
+          "e5": 2.0057054680000874,
+          "candidate": 0.5138183210001444,
+          "change_percent": -74.38216481941994
+        },
+        "full": {
+          "e5": 4.304977974010399,
+          "candidate": 1.6202033759982442,
+          "change_percent": -62.36442124025765
+        },
+        "io_bytes": {
+          "e5": 150364160,
+          "candidate": 47722496,
+          "change_percent": -68.26205393625715
+        },
+        "peak_memory_bytes": {
+          "e5": 12582912,
+          "candidate": 12582912,
+          "change_percent": 0.0
+        }
+      },
+      "single_pair_only": true
+    },
+    "1c64m": {
+      "pairs": 1,
+      "medians": {
+        "write": {
+          "e5": 1.3695021349994931,
+          "candidate": 0.7894280530017568,
+          "change_percent": -42.35656646113597
+        },
+        "query": {
+          "e5": 0.9643909430014901,
+          "candidate": 0.5873150999977952,
+          "change_percent": -39.09989467861607
+        },
+        "full": {
+          "e5": 2.690942577988608,
+          "candidate": 1.6709148310037563,
+          "change_percent": -37.905964821712736
+        },
+        "io_bytes": {
+          "e5": 32354304,
+          "candidate": 24125440,
+          "change_percent": -25.43359918977086
+        },
+        "peak_memory_bytes": {
+          "e5": 23269376,
+          "candidate": 16130048,
+          "change_percent": -30.68121809540574
+        }
+      },
+      "single_pair_only": true
+    },
+    "2c64m": {
+      "pairs": 1,
+      "medians": {
+        "write": {
+          "e5": 1.6171170829984476,
+          "candidate": 0.8538707389961928,
+          "change_percent": -47.1979643296482
+        },
+        "query": {
+          "e5": 0.9511492679957883,
+          "candidate": 0.640749551996123,
+          "change_percent": -32.634174933838
+        },
+        "full": {
+          "e5": 2.9170643239922356,
+          "candidate": 1.7994777449857793,
+          "change_percent": -38.31203068833771
+        },
+        "io_bytes": {
+          "e5": 32354304,
+          "candidate": 24117248,
+          "change_percent": -25.4589188504874
+        },
+        "peak_memory_bytes": {
+          "e5": 23244800,
+          "candidate": 16269312,
+          "change_percent": -30.008810572687228
+        }
+      },
+      "single_pair_only": true
+    }
+  },
+  "accepted_tradeoffs": [
+    "12 MiB peak still reaches the limit; no claimed peak-memory reduction there.",
+    "64 MiB restart time regressed in single-pair measurements.",
+    "1c12m unfiltered maximum latency rose from about 3.57 ms to 4.62 ms despite improved P99.",
+    "Preserve every raw maximum/latency; do not replace with percentile summaries."
+  ],
+  "limits": [
+    "Default dataset matches documented seed/shape; original document SQL and raw dataset hashes were not provided.",
+    "No global page-cache purge; first-query and warmup windows are separately included in full-stage time.",
+    "1c2g uses three paired rounds; other resource groups have one pair, preliminary only.",
+    "Platform E formula/hidden workload unknown; no extrapolation to score.",
+    "Independent oracle and resource observer stay outside measured cgroup and request timing.",
+    "Restart startup/first-query metrics are separate supplementary windows; OS page cache is not claimed cold.",
+    "Runtime differs from document by materialization CRC validation; its cost is included."
+  ],
+  "data_preservation": {
+    "shared_sql_and_oracle": "Included in raw evidence archive; do not delete as e5 database data",
+    "original_docker_database_volumes": "Temporary; not retained as backups by original test harness",
+    "candidate_copy": "/home/chenyifu/OceanBase/reports/full-native-retained-20261114/candidate-reconstructed-data",
+    "candidate_copy_provenance": "/home/chenyifu/OceanBase/reports/full-native-retained-20261114/reconstructed-data.json",
+    "candidate_copy_is_original_benchmark_volume": false
+  },
+  "cleanup": {
+    "scope": "Only disposable e5 database files/volumes from this round; retain baseline source, images, raw measurements and common replay inputs",
+    "local_e5_database_files_found": [],
+    "temporary_old_reader_probe_deleted": true,
+    "docker_volume_state": "NOT_VERIFIED: Docker socket permission denied",
+    "docker_volumes_from_e5_inspect_evidence": [
+      "vectordb-judge-0247663a39184408bd228abc1fc56115-data",
+      "vectordb-judge-03ca225b49904d2ba2077f3122d21683-data",
+      "vectordb-judge-21ed8380638b4a65b6e0fcd2d119d071-data",
+      "vectordb-judge-229817ecb80542f095a3d231abd5a778-data",
+      "vectordb-judge-7cb0255995134d098974322872c38c5d-data",
+      "vectordb-judge-9b4ac3f25b2d43fbb36c3821db0ffc6b-data",
+      "vectordb-judge-b8347c728bd541c99035f56d690d296d-data",
+      "vectordb-judge-e8c80e72bf784900980450454286a860-data"
+    ],
+    "docker_volumes_removed_by_this_action": [],
+    "note": "Verification Session.close attempts volume deletion; absence was not independently confirmed. No prune or broad deletion."
+  },
+  "git_status_at_recording": {
+    "head": "e5ad115b0ca35776a44cd6ec31b52e9efe2af01f",
+    "candidate_committed": false,
+    "pushed": false,
+    "note": "Historical snapshot at recorded_at_utc, before subsequent user authorization to commit and push; actual commit identity is in Git history."
+  },
+  "conversation_sha256_at_recording": "92f8c877617ac949ce2a14375fcbc3906f65562142cf0e56e520d3ab92716f6f",
+  "historical_format_check": {
+    "e5_can_read_new_directory": false,
+    "observed_old_reader_behavior": "In the historical disposable-copy test, e5 created an empty manifest and deleted new mv-* materializations.",
+    "boundary_evidence": "/home/chenyifu/OceanBase/reports/full-native-retained-20261114/old-reader-boundary.json",
+    "new_reader_accepts_e5_directory": false,
+    "in_place_migration_implemented": false
+  },
+  "development_policy": {
+    "active_baseline": "accepted full C++ implementation",
+    "e5_status": "retired; historical comparison evidence only",
+    "rollback_to_e5_planned": false,
+    "e5_operational_warnings_and_rollback_instructions_removed": true,
+    "requested_by": "explicit user instruction"
+  }
+}

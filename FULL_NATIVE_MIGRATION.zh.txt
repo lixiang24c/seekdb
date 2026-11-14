@@ -1,0 +1,110 @@
+完整 C++ 开发基线：启动、构建及恢复说明
+
+用户已根据本轮容器验收决定保留完整 C++ 改造，作为后续开发基线。
+停止扩展优化，后续只处理明确缺陷。运行时与检查脚本已按验收指纹冻结；
+冻结依据是源码、检查脚本指纹和实际镜像 ID；后续提交身份以 Git 历史为准。
+冻结清单：FULL_NATIVE_ACCEPTANCE.json。
+验收报告：/home/chenyifu/OceanBase/reports/full-native-docker-20261114T060456747532Z/report.json
+完整归档：/home/chenyifu/OceanBase/reports/full-native-retained-20261114/
+
+历史比较基线：e5ad115b0ca35776a44cd6ec31b52e9efe2af01f。
+迁移输入：用户提供的 e5-full-native-optimization.zh.md，SHA256
+9c9ed8afabb58ad280d731a744251c227a2aa45e4a2674f5df28e3078567d447。
+输入全文、原始 diff、e5 运行时快照、文档原版二进制及最小复现保存在：
+/home/chenyifu/OceanBase/reports/e5-native-migration-20261114T042820Z/
+
+当前实现
+独立 C++ 协议入口、SQL 解析与绑定、事务调度、列式段及日志恢复、关系查询、
+精确 TopK、位图条件缓存、预算映射、同值段证明和投影回读。
+复用 e5 原生存储及筛选/精确求和内核；Python 源码保留作基线与验证参考，
+生产 Docker ENTRYPOINT 不再启动 Python 数据库服务。
+没有引入“可查询日志”、已撤销的量化执行器、无条件扩大 mmap、WAL 预填零、
+fdatasync 或 fsync 前回收旧段等实验。已有 e5 源文件不计作本轮新增成果。
+
+默认启动方式
+ENTRYPOINT 为 /app/minivectordb-native；不传参数时数据库目录为 /data。
+启动完成恢复后输出一行 {"type":"ready"}，通过 stdin/stdout JSON Lines 接收
+execute/shutdown，请求响应逐条刷新；错误诊断写 stderr，不提供网络服务。
+shutdown 或 stdin EOF 撤销未提交事务；已确认提交由日志保证恢复。
+默认 MINIDB_SCALAR_SUFFIX=1；自动选择可用 SIMD，普通筛选与最终排序保持精确。
+Python 基础镜像中的解释器只保留给工具使用，不参与默认数据库执行链路。
+
+示例（以下命令仅记录，本次未执行；使用独立的新命名卷）：
+docker volume create minivectordb-full-native-data
+docker run --rm -i --network=none --cpus=1 --memory=2g --memory-swap=2g \
+  --pids-limit=128 --read-only --cap-drop=ALL --security-opt=no-new-privileges \
+  --mount type=volume,src=minivectordb-full-native-data,dst=/data \
+  sha256:d1d2d64a54cf6503b3073ccf31e1edff088e7fc19807edab54c40db5158f1bb8
+可按实际配额将 --cpus 改成 2，并降低 memory 与 memory-swap 到同一个值以禁用 swap。
+如用宿主 bind mount，只配置该专用目录权限，确保容器能读写；不放宽整个项目权限。
+
+相对文档的正确性修正
+1. 物化段只检查大小和头部不足以证明正文已落盘。文档原版可复现：日志已确认
+   [3,4]，保持物化文件大小/头部而将向量正文置零后，重启返回 [0,0]。
+   现在日志元数据包含不可变物化文件 CRC32，恢复时逐文件校验；不一致或旧帧
+   缺少校验值时从完整 CRC 日志帧重放。提交时复用旧段已计算的校验值，仅扫描
+   新段；其 CPU、I/O 与恢复读取成本必须计入实测。CRC 不承诺防恶意篡改。
+2. 协议请求 ID 不等于 SQL BIGINT。文档原版会将超大 JSON 整数 ID 转为浮点数。
+   现在保留整数 token 原样输出；SQL BIGINT 和持久化元数据的范围检查保持。
+
+提交与恢复
+完整日志帧写入并 fsync 成功后才能确认提交。写入/同步异常终止服务，不能假报
+成功。物化段可由日志重建，checkpoint 仍同步替换文件、原子 rename 并同步目录。
+强杀故障由测试父进程 docker kill --signal=KILL 发出，验证实际退出 137，
+不使用容器 PID 1 自发 SIGKILL；EIO 必须退出 1 并留下原始错误。
+故障 interposer 仅挂载进测试容器，不编译或复制进生产镜像。
+
+日志帧包含长度、目录元数据、二进制载荷、CRC32 与 MVCMT001 尾标。
+恢复按有效帧重建提交状态，截去无效/不完整尾部；物化文件大小、头部、CRC
+均匹配时才复用，否则逐帧重放并回收不再引用的段。不能把 CRC 当作防篡改保证，
+也不承诺任意日志损坏都能恢复。未收到确认的提交可能完整存在或完整消失。
+单条成功修改可以记录源段、排除主键和新增批数据的重建配方；多条成功修改的
+事务使用完整新文件载荷。失败语句不计入成功修改次数，回滚不发布私有状态。
+日志大小超过 max(8 MiB, 4×当前活数据文件字节) 时执行 checkpoint：写完整快照
+到 commit.next、fsync、rename 到 commit.log、fsync 目录；旧段在提交后回收。
+备份数据时停止写入并关闭数据库，再复制整个数据目录；不只复制某几个段文件。
+
+依赖和构建
+yyjson/utf8proc 源码和许可证随 native/vendor 交付，manifest 固定来源 commit
+及 SHA256，Docker 构建先 sha256sum 校验。zlib/libc/libm 使用固定基础镜像
+所提供的系统库；libstdc++/libgcc 静态链接。RUN 不执行 apt/pip 或联网下载。
+新机器仍须事先缓存或能够拉取 Dockerfile 固定摘要的两个基础镜像。
+在独立源码目录中重建：
+docker build --platform=linux/amd64 --no-cache --network=none \
+  --iidfile rebuilt-image.id -t minivectordb:full-native .
+重建可能产生不同镜像 ID，不能直接沿用本次 ID 的验收结论；须记录新 ID 并验证。
+
+统一验收入口（默认仅执行一次完整工作流）
+python3 checks/verify_full_native.py
+脚本冻结源码/检查脚本，分别断网、无缓存构建 e5 和候选，只使用不可变镜像 ID。
+恢复、公开检查、状态机、数值字节、过滤阈值、缓存、低内存压力均以最终候选
+镜像验收；任何正确性检查失败都不会启动性能测量。
+性能固定种子 872909，10000 行/128 维、512 字符文本、100 行一批、1000 次
+TopK、K=10、过滤与无过滤各半。1 CPU/2 GiB 按 e5→候选、候选→e5、e5→候选
+三对交替；2 CPU/2 GiB，以及 1/2 CPU 的 12 MiB、64 MiB 各一对，总计 16 次。
+每次独立容器/卷，记录启动、写入/提交、索引、首次查询、预热、正式查询、
+完整 I/O、包含页缓存的峰值内存、P95/P99；独立真值和观察器在计时及被测
+cgroup 外。原文未提供完整 SQL/数据哈希，不能宣称输入逐字节等同原实验。
+单对结果仅作观察；不将历史阶段收益相乘，不换算未知平台 E。
+
+版本使用范围
+当前完整 C++ 版本是后续唯一开发和运行基线。e5 已停止使用，不再安排切回、
+旧数据迁移或降级操作；其源码、镜像标识和测试记录仅保留为历史性能对照证据。
+
+测试数据保留与清理
+按用户最后指示，不要求保留 e5 测试数据库实体；保留 e5 源码基线、镜像 ID、
+原始测量/逐请求延迟/最大值/结果以及双方共用的 SQL、种子和独立真值。
+原验收脚本使用临时数据卷，结束后尝试删除；不能声称原 Docker 数据卷已有备份。
+已从原始 workload.sql 重建新版的 10000 行/128 维数据副本，放在归档目录的
+candidate-reconstructed-data；这是宿主重建副本，不是原 Docker 负载卷或新性能结果。
+e5 误读试验的一次性副本已删除。报告目录内未发现残留 e5 数据库文件；Docker
+卷残留因 socket 权限不足未能独立复查，清理边界及已识别卷名见 cleanup.json。
+
+状态
+本轮容器验收 PASS，16 次完整负载通过；1c2g 三对全阶段中位耗时下降 42.8%，
+写入/查询/完整 I/O/峰值内存均改善。其余环境单对结果只作初步观察。
+接受并保留：12 MiB 峰值仍触顶、64 MiB 重启小幅回退、1c12m 无过滤最大延迟
+3.57→4.62 ms。原始极值不会被 P99 汇总覆盖，所有原始报告已逐文件校验归档。
+源码、检查脚本指纹和实际验收镜像 ID 见冻结清单。镜像本体未 docker save 备份，
+不能将“保留 ID 和源码归档”写成“已导出镜像”。
+既有验收报告、对话材料保持不变。本次提交和推送已获用户明确授权，未授权触发正式提测。
