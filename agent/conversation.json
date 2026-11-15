@@ -2,17 +2,18 @@
  "synthetic": false,
  "scope": "真实学习记录，按主题归组而非完整时间线；早期经历为事后复盘，实验按各自记录版本解释。",
  "engineering_summary": {
-  "content": "所用参考文档由学生亲手撰写，文档中的设计与实现方案归于学生。材料记录覆盖段阈值调整、重启查询分析、独立可见性验证、向量解析撤回及迁移取舍。48轮迁移保留cover；144轮内存边界实验后，学生解释OOM/I/O收益并接受回退。随后提出原生架构分阶段迁移，24个恢复场景与12个负载通过后，结合整体收益、索引与查询长尾代价决定保留，并澄清实际资源限额仍需分组验证。各主题按原版本区分学生判断、Agent实现和实测结果。 最新独立C++链路采用日志同步确认提交，冻结镜像完成16次配对负载；学生据结果接受重启和极端延迟代价，保留原始数据并冻结后续基线。 后续可查询日志消除双份存储，经开关对照默认关闭候选列表；学生确认取舍并要求最终镜像补验，60公开用例、75恢复组通过。"
+  "content": "所用参考文档由学生亲手撰写，文档中的设计与实现方案归于学生。材料记录覆盖段阈值调整、重启查询分析及迁移取舍。48轮迁移保留cover；144轮内存边界实验后，学生解释OOM/I/O收益并接受回退。随后提出原生架构分阶段迁移，24个恢复场景与12个负载通过后，结合整体收益、索引与查询长尾代价决定保留，并澄清实际资源限额仍需分组验证。各主题按原版本区分学生判断、Agent实现和实测结果。 最新独立C++链路采用日志同步确认提交，冻结镜像完成16次配对负载；学生据结果接受重启和极端延迟代价，保留原始数据并冻结后续基线。 后续可查询日志消除双份存储，经开关对照默认关闭候选列表；学生确认取舍并要求最终镜像补验，60公开用例、75恢复组通过。 最新查询执行优化经384MiB整版配对与16MiB缓存开关复测，学生接受额外内存和初始化代价，区分整体/单项收益并冻结同一候选。"
  },
  "reading_guide": {
-  "how_to_read": "主题按开发阶段排列：早期覆盖段及重启查询实验→独立可见性验证→向量解析撤回→48轮迁移→144轮内存取舍→原生架构迁移→独立C++及日志验收→可查询日志与交付冻结。主题内按判断、修改、结果及反馈阅读；共享实验不代表两次运行，早期材料未补造逐条时间戳。student_evidence与result_evidence分别定位学生原话和实际结果。",
+  "how_to_read": "主题按开发阶段排列：早期覆盖段及重启查询实验→48轮迁移→144轮内存取舍→原生架构迁移→独立C++及日志验收→可查询日志与交付冻结→查询执行优化及低内存缓存取舍。主题内按判断、修改、结果及反馈阅读；共享实验不代表两次运行，早期材料未补造逐条时间戳。student_evidence与result_evidence分别定位学生原话和实际结果。",
   "not_included": "主题块不代表完整逐轮对话。U4与U5共享查询原始样本，集中于U5的exp-B-shared-samples；整理者事后统计排在学生解释之后，不作为当时已提供给学生的反馈。"
  },
  "role_legend": {
   "user": "学生原话。",
   "assistant": "Agent回复。",
   "tool": "工具或报告结果；派生统计保留来源标注。",
-  "editorial": "全局及主题摘要、阅读指引和interpretation由整理者或Agent撰写，不是学生原话。"
+  "editorial": "全局及主题摘要、阅读指引和interpretation由整理者或Agent撰写，不是学生原话。",
+  "user_document": "学生亲手撰写的参考文档原文摘录；不是聊天发言，历史文档实验与本轮验证分开。"
  },
  "topics": [
   {
@@ -177,120 +178,6 @@
    "not_shown": "有实验前机制判断和实验后结果解释，没有据此修改方案并复测；冷页缓存推断未验证。21组来自同一数据与种子，并非独立样本。另有n400的12组，第2条最慢仅10/12，第3—6条中位数24.33ms。"
   },
   {
-   "unit_id": "N2-independent-visibility-oracle",
-   "topic": "指定更新/删除/失败语句及归并边界，用独立模型核对查询可见性",
-   "summary": "指定更新、删除重插、失败语句和归并边界，要求用独立维护的数据核对，不只比较两条查询路径。\n\nAgent复用并补充检查，f10eddf固定镜像21组通过，含跨阈值事务和重复语句失败后的检查。\n\n没有学生解释失败、修正并复测的记录；脚本和模型由Agent编写。21组属于一个验证实例。",
-   "records": [
-    {
-     "id": "day2-147",
-     "role": "user",
-     "content": "ok，我们现在继续沿用刚才的镜像，重点验证更新、删除之后，普通查询和向量查询是否一致。现在你需要：先看现有 overlay_boundaries、combined_overlays、overlay_recovery 检查，已有覆盖直接复用。重点检查：修改向量和过滤列、删除后重插同一主键，以及事务中一条语句失败后继续读写，最后分别提交、回滚和重启。再检查失效主键达到 128 个、段数达到 32 个附近的归并边界。预期结果用独立维护的数据核对，不要只拿两条查询路径互相比。先不改实现。把实际覆盖了哪些场景、结果和遗漏发给我；发现问题就保留最小复现。仍然不要动对话材料，也不要提交或推送。",
-     "record_type": "verbatim",
-     "provenance": {"source_id": "S3", "line": 147, "timestamp": "2026-11-12T09:38:43.418Z"}
-    },
-    {
-     "id": "day2-overlay",
-     "role": "tool",
-     "output": "{\"/status\":\"PASS\",\"/source_commit\":\"f10eddfdf209b0fd6e374da7d271e39e41b4b2c9\",\"/counts\":{\"PASS\":21,\"FAIL\":0,\"TIMEOUT\":0,\"NOT_RUN\":0},\"/omissions\":[\"No host reboot, disk-full, fsync/device power-loss, or concurrent-client tests.\",\"Default image configuration only; graph ANN is disabled in this image.\",\"New model tests use 16-dimensional vectors, existing combined check uses 128; not an exhaustive dimension/size benchmark.\",\"The existing combined check temporarily sets MAX_SEGMENTS=1 only to exercise fallback; normal boundary tests use unchanged 32/128 constants.\"],\"/cases/0/id\":\"reuse-overlay_boundaries\",\"/cases/0/status\":\"PASS\",\"/cases/1/id\":\"reuse-combined_overlays\",\"/cases/1/status\":\"PASS\",\"/cases/2/id\":\"reuse-overlay_recovery\",\"/cases/2/status\":\"PASS\",\"/cases/7/id\":\"txn-indexed-commit\",\"/cases/7/status\":\"PASS\",\"/cases/11/id\":\"boundary-excluded-update\",\"/cases/11/status\":\"PASS\",\"/cases/13/id\":\"boundary-segments-update\",\"/cases/13/status\":\"PASS\",\"/cases/15/id\":\"txboundary-excluded-commit\",\"/cases/15/status\":\"PASS\",\"/cases/16/id\":\"txboundary-excluded-rollback\",\"/cases/16/status\":\"PASS\",\"/cases/17/id\":\"txboundary-excluded-kill\",\"/cases/17/status\":\"PASS\",\"/cases/7/checkpoints\":[\"vector_only_change\",\"filter_only_change\",\"vector_and_filter_change\",\"deleted_key_absent\",\"same_key_reinsert_new_values\",\"after_commit\",\"recreated_container_persistent_volume\"],\"/cases/11/checkpoints\":[\"excluded_boundary_127\",\"excluded_boundary_128\",\"excluded_boundary_129\",\"restart_after_boundary\"],\"/cases/13/checkpoints\":[\"segment_count_30\",\"segment_count_31\",\"segment_count_32\",\"after_small_overlay_merge\",\"restart_after_boundary\"],\"/cases/15/checkpoints\":[\"transaction_reaches_threshold\",\"transaction_crosses_threshold\",\"after_duplicate_statement_failure\",\"after_invalid_vector_statement_failure\",\"transaction_reinsert_after_failure_and_merge\",\"after_commit\",\"restart_2_after_commit\"],\"/cases/16/checkpoints\":[\"after_rollback\",\"restart_2_after_rollback\"],\"/cases/17/checkpoints\":[\"restart_2_after_kill\"]}",
-     "provenance": {"artifact_source": "A2"},
-     "scope": "f10eddf固定镜像，128/32阈值；21组总计及关键场景摘录，用独立模型核对可见性和恢复。脚本与模型由Agent实现；展示的案例/检查点不是完整清单，未覆盖事项保留在omissions。",
-     "record_type": "selected_original_fields"
-    }
-   ],
-   "candidate_dimension": "独立验证与质疑",
-   "student_evidence": [
-    {"pointer": "/topics/2/records/0/content", "quote": "修改向量和过滤列、删除后重插同一主键，以及事务中一条语句失败后继续读写"},
-    {"pointer": "/topics/2/records/0/content", "quote": "预期结果用独立维护的数据核对，不要只拿两条查询路径互相比。"}
-   ],
-   "result_evidence": [
-    {"pointer": "/topics/2/records/1/output", "quote": "\"PASS\":21,\"FAIL\":0"},
-    {"pointer": "/topics/2/records/1/output", "quote": "transaction_crosses_threshold"},
-    {"pointer": "/topics/2/records/1/output", "quote": "after_duplicate_statement_failure"}
-   ],
-   "agent_response_not_student_evidence": [],
-   "not_shown": "脚本及模型由Agent编写；未出现学生解释失败、修正并复测。未覆盖的场景保留在结果omissions。",
-   "version_boundary": "21组边界验证使用f10eddf固定镜像；不能外推为b39d9821b重跑同一完整检查集。"
-  },
-  {
-   "unit_id": "N3-vector-fastpath-revert",
-   "topic": "按实测剖析选择向量解析，分两步修改、字节级差分、端到端对照后按预设规则撤回",
-   "summary": "要求先剖析再优化，分两步修改向量解析，比较float32字节及错误码，并预先规定收益不超波动就撤回。\n\nAgent发现特殊空白兼容性反例并加回退；三版各三轮，最终收益0.1252s低于采用的波动界限0.2972s，两步均撤回。\n\n撤回依据学生事先标准；学生未在复测后自行解释数据。剖析、两步修改和撤回只作同一链。",
-   "records": [
-    {
-     "id": "day2-289",
-     "role": "user",
-     "content": "🆗，边界检查完毕了，现在我们来进行性能分析吧。你先不要更改实现。当前成绩不到 300，目标 5000，你先确认这个分数的计算口径：时间、I/O、内存各占多少，有没有分项结果。拿不到平台明细就标明未知，不要从总分反推瓶颈。用刚才验证过的镜像，按赛题的 10000 行、128 维、每批 100 行、1000 次 TopK 查询跑三轮，查询一半带过滤、一半不带过滤，K=10。把启动、写入、建索引、两类查询的耗时分开，记录 I/O 和内存峰值；计分范围包含的阶段不能漏。然后只分析最值得优化的那部分，告诉我时间主要花在哪：解析、距离计算、过滤、回表，还是文件读写和同步。分析工具的额外开销别算进基准成绩最后给我一个优先优化点：证据是什么、预计改善哪个指标、代价是什么。先不要同时改几处，也不要为了跑分快而减少同步、降低精确性或针对固定测试数据做特判",
-     "record_type": "verbatim",
-     "provenance": {"source_id": "S3", "line": 289, "timestamp": "2026-11-12T10:24:28.306Z"}
-    },
-    {
-     "id": "day2-339",
-     "role": "user",
-     "content": "原始指标 E = 267.756695，然后原始指标排名才会换算成得分",
-     "record_type": "verbatim",
-     "provenance": {"source_id": "S3", "line": 339, "timestamp": "2026-11-12T10:25:57.398Z"},
-     "context": "原提问由Agent拟定：“不到 300、目标 5000”对应平台上的哪个分数字段？请提供字段名、规则链接或可复制的分项结果。当前本地赛题材料写的是性能排名折算最高 40 分，与这个量级不一致；拿不到的部分我会标为未知，继续做本地测量。"
-    },
-    {
-     "id": "day2-profile",
-     "role": "tool",
-     "output": "{\"/status\":\"PASS\",\"/source_commit\":\"f10eddfdf209b0fd6e374da7d271e39e41b4b2c9\",\"/workload\":{\"rows\":10000,\"dimensions\":128,\"batch_size\":100,\"queries\":1000,\"filtered_queries\":500,\"k\":10,\"mode\":\"exact\",\"filter\":\"c = category; ten uniformly populated categories; 10% selectivity\",\"body_bytes_per_row\":512,\"warmup_queries\":20,\"transactions\":\"BEGIN + INSERT 100 rows + COMMIT for every batch\"},\"/profile\":{\"status\":\"PASS\",\"target\":\"write\",\"selection_basis\":\"Largest measured end-to-end stage among write and query medians; NOT an inferred contribution to platform E.\",\"baseline_excluded\":true},\"/descriptive_median_seconds\":{\"write\":2.0366463560003467,\"query\":1.9270328399998107,\"unfiltered\":1.0219916340010968,\"filtered\":0.9050412059987138},\"/scoring/platform_reported_E\":267.756695,\"/scoring/platform_current_formula\":null,\"/measurement_scope/limitations\":[\"Official generator/seed, warmup/cache reset, baseline metrics, dedicated-device configuration and preparation time cap are unknown.\",\"Docker data volume shares a host device; raw per-device cgroup I/O is local evidence, not certified platform B.\",\"No platform E is inferred or computed. Per-metric medians are descriptive, not a synthetic scoring round.\",\"Observer syncfs flushes the containing filesystem; its latency is reported separately and is not assumed to be database-only latency.\"]}",
-     "provenance": {"artifact_source": "A3"},
-     "scope": "f10eddf三轮未插桩基准；剖析另外运行。平台E由用户报告，缩放/公式未知；不据此推算得分。",
-     "record_type": "selected_original_fields"
-    },
-    {
-     "id": "day2-450",
-     "role": "user",
-     "content": "ok，那你现在去优化 sql.py 的 vector()，先只改字符串向量的快速路径。具体改法：1. 保留 VECTOR_BODY.fullmatch()，不改变支持的数字语法。2. 正则验证成功后，把 list(map(float, map(str.strip, pieces))) 改成 list(map(float, pieces))。float() 本身能处理两端空白，不需要每个元素再调用一次 strip()。3. 字符串分支经 float() 转换后，元素类型已经确定，跳过转换前的逐元素类型与有限性检查。仍然保留 struct.pack/unpack 的 float32 转换、异常处理，以及转换后的有限性检查：溢出报错，转换成 inf 的值也必须拒绝。4. 列表输入保留原有检查，不能顺带接受 bool、字符串或其他类型。大文本回退路径先不动，维度检查顺序和错误码保持不变。分两步测，先测去掉 strip()，再测去掉字符串快速路径的前置循环，分别记录收益，不要混成一次修改。用旧实现作差分参考，检查正常数字、空白、科学计数法、非法元素、维度错误、1e309、float32 溢出、极小值和负零。合法结果要比较 float32 字节，不能只比较近似数值；非法输入比较错误码。复用已有向量文本和转换检查。最后重新构建镜像，跑公开检查，并在相同环境下交替测基线和候选各三轮完整负载。看正常运行的写入耗时中位数，也检查查询、I/O 和内存有没有回退。收益落在波动范围内就撤回，不要为了保留优化而挑最好一轮。不改 fsync，不动对话材料，不提交、不推送。反馈代码差异、差分测试结果和前后测量即可。",
-     "record_type": "verbatim",
-     "provenance": {"source_id": "S3", "line": 450, "timestamp": "2026-11-12T10:46:23.921Z"}
-    },
-    {
-     "id": "day2-548",
-     "role": "assistant",
-     "content": "有一项必要的兼容处理：`float()` 不接受 `U+001C`～`U+001F` 空白，而原实现接受。因此保留了 `ValueError` 时回退到带 `strip()` 转换的路径；直接删除会造成已复现的兼容性回退。",
-     "record_type": "verbatim_excerpt",
-     "provenance": {"source_id": "S3", "line": 548, "timestamp": "2026-11-12T10:55:05.239Z"}
-    },
-    {
-     "id": "day2-fastpath",
-     "role": "tool",
-     "output": "{\"/status\":\"PASS\",\"/baseline_commit\":\"f10eddfdf209b0fd6e374da7d271e39e41b4b2c9\",\"/steps\":{\"step1\":\"Remove per-element strip in the bounded string path, retaining ValueError compatibility fallback for U+001C..U+001F.\",\"step2\":\"Additionally skip the pre-pack type/finite loop only for successfully parsed bounded strings.\"},\"/acceptance_rule\":{\"defined_before_measurement\":true,\"write\":\"Candidate median reduction must exceed max(baseline range, candidate range), and candidate must be faster in all 3 paired rounds.\",\"query\":\"Reject increases exceeding max(baseline range, candidate range) for total, filtered, or unfiltered query time.\",\"resources\":\"Reject median B/M increases exceeding max(baseline range, candidate range, 1 MiB), checked separately for write/query projects.\",\"missing_resources\":\"Do not accept if I/O attribution is unknown.\",\"interpretation\":\"Conservative observed-noise rule with n=3; not a statistical significance claim. No best-round selection.\"},\"/recommendation\":\"REVERT_OR_DO_NOT_CLAIM_GAIN\",\"/limitations\":[\"Local fresh-volume warm-cache workload, not platform score; no platform cache reset/baseline/E conversion.\",\"I/O is per-cgroup on a shared host data device; image/runtime reads may share that device.\",\"Function microbenchmarks are separate diagnostics and never substituted for full-write timings.\"],\"/differential/baseline/status\":\"PASS\",\"/differential/baseline/cases\":6719,\"/differential/step1/status\":\"PASS\",\"/differential/step1/cases\":6719,\"/differential/step2/status\":\"PASS\",\"/differential/step2/cases\":6719,\"/comparisons/step1_only/time/write\":{\"before_median\":2.2394960029996582,\"after_median\":2.2248467979989073,\"median_reduction\":0.014649205000750953,\"observed_noise_bound\":0.2972049589989183,\"all_pairs_faster\":true,\"gain_exceeds_noise\":false,\"regression_exceeds_noise\":false},\"/comparisons/step2_incremental/time/write\":{\"before_median\":2.2248467979989073,\"after_median\":2.1142842110002675,\"median_reduction\":0.11056258699863974,\"observed_noise_bound\":0.27224423500047124,\"all_pairs_faster\":false,\"gain_exceeds_noise\":false,\"regression_exceeds_noise\":false},\"/comparisons/final_vs_baseline/time/write\":{\"before\":[2.2116243910004414,2.5088293499993597,2.2394960029996582],\"after\":[2.0514136940000753,2.3236579290005466,2.1142842110002675],\"before_median\":2.2394960029996582,\"after_median\":2.1142842110002675,\"median_reduction\":0.1252117919993907,\"observed_noise_bound\":0.2972049589989183,\"all_pairs_faster\":true,\"gain_exceeds_noise\":false,\"regression_exceeds_noise\":false},\"/comparisons/final_vs_baseline/time/query\":{\"before_median\":1.9532263750024867,\"after_median\":1.9756820550010161,\"median_reduction\":-0.022455679998529376,\"observed_noise_bound\":0.03914677100146946,\"all_pairs_faster\":false,\"gain_exceeds_noise\":false,\"regression_exceeds_noise\":false},\"/comparisons/step1_only/time/unfiltered\":{\"before\":[1.0183628170016163,0.9915392139992036,1.0104618570003367],\"after\":[1.024824116999298,1.0503457260001596,1.0564219240004604],\"before_median\":1.0104618570003367,\"after_median\":1.0503457260001596,\"median_reduction\":-0.03988386899982288,\"observed_noise_bound\":0.03159780700116244,\"all_pairs_faster\":false,\"gain_exceeds_noise\":false,\"regression_exceeds_noise\":true}}",
-     "provenance": {"artifact_source": "A4"},
-     "scope": "用户提出两步修改和撤回标准；Agent实现并针对U+001C..U+001F保留strip回退。三版各三轮；微基准不代替端到端。保留第一步无过滤查询退化和最终收益未超波动的结果。",
-     "record_type": "selected_original_fields"
-    },
-    {
-     "id": "day2-revert",
-     "role": "tool",
-     "output": "{\"decision\": \"REVERTED_BOTH_STEPS\", \"reason\": \"Final write median reduction 0.1252117919993907 s is below predefined observed-noise bound 0.2972049589989183 s; no best-round selection. This is insufficient evidence under the predeclared rule, not proof of zero benefit.\", \"restored_source_matches_baseline\": true}",
-     "provenance": {"artifact_source": "A5"},
-     "scope": "当时按用户事先标准撤回两步候选；不是用户事后解释，不声称优化无效。",
-     "record_type": "selected_original_fields"
-    }
-   ],
-   "candidate_dimension": "实验与反馈迭代",
-   "student_evidence": [
-    {"pointer": "/topics/3/records/0/content", "quote": "拿不到平台明细就标明未知，不要从总分反推瓶颈。"},
-    {"pointer": "/topics/3/records/0/content", "quote": "分析工具的额外开销别算进基准成绩"},
-    {"pointer": "/topics/3/records/3/content", "quote": "float() 本身能处理两端空白，不需要每个元素再调用一次 strip()。"},
-    {"pointer": "/topics/3/records/3/content", "quote": "合法结果要比较 float32 字节，不能只比较近似数值；非法输入比较错误码。"},
-    {"pointer": "/topics/3/records/3/content", "quote": "收益落在波动范围内就撤回，不要为了保留优化而挑最好一轮。"}
-   ],
-   "result_evidence": [
-    {"pointer": "/topics/3/records/5/output", "quote": "\"gain_exceeds_noise\":false"},
-    {"pointer": "/topics/3/records/5/output", "quote": "\"regression_exceeds_noise\":true"},
-    {"pointer": "/topics/3/records/6/output", "quote": "\"decision\": \"REVERTED_BOTH_STEPS\""},
-    {"pointer": "/topics/3/records/6/output", "quote": "0.1252117919993907 s is below predefined observed-noise bound 0.2972049589989183 s"}
-   ],
-   "agent_response_not_student_evidence": [
-    {"pointer": "/topics/3/records/4/content", "quote": "不接受 `U+001C`～`U+001F` 空白，而原实现接受。"}
-   ],
-   "not_shown": "用户关于float处理空白的概括有例外，U+001C..U+001F由Agent发现并修正；预定波动门槛的具体计算由Agent制定。用户未在复测后自行解释数据，不能据此补出学生事后反思。n=3规则不是统计显著性检验。",
-   "version_boundary": "两步候选在f10eddf阶段撤回。后续合并版独立移除转换前有限性循环，但保留类型与转换后有限性检查，也保留逐元素strip；不能据此声称后续恢复了该候选或当前没有任何类似改动。"
-  },
-  {
    "unit_id": "N5-optimization-migration-validation",
    "topic": "按机制迁移三类优化，分别验证小内存与正式规格，并按预设标准保留或撤回",
    "summary": "学生人工撰写迁移文档，指定先减少回表和运行时开销，核对文档基线后分项迁移；要求保留事务与标量回退正确性，小内存收益不能代替正式规格完整负载结果。\n\n四版本、四规格各三轮，共48次运行。cover正式规格查询中位数1.303→1.086秒，24MiB为2.249→1.158秒；objects虽省内存但64MiB过滤查询回退，SIMD无稳定完整负载收益。最终仅cover写回。\n\n学生反馈运行报告并要求最终对比；数值解释与回退诊断由Agent完成，按学生预设标准执行取舍，尚无学生事后解释或进一步修正。三项候选作为一条迁移链。",
@@ -349,23 +236,23 @@
    ],
    "candidate_dimension": "实验与反馈迭代",
    "student_evidence": [
-    {"pointer": "/topics/4/records/0/content", "quote": "这次我的思路是先减少不必要的数据访问和运行时开销，而不是换检索算法"},
-    {"pointer": "/topics/4/records/0/content", "quote": "能从向量索引直接得到主键和排序距离的查询就避免回表"},
-    {"pointer": "/topics/4/records/0/content", "quote": "先核对当前代码与文档基线的差异，再逐项迁移、分别验证，最后看组合效果，不要直接照抄 diff。"},
-    {"pointer": "/topics/4/records/0/content", "quote": "正确性、事务可见性和非 AVX2 回退必须保持；验收既要看文档中的小内存场景，也要看正式的 2 CPU、2 GiB 环境，不能拿内核微基准或小规格收益代替完整负载结论。"},
-    {"pointer": "/topics/4/records/0/content", "quote": "有稳定收益的改动再保留，无收益或有回退的撤回"},
-    {"pointer": "/topics/4/records/3/content", "quote": "阅读一下报告，再跟上版对比下，给我一个最终对比结论吧"}
+    {"pointer": "/topics/2/records/0/content", "quote": "这次我的思路是先减少不必要的数据访问和运行时开销，而不是换检索算法"},
+    {"pointer": "/topics/2/records/0/content", "quote": "能从向量索引直接得到主键和排序距离的查询就避免回表"},
+    {"pointer": "/topics/2/records/0/content", "quote": "先核对当前代码与文档基线的差异，再逐项迁移、分别验证，最后看组合效果，不要直接照抄 diff。"},
+    {"pointer": "/topics/2/records/0/content", "quote": "正确性、事务可见性和非 AVX2 回退必须保持；验收既要看文档中的小内存场景，也要看正式的 2 CPU、2 GiB 环境，不能拿内核微基准或小规格收益代替完整负载结论。"},
+    {"pointer": "/topics/2/records/0/content", "quote": "有稳定收益的改动再保留，无收益或有回退的撤回"},
+    {"pointer": "/topics/2/records/3/content", "quote": "阅读一下报告，再跟上版对比下，给我一个最终对比结论吧"}
    ],
    "result_evidence": [
-    {"pointer": "/topics/4/records/1/output", "quote": "\"id\":\"covering-scalar\",\"exit_code\":0,\"status\":\"PASS\""},
-    {"pointer": "/topics/4/records/1/output", "quote": "\"all_1000_queries\":true,\"all_10000_rows_after_restart\":true"},
-    {"pointer": "/topics/4/records/2/output", "quote": "\"baseline_median\":1.3025638649996836,\"candidate_median\":1.0863942510004563"},
-    {"pointer": "/topics/4/records/2/output", "quote": "\"baseline_median\":2.2494376410004406,\"candidate_median\":1.1577539489999253"},
-    {"pointer": "/topics/4/records/2/output", "quote": "\"baseline_median\":0.6053294790008295,\"candidate_median\":0.6156049429991981"},
-    {"pointer": "/topics/4/records/4/output", "quote": "\"decision\":\"KEEP_COVER_ONLY\""}
+    {"pointer": "/topics/2/records/1/output", "quote": "\"id\":\"covering-scalar\",\"exit_code\":0,\"status\":\"PASS\""},
+    {"pointer": "/topics/2/records/1/output", "quote": "\"all_1000_queries\":true,\"all_10000_rows_after_restart\":true"},
+    {"pointer": "/topics/2/records/2/output", "quote": "\"baseline_median\":1.3025638649996836,\"candidate_median\":1.0863942510004563"},
+    {"pointer": "/topics/2/records/2/output", "quote": "\"baseline_median\":2.2494376410004406,\"candidate_median\":1.1577539489999253"},
+    {"pointer": "/topics/2/records/2/output", "quote": "\"baseline_median\":0.6053294790008295,\"candidate_median\":0.6156049429991981"},
+    {"pointer": "/topics/2/records/4/output", "quote": "\"decision\":\"KEEP_COVER_ONLY\""}
    ],
    "not_shown": "实验脚本、数值波动门槛、机制诊断和结果分析主要由Agent完成；学生尚未解释数据后修正复测。三轮范围规则不等于统计显著性。强制标量不等于物理非AVX2机器；三项组合仅做过宿主正确性检查，Docker性能只测基线与单项；未入选不代表普遍无效，也不外推平台E。",
-   "version_boundary": "以本轮新测b39d9821b为基线，实验结束时仅cover写回未提交工作区，后随de9af1ed4提交；与N3撤回的解析候选分别记录。四规格和三个候选不拆分计数。",
+   "version_boundary": "以本轮新测b39d9821b为基线，实验结束时仅cover写回未提交工作区，后随de9af1ed4提交。四规格和三个候选不拆分计数。",
    "authorship": "迁移文档由学生人工撰写，优化方向、迁移规划及验收取舍要求归于学生。"
   },
   {
@@ -434,22 +321,22 @@
    ],
    "candidate_dimension": "取舍与反思",
    "student_evidence": [
-    {"pointer": "/topics/5/records/0/content", "quote": "Python 常驻内存、大块读取和 mmap 的工作集一旦挤压页缓存，就可能放大重复 I/O，甚至引起 OOM。因此先做轻量对象和按内存预算选择读取策略，把内存边界稳住"},
-    {"pointer": "/topics/5/records/0/content", "quote": "验收同时覆盖正式 2 CPU／2 GiB、小内存以及索引大于内存的场景，既看时间，也看 I/O、内存和长尾，不能只挑网格数据或缓存命中的结果。"},
-    {"pointer": "/topics/5/records/3/content", "quote": "轻量对象让原本在 12 MiB 下启动失败的场景通过，并在 16 MiB 下显著减少查询耗时和重复 I/O；预算读取让 16 MiB、2 万行／256 维场景从 OOM 变为三轮通过，两者组合覆盖了本轮两类 OOM 问题。"},
-    {"pointer": "/topics/5/records/3/content", "quote": "我接受已测得的大索引查询和部分长尾回退，这次优先改善资源受限时的稳定性与适用范围。"},
-    {"pointer": "/topics/5/records/3/content", "quote": "其余优化一并迁入，但本轮结果不能替代它们各自的验证，完整合入后仍需补齐回归，确保正确性、精确计算和事务持久性不变"}
+    {"pointer": "/topics/3/records/0/content", "quote": "Python 常驻内存、大块读取和 mmap 的工作集一旦挤压页缓存，就可能放大重复 I/O，甚至引起 OOM。因此先做轻量对象和按内存预算选择读取策略，把内存边界稳住"},
+    {"pointer": "/topics/3/records/0/content", "quote": "验收同时覆盖正式 2 CPU／2 GiB、小内存以及索引大于内存的场景，既看时间，也看 I/O、内存和长尾，不能只挑网格数据或缓存命中的结果。"},
+    {"pointer": "/topics/3/records/3/content", "quote": "轻量对象让原本在 12 MiB 下启动失败的场景通过，并在 16 MiB 下显著减少查询耗时和重复 I/O；预算读取让 16 MiB、2 万行／256 维场景从 OOM 变为三轮通过，两者组合覆盖了本轮两类 OOM 问题。"},
+    {"pointer": "/topics/3/records/3/content", "quote": "我接受已测得的大索引查询和部分长尾回退，这次优先改善资源受限时的稳定性与适用范围。"},
+    {"pointer": "/topics/3/records/3/content", "quote": "其余优化一并迁入，但本轮结果不能替代它们各自的验证，完整合入后仍需补齐回归，确保正确性、精确计算和事务持久性不变"}
    ],
    "result_evidence": [
-    {"pointer": "/topics/5/records/1/output", "quote": "\"mem12\":{\"status\":\"OOM_BOUNDARY_IMPROVED\",\"stable_gain\":true,\"regression\":false"},
-    {"pointer": "/topics/5/records/1/output", "quote": "\"buffer16\":{\"status\":\"OOM_BOUNDARY_IMPROVED\",\"stable_gain\":true,\"regression\":false"},
-    {"pointer": "/topics/5/records/1/output", "quote": "\"baseline_median\":11.386482957001135,\"candidate_median\":1.1324841189998551"},
-    {"pointer": "/topics/5/records/1/output", "quote": "\"baseline_median\":4286455808,\"candidate_median\":0"},
-    {"pointer": "/topics/5/records/1/output", "quote": "\"baseline_median\":16.228780908000772,\"candidate_median\":16.923074763999466"},
-    {"pointer": "/topics/5/records/1/output", "quote": "\"baseline_median\":0.05556761199841276,\"candidate_median\":0.07227001000137534"},
-    {"pointer": "/topics/5/records/4/output", "quote": "\"status\":\"INTEGRATED_HOST_PASS_DOCKER_PENDING\""},
-    {"pointer": "/topics/5/records/4/output", "quote": "\"runtime_fastpaths-auto\":{\"status\":\"PASS\",\"checks\":3929"},
-    {"pointer": "/topics/5/records/4/output", "quote": "\"status\":\"NOT_RUN\",\"planned_runs\":12,\"runs_per_scenario\":1"}
+    {"pointer": "/topics/3/records/1/output", "quote": "\"mem12\":{\"status\":\"OOM_BOUNDARY_IMPROVED\",\"stable_gain\":true,\"regression\":false"},
+    {"pointer": "/topics/3/records/1/output", "quote": "\"buffer16\":{\"status\":\"OOM_BOUNDARY_IMPROVED\",\"stable_gain\":true,\"regression\":false"},
+    {"pointer": "/topics/3/records/1/output", "quote": "\"baseline_median\":11.386482957001135,\"candidate_median\":1.1324841189998551"},
+    {"pointer": "/topics/3/records/1/output", "quote": "\"baseline_median\":4286455808,\"candidate_median\":0"},
+    {"pointer": "/topics/3/records/1/output", "quote": "\"baseline_median\":16.228780908000772,\"candidate_median\":16.923074763999466"},
+    {"pointer": "/topics/3/records/1/output", "quote": "\"baseline_median\":0.05556761199841276,\"candidate_median\":0.07227001000137534"},
+    {"pointer": "/topics/3/records/4/output", "quote": "\"status\":\"INTEGRATED_HOST_PASS_DOCKER_PENDING\""},
+    {"pointer": "/topics/3/records/4/output", "quote": "\"runtime_fastpaths-auto\":{\"status\":\"PASS\",\"checks\":3929"},
+    {"pointer": "/topics/3/records/4/output", "quote": "\"status\":\"NOT_RUN\",\"planned_runs\":12,\"runs_per_scenario\":1"}
    ],
    "not_shown": "144轮实验矩阵、数值门槛、脚本和诊断由Agent完成。学生结合结果解释并改变验收优先级；接受回退不等于消除回退，文档已说明精确求和条件及回退，本轮逐位和有理数对照由Agent补做。第一批容器三轮证据与后续八项合并版宿主回归分开；合并版Docker未执行，计划每场景一次不能证明稳定性能收益。OOM改善仅适用于已测边界，不外推所有低内存负载。",
    "version_boundary": "本轮基线de9af1ed已包含此前cover。此链只记录新增内存工作集假设、12/16MiB及大索引边界和学生取舍；不重复计算N5的文档迁移方向及48轮实验。不同候选、场景和八项合入不拆分实例。",
@@ -535,24 +422,24 @@
    ],
    "candidate_dimension": "技术理解与迁移",
    "student_evidence": [
-    {"pointer": "/topics/6/records/0/content", "quote": "低内存问题不能只靠缩小读取块解决，还要减少 Python 对象、重复数据和跨语言调用"},
-    {"pointer": "/topics/6/records/0/content", "quote": "Python 继续负责协议、SQL 绑定、事务和 manifest 发布，已有 C/AVX2 内核继续复用。"},
-    {"pointer": "/topics/6/records/0/content", "quote": "各阶段收益只能与对应基线比较，另外补做最终完整版本对 b2 的同环境对照，不能把阶段收益相乘。"},
-    {"pointer": "/topics/6/records/2/content", "quote": "不要通过取消 --cap-drop=ALL 或使用 privileged 绕过问题。"},
-    {"pointer": "/topics/6/records/2/content", "quote": "当前只能认定构建和已执行的正确性检查通过，恢复仍待验证、性能仍未知，不能把权限阻塞记作数据库失败，也不能把迁移完成当作成果已复现。"},
-    {"pointer": "/topics/6/records/4/content", "quote": "主要来自原生写入，而不是查询全面提速。这支持我将批量数据处理迁到 C++、减少重复存储和 Python 运行时开销的方向。"},
-    {"pointer": "/topics/6/records/4/content", "quote": "代价也明确保留：12 MiB 峰值仍触顶、建索引变慢，正式规格查询 P99 增加，最终查询组在部分环境下还抵消了一些阶段收益。我接受这些代价，优先保留整体资源效率和低内存收益，不要求每个阶段都更快。"},
-    {"pointer": "/topics/6/records/6/content", "quote": "这两个参数是机器的参数，但是测评方还是会在这个参数的基础上做限制，可能实际分配到的内存没有这么大，但cpu可以确定为1或者2个，所以对内存的分组测试还是要做"}
+    {"pointer": "/topics/4/records/0/content", "quote": "低内存问题不能只靠缩小读取块解决，还要减少 Python 对象、重复数据和跨语言调用"},
+    {"pointer": "/topics/4/records/0/content", "quote": "Python 继续负责协议、SQL 绑定、事务和 manifest 发布，已有 C/AVX2 内核继续复用。"},
+    {"pointer": "/topics/4/records/0/content", "quote": "各阶段收益只能与对应基线比较，另外补做最终完整版本对 b2 的同环境对照，不能把阶段收益相乘。"},
+    {"pointer": "/topics/4/records/2/content", "quote": "不要通过取消 --cap-drop=ALL 或使用 privileged 绕过问题。"},
+    {"pointer": "/topics/4/records/2/content", "quote": "当前只能认定构建和已执行的正确性检查通过，恢复仍待验证、性能仍未知，不能把权限阻塞记作数据库失败，也不能把迁移完成当作成果已复现。"},
+    {"pointer": "/topics/4/records/4/content", "quote": "主要来自原生写入，而不是查询全面提速。这支持我将批量数据处理迁到 C++、减少重复存储和 Python 运行时开销的方向。"},
+    {"pointer": "/topics/4/records/4/content", "quote": "代价也明确保留：12 MiB 峰值仍触顶、建索引变慢，正式规格查询 P99 增加，最终查询组在部分环境下还抵消了一些阶段收益。我接受这些代价，优先保留整体资源效率和低内存收益，不要求每个阶段都更快。"},
+    {"pointer": "/topics/4/records/6/content", "quote": "这两个参数是机器的参数，但是测评方还是会在这个参数的基础上做限制，可能实际分配到的内存没有这么大，但cpu可以确定为1或者2个，所以对内存的分组测试还是要做"}
    ],
    "result_evidence": [
-    {"pointer": "/topics/6/records/3/output", "quote": "\"baseline\":4.826098498000647,\"candidate\":3.1876012129941955"},
-    {"pointer": "/topics/6/records/3/output", "quote": "\"baseline\":690139136,\"candidate\":127897600"},
-    {"pointer": "/topics/6/records/3/output", "quote": "\"baseline\":0.08743830399907893,\"candidate\":0.3158671109995339"},
-    {"pointer": "/topics/6/records/3/output", "quote": "\"baseline\":3.810875621995365,\"candidate\":2.7672329540146166"},
-    {"pointer": "/topics/6/records/3/output", "quote": "\"baseline\":2.8373781199843506,\"candidate\":2.9545676470079343"},
-    {"pointer": "/topics/6/records/3/output", "quote": "\"unfiltered\":{\"p99\":0.0029226699989521876},\"filtered\":{\"p99\":0.0025406860004295595}"},
-    {"pointer": "/topics/6/records/5/output", "quote": "\"full_workload_runs\":12,\"runs_per_version_scenario\":1,\"recovery_cases\":24,\"oom_kills\":0"},
-    {"pointer": "/topics/6/records/5/output", "quote": "\"decision\":\"KEEP_COMPLETE_ARCHITECTURE\""}
+    {"pointer": "/topics/4/records/3/output", "quote": "\"baseline\":4.826098498000647,\"candidate\":3.1876012129941955"},
+    {"pointer": "/topics/4/records/3/output", "quote": "\"baseline\":690139136,\"candidate\":127897600"},
+    {"pointer": "/topics/4/records/3/output", "quote": "\"baseline\":0.08743830399907893,\"candidate\":0.3158671109995339"},
+    {"pointer": "/topics/4/records/3/output", "quote": "\"baseline\":3.810875621995365,\"candidate\":2.7672329540146166"},
+    {"pointer": "/topics/4/records/3/output", "quote": "\"baseline\":2.8373781199843506,\"candidate\":2.9545676470079343"},
+    {"pointer": "/topics/4/records/3/output", "quote": "\"unfiltered\":{\"p99\":0.0029226699989521876},\"filtered\":{\"p99\":0.0025406860004295595}"},
+    {"pointer": "/topics/4/records/5/output", "quote": "\"full_workload_runs\":12,\"runs_per_version_scenario\":1,\"recovery_cases\":24,\"oom_kills\":0"},
+    {"pointer": "/topics/4/records/5/output", "quote": "\"decision\":\"KEEP_COMPLETE_ARCHITECTURE\""}
    ],
    "not_shown": "文档中的架构设计和实现方案由学生撰写；Agent按文档迁入，补做数值验证并修复负零兼容、权限及PID1测试问题。四阶段是依赖分组，不等于文档逐项控制组；仅单轮，不能宣称稳定收益或逐项复现。已测1核12MiB、1核64MiB、2核2GiB；其余CPU×内存组合未测。b2不能直接读取新列式数据卷，整卷降级未验证。",
    "version_boundary": "本轮以b2ecc6b5为基线，含N6此前迁入的八项；final架构验收后随e5ad115b提交。本链只记录新增布局、原生写入/查询及其恢复和完整对照，三阶段和两次测试脚本修复不拆分计数。N6当时Docker待验收是历史状态，不能把本轮新架构对照倒算为N6原候选复测。",
@@ -627,22 +514,22 @@
    ],
    "candidate_dimension": "实验与反馈迭代",
    "student_evidence": [
-    {"pointer": "/topics/7/records/0/content", "quote": "进一步消除 Python 控制层的常驻内存、对象组织和跨语言调用开销，尤其避免过滤候选超过门槛后退回 Python 扫描"},
-    {"pointer": "/topics/7/records/0/content", "quote": "优先验证新日志的提交确认、故障重放、checkpoint、文件回收及旧数据迁移边界，再把公开检查、状态机、数值逐位对照和低内存压力检查统一跑在最终冻结镜像上。"},
-    {"pointer": "/topics/7/records/0/content", "quote": "性能先按文档的同种子、独立容器和数据目录、1 CPU／2 GiB 三轮交替配对"},
-    {"pointer": "/topics/7/records/3/content", "quote": "1 CPU／2 GiB 三轮配对的写入、查询、完整 I/O 和峰值内存均改善，全阶段耗时下降 42.8%，两类查询 P99 也约降一半"},
-    {"pointer": "/topics/7/records/3/content", "quote": "我接受目前记录的重启小幅回退和个别最大延迟增加，但保留原始数据，不用 P99 改善掩盖极端值。"},
-    {"pointer": "/topics/7/records/3/content", "quote": "尤其要明确旧程序能否读取新目录，不能把切回代码当作数据回退。"}
+    {"pointer": "/topics/5/records/0/content", "quote": "进一步消除 Python 控制层的常驻内存、对象组织和跨语言调用开销，尤其避免过滤候选超过门槛后退回 Python 扫描"},
+    {"pointer": "/topics/5/records/0/content", "quote": "优先验证新日志的提交确认、故障重放、checkpoint、文件回收及旧数据迁移边界，再把公开检查、状态机、数值逐位对照和低内存压力检查统一跑在最终冻结镜像上。"},
+    {"pointer": "/topics/5/records/0/content", "quote": "性能先按文档的同种子、独立容器和数据目录、1 CPU／2 GiB 三轮交替配对"},
+    {"pointer": "/topics/5/records/3/content", "quote": "1 CPU／2 GiB 三轮配对的写入、查询、完整 I/O 和峰值内存均改善，全阶段耗时下降 42.8%，两类查询 P99 也约降一半"},
+    {"pointer": "/topics/5/records/3/content", "quote": "我接受目前记录的重启小幅回退和个别最大延迟增加，但保留原始数据，不用 P99 改善掩盖极端值。"},
+    {"pointer": "/topics/5/records/3/content", "quote": "尤其要明确旧程序能否读取新目录，不能把切回代码当作数据回退。"}
    ],
    "result_evidence": [
-    {"pointer": "/topics/7/records/2/output", "quote": "\"e5\":2.7119975659879856,\"candidate\":1.5521701220059185"},
-    {"pointer": "/topics/7/records/2/output", "quote": "\"e5\":32354304,\"candidate\":17276928"},
-    {"pointer": "/topics/7/records/2/output", "quote": "\"p99\":0.000884036002389621,\"max\":0.0046249389997683465"},
-    {"pointer": "/topics/7/records/2/validation_output", "quote": "\"saved_queries_rechecked_against_independent_oracle\":16000"},
-    {"pointer": "/topics/7/records/2/validation_output", "quote": "\"damage_cases\":3,\"replay_kill\":true,\"partial_tail\":true"},
-    {"pointer": "/topics/7/records/2/validation_output", "quote": "\"point\":\"checkpoint-after-rename\",\"synced_commit_survives_checkpoint\":true"},
-    {"pointer": "/topics/7/records/4/output", "quote": "\"decision\":\"KEEP_FULL_CPP_AS_DEVELOPMENT_BASELINE\""},
-    {"pointer": "/topics/7/records/4/output", "quote": "\"e5_can_read_new_directory\":false"}
+    {"pointer": "/topics/5/records/2/output", "quote": "\"e5\":2.7119975659879856,\"candidate\":1.5521701220059185"},
+    {"pointer": "/topics/5/records/2/output", "quote": "\"e5\":32354304,\"candidate\":17276928"},
+    {"pointer": "/topics/5/records/2/output", "quote": "\"p99\":0.000884036002389621,\"max\":0.0046249389997683465"},
+    {"pointer": "/topics/5/records/2/validation_output", "quote": "\"saved_queries_rechecked_against_independent_oracle\":16000"},
+    {"pointer": "/topics/5/records/2/validation_output", "quote": "\"damage_cases\":3,\"replay_kill\":true,\"partial_tail\":true"},
+    {"pointer": "/topics/5/records/2/validation_output", "quote": "\"point\":\"checkpoint-after-rename\",\"synced_commit_survives_checkpoint\":true"},
+    {"pointer": "/topics/5/records/4/output", "quote": "\"decision\":\"KEEP_FULL_CPP_AS_DEVELOPMENT_BASELINE\""},
+    {"pointer": "/topics/5/records/4/output", "quote": "\"e5_can_read_new_directory\":false"}
    ],
    "not_shown": "CRC日志帧与恢复设计来自学生文档；物化文件正文CRC校验是Agent针对复现损坏追加的修正，大整数请求ID修复及本轮验证脚本也由Agent完成。1c2g三对，其余仅一对；写入降幅44.2%低于文档57.7%，原因未剖析。4097候选正确性通过不代表性能倍率复现，历史单项收益未逐项复现。LeakSanitizer未运行，未清全局缓存，平台分数未知。旧新格式不兼容为历史实测边界，e5已弃用，无回退计划。",
    "version_boundary": "以N7最终提交e5ad115b为基线；此轮新增独立入口和日志提交语义，与前轮Python控制+C++热点迁移区分。同一冻结候选统一验收，CRC修正、配对、取舍及数据格式核对不拆分实例。",
@@ -708,35 +595,142 @@
    ],
    "candidate_dimension": "实验与反馈迭代",
    "student_evidence": [
-    {"pointer": "/topics/8/records/1/content", "quote": "让查询直接访问日志中的数据帧；同时用共享分页目录和提交 delta 减少事务快照复制与目录重复写入"},
-    {"pointer": "/topics/8/records/1/content", "quote": "整数表示只能作带保守误差界的筛选，最终仍用原始 float32 向量精算；缓存必须有预算、正确失效并保留回退。"},
-    {"pointer": "/topics/8/records/1/content", "quote": "用同一二进制开关区分各项收益"},
-    {"pointer": "/topics/8/records/1/content", "quote": "缺失指标不拿其他值替代"},
-    {"pointer": "/topics/8/records/3/content", "quote": "候选列表没有稳定收益，全开配置还有明显长尾回退，因此保持默认关闭，不为了“全部启用”牺牲已测表现。"},
-    {"pointer": "/topics/8/records/3/content", "quote": "用根 Dockerfile 和最终默认配置构建镜像，记录镜像 ID、源码及配置指纹，确认入口和开关实际生效，再对这一个最终镜像补跑公开检查与关键提交、回滚、重启及 checkpoint 恢复检查。"},
-    {"pointer": "/topics/8/records/3/content", "quote": "报告中继续保留建索引回退、个别轮次变慢和压力场景指标缺失，不宣称所有环境都提速。"}
+    {"pointer": "/topics/6/records/1/content", "quote": "让查询直接访问日志中的数据帧；同时用共享分页目录和提交 delta 减少事务快照复制与目录重复写入"},
+    {"pointer": "/topics/6/records/1/content", "quote": "整数表示只能作带保守误差界的筛选，最终仍用原始 float32 向量精算；缓存必须有预算、正确失效并保留回退。"},
+    {"pointer": "/topics/6/records/1/content", "quote": "用同一二进制开关区分各项收益"},
+    {"pointer": "/topics/6/records/1/content", "quote": "缺失指标不拿其他值替代"},
+    {"pointer": "/topics/6/records/3/content", "quote": "候选列表没有稳定收益，全开配置还有明显长尾回退，因此保持默认关闭，不为了“全部启用”牺牲已测表现。"},
+    {"pointer": "/topics/6/records/3/content", "quote": "用根 Dockerfile 和最终默认配置构建镜像，记录镜像 ID、源码及配置指纹，确认入口和开关实际生效，再对这一个最终镜像补跑公开检查与关键提交、回滚、重启及 checkpoint 恢复检查。"},
+    {"pointer": "/topics/6/records/3/content", "quote": "报告中继续保留建索引回退、个别轮次变慢和压力场景指标缺失，不宣称所有环境都提速。"}
    ],
    "result_evidence": [
-    {"pointer": "/topics/8/records/0/output", "quote": "\"counted_in_regression_pass\":false"},
-    {"pointer": "/topics/8/records/2/output", "quote": "\"baseline\":0.8771016319951741,\"no-postings\":0.7589516860025469"},
-    {"pointer": "/topics/8/records/2/output", "quote": "\"baseline\":0.5301423060009256,\"no-postings\":0.4586270500003593"},
-    {"pointer": "/topics/8/records/2/output", "quote": "\"no-postings\":0.4586270500003593,\"candidate\":0.48470591400109697"},
-    {"pointer": "/topics/8/records/2/review_excerpt", "quote": "源码/检查脚本与验收冻结指纹完全匹配；21000 次保存查询的主键和 binary64 距离重新对独立真值核对。"},
-    {"pointer": "/topics/8/records/4/output", "quote": "\"performance_runs\":0,\"public_cases\":60,\"recovery_groups\":75,\"transaction_profiles\":3"},
-    {"pointer": "/topics/8/records/4/output", "quote": "\"default_path_diagnostics\":{\"posting_scans\":0},\"positive_control_diagnostics\":{\"posting_scans\":140}"}
+    {"pointer": "/topics/6/records/0/output", "quote": "\"counted_in_regression_pass\":false"},
+    {"pointer": "/topics/6/records/2/output", "quote": "\"baseline\":0.8771016319951741,\"no-postings\":0.7589516860025469"},
+    {"pointer": "/topics/6/records/2/output", "quote": "\"baseline\":0.5301423060009256,\"no-postings\":0.4586270500003593"},
+    {"pointer": "/topics/6/records/2/output", "quote": "\"no-postings\":0.4586270500003593,\"candidate\":0.48470591400109697"},
+    {"pointer": "/topics/6/records/2/review_excerpt", "quote": "源码/检查脚本与验收冻结指纹完全匹配；21000 次保存查询的主键和 binary64 距离重新对独立真值核对。"},
+    {"pointer": "/topics/6/records/4/output", "quote": "\"performance_runs\":0,\"public_cases\":60,\"recovery_groups\":75,\"transaction_profiles\":3"},
+    {"pointer": "/topics/6/records/4/output", "quote": "\"default_path_diagnostics\":{\"posting_scans\":0},\"positive_control_diagnostics\":{\"posting_scans\":140}"}
    ],
    "not_shown": "验证脚本、数值门槛、实际缺陷修复及候选列表机制解释由Agent完成。主规格三个种子非同输入重复，其他规格仅单对；压力峰值/I/O未知，v1仅模拟，未复现全部文档输入和历史单项收益。",
    "version_boundary": "N8冻结版122b5764→撤去物化正文CRC→迁入queryable.log→按实测默认关闭候选列表→最终镜像正确性验收，随de2e2822提交。性能与交付镜像分开：默认组合仅有主规格性能样本，其他规格全开结果不能代替，最终镜像未重测性能。CRC撤回不另计实例。"
+  },
+  {
+   "unit_id": "N10-de2-query-cache-tradeoff",
+   "topic": "查询执行优化与低内存缓存：整版配对、针对性开关验证、初始化代价与冻结取舍",
+   "authorship": "current-vs-de2.zh(1).md及配套补丁由学生亲手撰写，其中设计和实现方案归学生。Agent负责迁入、补齐构建文件放行、编写和修复测量脚本、执行验证与诊断。",
+   "summary": "学生要求只迁入保留的查询优化，先独立验证安全筛选、计划失效和CRC中断恢复，再比较整版而非拆成22项。新候选27个正确性验收阶段通过；测量观察器先因Agent脚本API错误失败，修复后完成8次负载。\n\n384MiB三对查询中位数1.740→1.427秒，减少18.00%；16MiB单对减少24.11%，但出现10.711ms过滤最大值，且峰值和预热成本上升。学生据此指定同一候选在16MiB下做缓存开关三对，并要求路径诊断与计时分开，不能直接把尖峰归因于缓存。\n\n缓存对照查询中位数1.920→1.461秒，三对均改善；额外峰值约1.49MiB，首条过滤查询0.603→6.985ms。诊断确认默认构建缓存并执行4009次分块扫描，旧门槛均为0。10.711ms过滤尖峰未重现，仍保留5.352ms过滤最大值和独立诊断中的23.770ms无过滤延迟。\n\n学生接受额外内存及初始化代价，保留当前整套优化和默认准入，要求区分两种收益口径，停止调参与追查；同一候选身份复核通过后冻结。整版与缓存消融属于同一验证取舍链，不拆分计数。",
+   "records": [
+    {
+     "id": "de2-query-4927",
+     "role": "user",
+     "record_type": "verbatim",
+     "content": "参照 current-vs-de2.zh(1).md 和 current-vs-de2.patch 复现最终保留版本。这轮只做补丁迁入和正确性确认，性能对照下一步再安排。\n上一轮 postings 的收益不稳定，所以继续默认关闭。本轮保留可查询日志架构，只迁入文件里的查询执行优化，不加入已撤回的实验，也不自行扩展方向。\n核对当前代码与 de2 的差异后应用补丁，保留现有未提交内容。除公开和契约检查外，用独立真值重点核对近并列、极端数值及距离投影，确认安全筛选没有漏掉真实 TopK；再检查计划缓存遇到参数变化、更新和回滚是否失效，以及低内存、关闭 mmap/SIMD 时能否正确回退。CRC 合并补做代表性的中断恢复检查，不沿用旧版本结论。\n完成后先停，简要反馈迁入情况、构建指纹、验证结果和未解决问题，再决定下一步。不动对话材料，不提交、推送或正式提测。",
+     "provenance": {"source_id": "S3", "line": 4927, "timestamp": "2026-11-15T04:16:43.648Z"}
+    },
+    {
+     "id": "de2-query-document-mechanisms",
+     "role": "user_document",
+     "record_type": "verbatim_excerpts",
+     "content": "对于相同 SQL 模板，只复用已校验的表名、主键投影、过滤条件、向量列、维度和 LIMIT。每次仍解析新查询向量并调用原始精确 TopK；不保存候选结果、距离或答案。\n\n原实现对 resident_budget<64 MiB 一律禁用分块缓存；现在移除这一粗门槛，至少 8 MiB resident_budget 才考虑构建，预算为 min(4 MiB,resident_budget/8)，再受 /proc/self/status 的 RssAnon 所剩余量约束。读取不到该指标时，低内存保持原回退，高内存保留旧预算。分块数组、记录偏移和对象大小仍全部计费；空间不足、分配失败或数值不适合量化时继续精确原路径。旧行式量化缓存先释放再构建分块缓存。MINIDB_COMPACT_BUDGET=0 使用旧门槛和预算。",
+     "provenance": {"artifact_source": "A28"},
+     "scope": "学生亲手撰写的参考文档，两段机制原文分别摘录；不是新增聊天发言。文档历史专项数字不当成本轮复现实验结果。"
+    },
+    {
+     "id": "de2-query-correctness",
+     "role": "tool",
+     "record_type": "selected_fields_and_organizer_aggregation",
+     "provenance": {"artifact_source": "A24"},
+     "scope": "27个验收阶段全部PASS，名称列于passed_stage_names；保留独立数值、计划命中及CRC关键结果。12/16MiB、关闭mmap/SIMD、禁用新增路径及大日志分别检查。CRC为日志调用合并后重测，不恢复物化正文CRC。字段筛选和汇总由整理者完成，未新增实验。",
+     "output": "{\"status\":\"PASS\",\"performance_runs\":0,\"kernel_truth\":{\"status\":\"PASS\",\"oracle\":\"binary64 rounded products accumulated with independent math.fsum\",\"groups\":360,\"refinements\":480,\"certified\":294,\"quant_rejected\":60,\"kernel\":\"avx2\"},\"focused_1c2g\":{\"status\":\"PASS\",\"numeric\":{\"queries\":240,\"shapes\":[\"gaussian\",\"near\",\"ties\",\"subnormal\",\"maximum\",\"heterogeneous\",\"scaled_small\",\"normalized\",\"sparse\",\"uniform\"],\"oracle\":\"independent float32 data, binary64 rounded products + math.fsum; IDs and binary64 distance bytes\"},\"plans\":{\"queries\":386,\"parameter_values\":13,\"parameter_probe\":{\"MINIDB_PATH\":{\"plan_hits\":21,\"plan_builds\":64}},\"failed_statement_atomic\":true,\"endings\":[\"ROLLBACK\",\"COMMIT\",\"restart\"]},\"crc\":[{\"point\":\"write-3\",\"rows\":0,\"multi_buffer_frames\":0,\"status\":\"PASS\"},{\"point\":\"write-4\",\"rows\":0,\"multi_buffer_frames\":0,\"status\":\"PASS\"},{\"point\":\"write-5\",\"rows\":0,\"multi_buffer_frames\":0,\"status\":\"PASS\"},{\"point\":\"write-6\",\"rows\":0,\"multi_buffer_frames\":0,\"status\":\"PASS\"},{\"point\":\"sync-before\",\"rows\":100,\"multi_buffer_frames\":1,\"status\":\"PASS\"},{\"point\":\"sync-after\",\"rows\":100,\"multi_buffer_frames\":1,\"status\":\"PASS\"}]},\"passed_stage_names\":[\"docker-version\",\"build\",\"inspect\",\"binary-fingerprint\",\"fault-build\",\"screen-build\",\"screen-truth\",\"public-1c2g\",\"focused-1c2g\",\"public-2c2g\",\"focused-2c2g\",\"contract\",\"native\",\"faults-1c2g\",\"transactions-1c2g\",\"faults-1c16m\",\"transactions-1c16m\",\"numeric-12m\",\"plans-12m\",\"numeric-16m\",\"plans-16m\",\"numeric-64m-fallback\",\"plans-64m-fallback\",\"numeric-2g-disabled\",\"plans-2g-disabled\",\"large-map-32m\",\"crc-12m\"]}",
+     "detail_source": {"artifact_source": "A30"}
+    },
+    {
+     "id": "de2-query-5224",
+     "role": "user",
+     "record_type": "verbatim",
+     "content": "我已人工检查报告，你可以复核一遍：这轮迁入和正确性检查通过，先保持代码不动，开始对照 de2 测整体收益，不逐项拆解 22 阶段。先复现文档里的普通混合查询负载，在相同的 1 CPU / 384 MiB 限制下，用同一数据、查询和预热方式比较 de2 与本轮已验收镜像，postings 均关闭。做三组成对测试，交替运行顺序，分别报告过滤与无过滤查询的耗时、CPU 和尾延迟，继续核对结果正确性。再用一个 16 MiB 低内存场景检查收益是否仍在，同时记录数据库容器的峰值内存和 OOM；驱动放在容器外，避免混入资源统计。启动、写入、建索引与查询分开计时，防止查询提速掩盖其他阶段退步。完成后先停，反馈整体收益、回退和测量缺口，再决定是否需要针对文件内的某层做消融。不新增优化，不动对话材料，不提交、推送或正式提测。",
+     "provenance": {"source_id": "S3", "line": 5224, "timestamp": "2026-11-15T05:06:45.046Z"}
+    },
+    {
+     "id": "de2-query-overall-comparison",
+     "role": "tool",
+     "record_type": "selected_fields_and_organizer_aggregation",
+     "provenance": {"artifact_source": "A25"},
+     "scope": "基线de2与本轮候选均关闭postings；1核384MiB种子42/43/44三对AB/BA/AB，16MiB种子42一对。10000行×128维，每批100行自动提交，预热10次后4000条K=10查询，过滤各半；双方相同输入。驱动在数据库容器外，分类CPU另计数回放，不混入正常耗时及峰值。单位秒/字节；metrics数组为[基线中位数,候选中位数]，其余保留命名字段；full含启动至查询，峰值截至正常查询完成，I/O为可见设备合计。观察器失败及整对重跑保留；验证计数由整理者汇总。",
+     "output": "{\"status\":\"PASS\",\"completed_normal_runs\":8,\"comparisons\":[{\"memory\":\"384m\",\"pairs\":3,\"preliminary_single_pair\":false,\"metrics\":{\"stage:startup\":[0.2552346150041558,0.27183033800974954],\"stage:write\":[0.3367578179895645,0.28234266700746957],\"stage:index\":[0.0021933259995421395,0.0019886499940184876],\"stage:warmup\":[0.011608742002863437,0.011090639003668912],\"stage:query\":{\"baseline_median\":1.740316345996689,\"candidate_median\":1.4270818150107516},\"stage:full_through_query\":[2.3542581819929183,2.0315387390292017],\"query:filtered:total_seconds\":[0.8339910843642429,0.6628315614216262],\"query:unfiltered:total_seconds\":[0.9015076021460118,0.7601137527672108],\"query:filtered:p99_seconds\":[0.0005591200024355203,0.00046461699821520597],\"query:filtered:max_seconds\":{\"baseline_median\":0.012098574006813578,\"candidate_median\":0.0006483980105258524},\"query:unfiltered:p99_seconds\":[0.0006231129955267534,0.0005195800040382892],\"class_cpu:filtered\":[0.1845025950000002,0.09496205800000004],\"class_cpu:unfiltered\":[0.2735142710000005,0.21421487400000003],\"peak_memory_bytes\":[8892416,8962048],\"io_all_devices_bytes\":[6021120,6021120]},\"query_paired_improvement_percent\":[20.450783090180547,14.81409163135271,16.08696773051569]},{\"memory\":\"16m\",\"pairs\":1,\"preliminary_single_pair\":true,\"metrics\":{\"stage:startup\":[0.2650913469988154,0.25068816299608443],\"stage:write\":[0.365296121002757,0.28575823799474165],\"stage:index\":[0.0018446530011715367,0.0018628510006237775],\"stage:warmup\":[0.006752627989044413,0.01174302700383123],\"stage:query\":{\"baseline_median\":1.9572968610009411,\"candidate_median\":1.4854382960038492},\"stage:full_through_query\":[2.600453856983222,2.0401772229961352],\"query:filtered:total_seconds\":[0.8830608458665665,0.6965010001149494],\"query:unfiltered:total_seconds\":[1.0694983036228223,0.7845751600398216],\"query:filtered:p99_seconds\":[0.000626895998721011,0.0004646890010917559],\"query:filtered:max_seconds\":{\"baseline_median\":0.0007746600022073835,\"candidate_median\":0.010711067996453494},\"query:unfiltered:p99_seconds\":[0.0007270339992828667,0.000553662990569137],\"class_cpu:filtered\":[0.25482428500000065,0.09408497000000017],\"class_cpu:unfiltered\":[0.4485906769999995,0.20809525899999992],\"peak_memory_bytes\":[7421952,8646656],\"io_all_devices_bytes\":[6021120,6021120]},\"query_paired_improvement_percent\":[24.107664728782552]}],\"failed_attempts\":[{\"name\":\"384m-42\",\"seed\":42,\"memory\":\"384m\",\"order\":[\"baseline\",\"candidate\"],\"status\":\"FAIL\",\"attempt\":1,\"runs\":{}}],\"harness_correction\":{\"reason\":\"Fix use of nonexistent time.clock_getcpuclockid with libc POSIX clock_getcpuclockid via ctypes; optional unsupported clock stays null.\",\"successful_runs_before_change\":0,\"retry_policy\":\"Rerun entire unfinished seed-42 pair; preserve original failed attempt.\"},\"run_validation_summary\":{\"runs\":8,\"passed\":8,\"verified_queries_per_run\":4010,\"oom\":0,\"oom_kill\":0}}"
+    },
+    {
+     "id": "de2-query-5401",
+     "role": "user",
+     "record_type": "verbatim",
+     "content": "整体版本先保留。下一步只确认低内存分块缓存的取舍，不重跑全部消融，也不新增优化。沿用本轮 16 MiB 负载，在当前候选版本上对比默认配置与 MINIDB_COMPACT_BUDGET=0，其他条件不变，做三组成对测试并交替顺序。诊断另跑一次，确认两种配置实际走了什么缓存路径，避免只比较开关名。重点看查询收益、峰值内存，以及首次查询和预热的额外成本；保留过滤查询的 P99 和最大值，观察上轮 10.71 ms 尖峰是否重现。若重现，再结合缓存构建时点和资源计数判断，不能直接归因于缓存。根据结果建议保留默认准入还是恢复旧门槛；如果差异不稳定，就明确暂不能归因，不继续调参。完成后先停，不动对话材料，不提交、推送或正式提测。",
+     "provenance": {"source_id": "S3", "line": 5401, "timestamp": "2026-11-15T08:19:13.553Z"}
+    },
+    {
+     "id": "de2-query-cache-comparison",
+     "role": "tool",
+     "record_type": "selected_fields_and_organizer_aggregation",
+     "provenance": {"artifact_source": "A26"},
+     "scope": "同一候选、1核16MiB；默认准入对MINIDB_COMPACT_BUDGET=0旧门槛，复用整体对照seed42输入，三对交替顺序。6次正常计时与2次独立诊断分开。缓存收益相对旧门槛，不与整体版本收益叠加。首条查询仍在10次预热内；预算读取时点仅标记准入尝试，结合成功构建计数判断路径，不是构建完成时间。逐轮重复验证字段汇总，最大延迟按配对顺序保留，CPU中位数由整理者从原正常轮计算。",
+     "output": "{\"status\":\"PASS\",\"completed_runs\":6,\"planned_diagnostic_runs\":2,\"comparison\":{\"stage:query\":{\"old_threshold_median\":1.9195181370014325,\"default_median\":1.4611069370002951},\"stage:full_through_query\":{\"old_threshold_median\":2.4899761470005615,\"default_median\":2.0087724750192137},\"first_query_seconds\":{\"old_threshold_median\":0.0009853670053416863,\"default_median\":0.0009014929964905605},\"first_filtered_query_seconds\":{\"old_threshold_median\":0.000602909000008367,\"default_median\":0.006984936000662856},\"stage:warmup_total\":{\"old_threshold_median\":0.00629242199647706,\"default_median\":0.010855312008061446},\"peak_memory_bytes\":{\"old_threshold_median\":7282688,\"default_median\":8843264},\"io_all_devices_bytes\":{\"old_threshold_median\":6021120,\"default_median\":6021120},\"query:filtered:total_seconds\":{\"old_threshold_median\":0.8631954949523788,\"default_median\":0.6795560935133835},\"query:unfiltered:total_seconds\":{\"old_threshold_median\":1.0492710259568412,\"default_median\":0.775355763049447},\"query:filtered:p99_seconds\":{\"old_threshold_median\":0.0005987139884382486,\"default_median\":0.00045365298865363},\"query:filtered:max_seconds\":{\"old_threshold_median\":0.0008110789931379259,\"default_median\":0.0007317780109588057},\"query:unfiltered:p99_seconds\":{\"old_threshold_median\":0.0007399579917546362,\"default_median\":0.0005220599996391684}},\"query_paired_reductions_percent\":[15.454998143298726,27.107423282708922,23.881576900192382],\"spike_reference_seconds\":0.010711067996453494,\"normal_spikes\":{\"default\":0,\"old_threshold\":0},\"diagnostics\":{\"default\":{\"status\":\"PASS\",\"observed_path\":\"blocked-cache\",\"path_matches_expected\":true,\"block_path\":{\"kernel\":\"avx2\",\"scans\":4009,\"builds\":1,\"peak_bytes\":1546480},\"posting_scans\":0,\"cache_budget_read_events\":[{\"success\":true,\"query_windows\":[{\"phase\":\"warmup\",\"query_index\":1}]}],\"unfiltered_max_seconds\":0.023770223997416906},\"old_threshold\":{\"status\":\"PASS\",\"observed_path\":\"fallback-no-block-scans\",\"path_matches_expected\":true,\"block_path\":{\"kernel\":\"avx2\",\"scans\":0,\"builds\":0,\"peak_bytes\":0},\"posting_scans\":0,\"cache_budget_read_events\":[],\"unfiltered_max_seconds\":0.0011840259976452217}},\"recommendation\":\"PROVISIONAL_KEEP_DEFAULT_REVIEW_MEMORY_AND_TAIL_COST\",\"normal_run_summary\":{\"runs\":6,\"verified_queries_per_run\":4010,\"oom\":0,\"oom_kill\":0,\"by_setting\":{\"default\":{\"filtered_max_seconds_by_pair\":[0.005351922998670489,0.0005513950018212199,0.0007317780109588057],\"unfiltered_max_seconds_by_pair\":[0.00102066999534145,0.000765857010264881,0.006205732002854347],\"query_cpu_median_seconds\":0.24681199999999998},\"old_threshold\":{\"filtered_max_seconds_by_pair\":[0.000805583011242561,0.0008224190096370876,0.0008110789931379259],\"unfiltered_max_seconds_by_pair\":[0.0010305700125172734,0.006828258992754854,0.0009747550066094846],\"query_cpu_median_seconds\":0.5536559999999999}}}}",
+     "agent_interpretation_excerpt": "诊断佐证：默认仅成功构建1次缓存，内部计费1,546,480字节（约1.475 MiB）；预算读取标记位于第2条预热请求，即首条过滤查询。该窗口CPU约6.259ms、minor faults增加359，伴随内存增加；无major fault、设备I/O、回收或配额限流增长。结合构建次数与后续分块扫描，支持初始化成本与缓存准备有关；标记本身不是精确的构建完成时间。",
+     "interpretation_source": {"artifact_source": "A29"}
+    },
+    {
+     "id": "de2-query-5493",
+     "role": "assistant",
+     "record_type": "verbatim",
+     "content": "已区分出两种现象：预热中首条过滤查询变慢，有缓存构建的时点、CPU 和内存证据；后续偶发长延迟则不能直接归因于缓存。\n\n三对正常计时没有重现上轮的 10.711 ms 过滤尖峰，但仍有 5.352 ms 的过滤最大值。独立诊断还出现了一次 23.770 ms 无过滤延迟，我会结合该窗口的资源计数说明它能排除什么、还有什么未知。",
+     "provenance": {"source_id": "S3", "line": 5493, "timestamp": "2026-11-15T08:45:29.225Z"}
+    },
+    {
+     "id": "de2-query-5509",
+     "role": "user",
+     "record_type": "verbatim",
+     "content": "报告我已经看完了，你不需要读取了。保留默认低内存缓存准入和当前整套优化，停止调参。我们接受约 1.49 MiB 的额外峰值内存及首次过滤查询的初始化成本，换取本次持续查询负载下稳定的整体收益；不再追查未重现尖峰，不展开其他消融。这轮只做验收收口：核对当前运行源码、默认配置和最终镜像是否仍与已通过正确性检查的版本一致，并确认整体对照、缓存对照使用的是同一候选。已有检查能覆盖的不要重跑；只有发现实际缺口才补对应检查，不改引擎。更新本轮验收说明，明确保留方案、整体收益、低内存代价及限制，区分相对 de2 的收益与本次缓存开关收益，不能叠加百分比。保留单数据集、热缓存、AVX-512 未确认和无正式 E 的边界；历史记录不覆盖。最后给出本地验收是否通过、最终镜像及源码/二进制指纹、是否还有阻断项。无阻断就停；有阻断如实报告，不为赶进度写 PASS。不动对话材料，不提交、推送或正式提测。",
+     "provenance": {"source_id": "S3", "line": 5509, "timestamp": "2026-11-15T08:48:53.996Z"}
+    },
+    {
+     "id": "de2-query-frozen-acceptance",
+     "role": "tool",
+     "record_type": "selected_original_fields",
+     "provenance": {"artifact_source": "A27"},
+     "scope": "学生5509行决策后的验收收口：核对当前源码/配置与正确性验收快照，以及两次对照均使用同一候选；复用既有不可变镜像记录，未重建或重新执行实验。最终随098a3547提交，提交本身不计验证证据。",
+     "output": "{\"status\":\"PASS\",\"image\":\"sha256:684a1d7c762d44b86698db5ce439eaee2dd03e7284363c713cfc80e44d79484a\",\"default_environment\":{\"MINIDB_POSTINGS\":\"0\",\"MINIDB_COMPACT_BUDGET\":\"unset; source default enabled\"},\"runtime_build_config_harness_unchanged\":true,\"reused_correctness_check_stages\":27,\"identity_checked_container_runs\":12,\"repeated_checks\":0,\"blockers\":[],\"live_docker_reinspection_performed\":false}"
+    }
+   ],
+   "candidate_dimension": "实验与反馈迭代",
+   "student_evidence": [
+    {"pointer": "/topics/7/records/0/content", "quote": "用独立真值重点核对近并列、极端数值及距离投影，确认安全筛选没有漏掉真实 TopK"},
+    {"pointer": "/topics/7/records/3/content", "quote": "再用一个 16 MiB 低内存场景检查收益是否仍在，同时记录数据库容器的峰值内存和 OOM；驱动放在容器外，避免混入资源统计。"},
+    {"pointer": "/topics/7/records/3/content", "quote": "启动、写入、建索引与查询分开计时，防止查询提速掩盖其他阶段退步。"},
+    {"pointer": "/topics/7/records/5/content", "quote": "在当前候选版本上对比默认配置与 MINIDB_COMPACT_BUDGET=0，其他条件不变，做三组成对测试并交替顺序。"},
+    {"pointer": "/topics/7/records/5/content", "quote": "若重现，再结合缓存构建时点和资源计数判断，不能直接归因于缓存。"},
+    {"pointer": "/topics/7/records/8/content", "quote": "我们接受约 1.49 MiB 的额外峰值内存及首次过滤查询的初始化成本，换取本次持续查询负载下稳定的整体收益"},
+    {"pointer": "/topics/7/records/8/content", "quote": "区分相对 de2 的收益与本次缓存开关收益，不能叠加百分比。"},
+    {"pointer": "/topics/7/records/8/content", "quote": "保留单数据集、热缓存、AVX-512 未确认和无正式 E 的边界"}
+   ],
+   "result_evidence": [
+    {"pointer": "/topics/7/records/2/output", "quote": "\"groups\":360,\"refinements\":480,\"certified\":294,\"quant_rejected\":60"},
+    {"pointer": "/topics/7/records/4/output", "quote": "\"baseline_median\":1.740316345996689,\"candidate_median\":1.4270818150107516"},
+    {"pointer": "/topics/7/records/4/output", "quote": "\"baseline_median\":1.9572968610009411,\"candidate_median\":1.4854382960038492"},
+    {"pointer": "/topics/7/records/4/output", "quote": "\"candidate_median\":0.010711067996453494"},
+    {"pointer": "/topics/7/records/6/output", "quote": "\"old_threshold_median\":1.9195181370014325,\"default_median\":1.4611069370002951"},
+    {"pointer": "/topics/7/records/6/output", "quote": "\"old_threshold_median\":7282688,\"default_median\":8843264"},
+    {"pointer": "/topics/7/records/6/output", "quote": "\"old_threshold_median\":0.000602909000008367,\"default_median\":0.006984936000662856"},
+    {"pointer": "/topics/7/records/6/output", "quote": "\"scans\":4009,\"builds\":1,\"peak_bytes\":1546480"},
+    {"pointer": "/topics/7/records/6/output", "quote": "\"scans\":0,\"builds\":0,\"peak_bytes\":0"},
+    {"pointer": "/topics/7/records/9/output", "quote": "\"reused_correctness_check_stages\":27,\"identity_checked_container_runs\":12,\"repeated_checks\":0"}
+   ],
+   "not_shown": "脚本API错误、路径探针和初始化原因分析由Agent处理，不算学生独立发现。学生提出配对/资源隔离/针对性消融，并据结果接受代价。主规格三种子仍属同一负载族，16MiB整版只有一对，缓存对照是单seed三次重复；不能外推所有负载。原文档生成器缺失，双方输入相同不等于复现原文档输入；热缓存、AVX2，AVX-512硬件执行未确认。诊断延迟不混入基准，未重现尖峰原因未确定。峰值截止查询完成、退出阶段未单测；可见设备I/O不等于平台指定设备指标，无正式E。",
+   "version_boundary": "以N9冻结后的de2为基线，本轮新增查询执行与低内存缓存准入验证；不重复计入N9日志架构成果。整体版本对de2与同候选缓存开关是不同基线，百分比不相加或相乘。参考文档22阶段只作方案来源，本轮没有逐项复现；旧文档历史数值不混入本轮结果。新正确性、性能及收口材料都指向684a1d7c镜像；收口时HEAD仍是61d27c、实现尚未提交，以源码指纹为准，后随098a3547提交。"
   }
  ],
  "history_sources": [
-  {"id": "S3", "description": "11月12—13日续聊；f10eddf验证、解析候选撤回及后续迁移，各实验版本见主题。"}
+  {"id": "S3", "description": "11月12—15日续聊；优化迁移、验证及取舍，各实验版本见主题。"}
  ],
  "artifact_sources": [
-  {"id": "A2", "description": "f10eddf覆盖段容器边界验证报告"},
-  {"id": "A3", "description": "f10eddf性能基准与剖析报告"},
-  {"id": "A4", "description": "两步向量解析对照报告"},
-  {"id": "A5", "description": "两步向量解析撤回决定"},
   {"id": "A9", "description": "11月13日四规格迁移验证报告"},
   {"id": "A10", "description": "迁移最终取舍报告"},
   {"id": "A11", "description": "11月13日内存边界迁移144轮报告"},
@@ -751,6 +745,13 @@
   {"id": "A20", "description": "物化CRC撤回后的宿主结果及放弃保障"},
   {"id": "A21", "description": "可查询日志21次整版与开关对照"},
   {"id": "A22", "description": "可查询日志结果复核与默认组合取舍"},
-  {"id": "A23", "description": "最终根配置镜像交付与冻结验收"}
+  {"id": "A23", "description": "最终根配置镜像交付与冻结验收"},
+  {"id": "A24", "description": "de2查询优化候选27阶段容器正确性验收"},
+  {"id": "A25", "description": "de2整版对照8次负载及观察器失败/修复记录"},
+  {"id": "A26", "description": "低内存缓存6次正常计时与2次独立诊断"},
+  {"id": "A27", "description": "查询优化最终冻结身份及验收收口"},
+  {"id": "A28", "description": "学生亲手撰写的查询执行优化参考文档"},
+  {"id": "A29", "description": "Agent撰写的整版与缓存取舍验收说明"},
+  {"id": "A30", "description": "新候选1c2g独立数值、计划及CRC详细结果"}
  ]
 }
