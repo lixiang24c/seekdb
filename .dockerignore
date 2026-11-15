@@ -15,3 +15,5 @@
 !native/*.inc
 !native/block_scan_impl.h
 !native/block_bounds_impl.h
+!native/block_dynamic_impl.h
+!native/block_dynamic_scan.h

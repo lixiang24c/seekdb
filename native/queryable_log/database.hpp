@@ -22,6 +22,10 @@ extern "C" uint64_t mv_refine_four_calls(void);
 extern "C" uint64_t mv_refine_four_points(void);
 extern "C" uint64_t mv_fp64_bound_calls(void);
 extern "C" uint64_t mv_legacy_bound_calls(void);
+extern "C" int mv_dynamic_available(size_t);
+extern "C" int mv_dynamic_pack_row(const unsigned char*,size_t,unsigned char*,size_t,double*,double*);
+extern "C" size_t mv_dynamic_topk(const unsigned char*,size_t,size_t,const double*,double,double,const unsigned char*,const uint32_t*,size_t,size_t,uint32_t*);
+extern "C" uint64_t mv_dynamic_scans(void);
 extern "C" int mv_quant_pack_block_row(const unsigned char*,unsigned char*,size_t,double*,double*);
 extern "C" size_t mv_quant_topk_blocks(const unsigned char*,size_t,const uint32_t*,size_t,size_t,uint32_t*);
 
@@ -217,10 +221,14 @@ class LogDatabase {
     QueryableLog log;LogCatalog tables,committed;bool transaction=false;void *mapping=nullptr;bool large_mapping_refused=false;size_t mapped_bytes=0;uint64_t resident_budget=0;
     std::unique_ptr<::RangeDirectory> ranges;const LogTable *range_owner=nullptr;int range_order=0;
     LogIntColumn integer_column;
+    struct SecondaryEntry {int64_t value;uint64_t offset;};
+    std::vector<SecondaryEntry> secondary_entries;const LogTable *secondary_owner=nullptr;size_t secondary_column=SIZE_MAX;bool secondary_attempted=false;
+    uint64_t secondary_builds=0,secondary_scans=0,secondary_peak=0;
+    void clear_secondary(){decltype(secondary_entries)().swap(secondary_entries);secondary_owner=nullptr;secondary_column=SIZE_MAX;secondary_attempted=false;}
     struct BlockVectors {
         const LogTable *owner=nullptr;Bytes data;std::vector<uint64_t> records;std::vector<std::array<double,2>> bounds;bool heterogeneous=false;std::array<uint32_t,256> starts{},counts{};std::array<int64_t,256> dictionary{};
-        size_t uses=0,column=SIZE_MAX,preferred=SIZE_MAX,groups=0;bool rejected=false,ready=false,regrouped=false;double norm=0,error=0;
-        void clear(){owner=nullptr;Bytes().swap(data);std::vector<uint64_t>().swap(records);decltype(bounds)().swap(bounds);heterogeneous=false;uses=groups=0;column=preferred=SIZE_MAX;rejected=ready=regrouped=false;norm=error=0;}
+        size_t covered=0,uses=0,column=SIZE_MAX,preferred=SIZE_MAX,groups=0;bool rejected=false,ready=false,regrouped=false;double norm=0,error=0;
+        void clear(){owner=nullptr;Bytes().swap(data);std::vector<uint64_t>().swap(records);decltype(bounds)().swap(bounds);heterogeneous=false;covered=uses=groups=0;column=preferred=SIZE_MAX;rejected=ready=regrouped=false;norm=error=0;}
     } block_vectors;
     bool tile_bounds=!std::getenv("MINIDB_TILE_BOUNDS")||std::string(std::getenv("MINIDB_TILE_BOUNDS"))!="0";
     const LogTable *uniform_owner=nullptr;bool uniform_checked=false,uniform_value=false;uint64_t uniform_point=0,uniform_scans=0;
@@ -240,7 +248,7 @@ class LogDatabase {
         if(name!=quant_name){Bytes().swap(quant_cache);quant_name=name;quant_uses=0;quant_rejected=false;}
         if(quant_rejected)return nullptr;if(!quant_cache.empty()){++quant_hits;return quant_cache.data();}
         if(++quant_uses<2)return nullptr;size_t budget=std::min(uint64_t(4u<<20),resident_budget/32);
-        size_t occupied=block_vectors.data.capacity()+block_vectors.records.capacity()*8+block_vectors.bounds.capacity()*16+(block_vectors.ready?sizeof(BlockVectors):0);
+        size_t occupied=block_vectors.data.capacity()+block_vectors.records.capacity()*8+block_vectors.bounds.capacity()*16+(block_vectors.ready?sizeof(BlockVectors):0)+secondary_entries.capacity()*sizeof(SecondaryEntry);
         budget=occupied<budget?budget-occupied:0;
         if(count>budget/144){++quant_budget_rejects;quant_rejected=true;return nullptr;}
         try{quant_cache.resize(count*144);}catch(const std::bad_alloc &){Bytes().swap(quant_cache);quant_rejected=true;return nullptr;}if(quant_cache.capacity()>budget){++quant_budget_rejects;Bytes().swap(quant_cache);quant_rejected=true;return nullptr;}
@@ -248,7 +256,7 @@ class LogDatabase {
         for(auto &e:table.extents){if(!mv_quant_pack(view+e.vectors+8,e.count,quant_cache.data()+offset*144,&quant_norm,&quant_error)){++quant_numeric_rejects;Bytes().swap(quant_cache);quant_rejected=true;return nullptr;}offset+=e.count;}
         ++quant_builds;quant_peak=std::max(quant_peak,uint64_t(quant_cache.capacity()));return quant_cache.data();
     }
-    struct Prepared {std::shared_ptr<const CompiledProjection> compiled;bool parameterized=false,scores=false,materialized=false;std::vector<size_t> columns;std::vector<bool> needed;std::vector<std::string> labels;std::vector<unsigned char> projection;std::string prefix,suffix,name,label;std::vector<std::string> pieces;std::vector<BoundCondition> conditions;size_t column,dimension,k,charge;};
+    struct Prepared {std::shared_ptr<const CompiledProjection> compiled;bool parameterized=false,scores=false,materialized=false,repeated=false;std::vector<size_t> columns;std::vector<bool> needed;std::vector<std::string> labels;std::vector<unsigned char> projection;std::string prefix,suffix,name,label,repeated_middle;std::vector<std::string> pieces;std::vector<BoundCondition> conditions;size_t column,dimension,k,charge;};
     std::list<Prepared> plans;size_t plan_bytes=0;uint64_t plan_hits=0,plan_builds=0,batch_hits=0;
     bool plans_enabled=!std::getenv("MINIDB_QUERY_PLANS")||std::string(std::getenv("MINIDB_QUERY_PLANS"))!="0";
     bool batch_output_enabled=!std::getenv("MINIDB_BATCH_OUTPUT")||std::string(std::getenv("MINIDB_BATCH_OUTPUT"))!="0";
@@ -289,6 +297,11 @@ class LogDatabase {
                 if(!matched||position+plan.suffix.size()+2>sql.size())continue;prefix_size=position;
             }
             auto text=sql.substr(prefix_size,sql.size()-prefix_size-plan.suffix.size());
+            if(plan.repeated){
+                size_t close=text.find(']');if(close==text.npos)continue;size_t bytes=close+1;
+                if(bytes+plan.repeated_middle.size()>text.size()||text.substr(bytes,plan.repeated_middle.size())!=plan.repeated_middle)continue;
+                auto second=text.substr(bytes+plan.repeated_middle.size());if(second!=text.substr(0,bytes))continue;text=text.substr(0,bytes);
+            }
             std::vector<float> values(plan.dimension);if(mv_vector_parse(text.data(),text.size(),values.size(),values.data()))return false;
             auto table=tables.find(plan.name);if(table==tables.end())return false;
             BoundExpr order;order.column=plan.column;order.distance=true;order.query.assign(values.begin(),values.end());
@@ -314,17 +327,22 @@ class LogDatabase {
         for(auto &c:conditions)if(!std::holds_alternative<int64_t>(c.value))return;
         const Value *source=st.order[0].expr.distance?&st.order[0].expr.query:nullptr;
         if(!source)for(auto &item:st.projection)if(item.expr.distance){source=&item.expr.query;break;}
-        if(!source)return;const auto &value=*source;if(value.kind!=Value::Vector||value.text.empty())return;
+        if(!source)return;const auto &value=*source;if((value.kind!=Value::Vector&&value.kind!=Value::Text)||value.text.empty())return;
         size_t first=sql.find('['),last=sql.find(']');
-        if(first==sql.npos||last==sql.npos||last<first||sql.find('[',first+1)!=sql.npos||sql.find(']',last+1)!=sql.npos||sql.substr(first,last-first+1)!=value.text)return;
-        if(first+sql.size()-last-1>4096)return;
-        Prepared plan;plan.prefix=std::string(sql.substr(0,first));plan.suffix=std::string(sql.substr(last+1));plan.name=fold(st.table);plan.label=response.columns[0];plan.conditions=conditions;plan.column=order.column;plan.dimension=schema.dimension();plan.k=*st.limit;
+        if(first==sql.npos||last==sql.npos||last<first||sql.substr(first,last-first+1)!=value.text)return;
+        size_t second=sql.find('[',last+1),second_end=sql.npos;
+        if(second!=sql.npos){second_end=sql.find(']',second+1);if(second_end==sql.npos||sql.find('[',second+1)!=sql.npos||sql.find(']',second_end+1)!=sql.npos||sql.substr(second,second_end-second+1)!=value.text)return;}
+        else if(sql.find(']',last+1)!=sql.npos)return;
+        if(first+sql.size()-last-1-(second==sql.npos?0:second_end-second+1)>4096)return;
+        Prepared plan;plan.prefix=std::string(sql.substr(0,first));plan.suffix=std::string(sql.substr(last+1));if(second!=sql.npos){plan.repeated=true;plan.repeated_middle=std::string(sql.substr(last+1,second-last-1));plan.suffix=std::string(sql.substr(second_end+1));}plan.name=fold(st.table);plan.label=response.columns[0];plan.conditions=conditions;plan.column=order.column;plan.dimension=schema.dimension();plan.k=*st.limit;
         if(outputs.size()!=1||fields[0]!=0){plan.labels=response.columns;plan.projection=fields;for(auto &output:outputs)plan.scores=plan.scores||output.distance;}
         if(materialized){plan.materialized=true;plan.needed.assign(schema.columns.size(),false);for(auto &output:outputs){plan.columns.push_back(output.column);if(!output.distance)plan.needed[output.column]=true;}for(auto &condition:conditions)plan.needed[condition.column]=true;}
-        plan.charge=sizeof(Prepared)+48+plan.prefix.capacity()+plan.suffix.capacity()+plan.name.capacity()+plan.label.capacity()+plan.conditions.capacity()*sizeof(BoundCondition);for(auto &c:plan.conditions)plan.charge+=c.op.capacity();
+        plan.charge=sizeof(Prepared)+48+plan.prefix.capacity()+plan.suffix.capacity()+plan.repeated_middle.capacity()+plan.name.capacity()+plan.label.capacity()+plan.conditions.capacity()*sizeof(BoundCondition);for(auto &c:plan.conditions)plan.charge+=c.op.capacity();
         plan.charge+=plan.columns.capacity()*sizeof(size_t)+(plan.needed.capacity()+7)/8;plan.charge+=plan.labels.capacity()*sizeof(std::string)+plan.projection.capacity();for(auto &label:plan.labels)plan.charge+=label.capacity();
         if(parameter_plans_enabled&&!conditions.empty()){
-            Lexer lexer(plan.prefix);std::vector<std::pair<size_t,size_t>> numbers;bool usable=true;
+            std::string_view lexical_prefix=plan.prefix;
+            if(value.kind==Value::Text){if(lexical_prefix.empty()||lexical_prefix.back()!='\'')return;lexical_prefix.remove_suffix(1);}
+            Lexer lexer(lexical_prefix);std::vector<std::pair<size_t,size_t>> numbers;bool usable=true;
             for(auto token=lexer.next();token.kind!=Token::End;token=lexer.next())if(token.kind==Token::Number){
                 size_t end=lexer.position();if(end<token.text.size()||numbers.size()>=conditions.size()||plan.prefix.substr(end-token.text.size(),token.text.size())!=token.text||!Value::number(token.text).integral){usable=false;break;}
                 if(Value::number(token.text).bigint()!=std::get<int64_t>(conditions[numbers.size()].value)){usable=false;break;}
@@ -342,12 +360,12 @@ class LogDatabase {
             size_t extra=sizeof(CompiledProjection)+64+projection->columns_json.capacity()+projection->fields.capacity();
             if(extra<=8192-plan.charge){plan.compiled=std::move(projection);plan.charge+=extra;}
         }
-        for(auto &old:plans)if(old.suffix==plan.suffix&&(old.prefix==plan.prefix||(old.parameterized&&!plan.pieces.empty()&&old.pieces==plan.pieces)))return;
+        for(auto &old:plans)if(old.repeated==plan.repeated&&old.repeated_middle==plan.repeated_middle&&old.suffix==plan.suffix&&(old.prefix==plan.prefix||(old.parameterized&&!plan.pieces.empty()&&old.pieces==plan.pieces)))return;
         if(!plan.pieces.empty()){
-            size_t variants=0;for(auto &old:plans)if(old.suffix==plan.suffix&&old.pieces==plan.pieces)++variants;
+            size_t variants=0;for(auto &old:plans)if(old.repeated==plan.repeated&&old.repeated_middle==plan.repeated_middle&&old.suffix==plan.suffix&&old.pieces==plan.pieces)++variants;
             if(variants>=5){
                 plan.parameterized=true;
-                for(auto it=plans.begin();it!=plans.end();)if(it->suffix==plan.suffix&&it->pieces==plan.pieces){plan_bytes-=it->charge;it=plans.erase(it);}else ++it;
+                for(auto it=plans.begin();it!=plans.end();)if(it->repeated==plan.repeated&&it->repeated_middle==plan.repeated_middle&&it->suffix==plan.suffix&&it->pieces==plan.pieces){plan_bytes-=it->charge;it=plans.erase(it);}else ++it;
             }
         }
         while(!plans.empty()&&(plans.size()>=8||plan_bytes+plan.charge>65536)){plan_bytes-=plans.front().charge;plans.pop_front();}
@@ -355,7 +373,7 @@ class LogDatabase {
     }
     struct Mask {std::string key,bytes;size_t charge;bool empty;std::vector<uint32_t> positions;};
     bool postings_enabled=!std::getenv("MINIDB_POSTINGS")||std::string(std::getenv("MINIDB_POSTINGS"))!="0";std::list<Mask> masks;size_t mask_bytes=0;
-    void invalidate(){uniform_owner=nullptr;uniform_checked=uniform_value=false;uniform_point=0;block_vectors.clear();plans.clear();plan_bytes=0;Bytes().swap(quant_cache);quant_name.clear();quant_uses=0;quant_rejected=false;integer_column.clear();ranges.reset();range_owner=nullptr;if(mapping)::munmap(mapping,mapped_bytes);mapping=nullptr;large_mapping_refused=false;mapped_bytes=0;masks.clear();mask_bytes=0;}
+    void invalidate(){clear_secondary();uniform_owner=nullptr;uniform_checked=uniform_value=false;uniform_point=0;block_vectors.clear();plans.clear();plan_bytes=0;Bytes().swap(quant_cache);quant_name.clear();quant_uses=0;quant_rejected=false;integer_column.clear();ranges.reset();range_owner=nullptr;if(mapping)::munmap(mapping,mapped_bytes);mapping=nullptr;large_mapping_refused=false;mapped_bytes=0;masks.clear();mask_bytes=0;}
     void collect(){if(log.needs_checkpoint(tables)){invalidate();log.checkpoint(tables);committed=tables;}}
     void publish(){if(!transaction){log.commit(tables,committed);committed=tables;collect();}}
     const unsigned char *mapped(const LogTable &table){
@@ -483,16 +501,60 @@ class LogDatabase {
         cache.ready=true;return &cache;
         }catch(const std::bad_alloc&){integer_column.clear();return nullptr;}
     }
-    uint64_t block_cache_budget()const{
-        if(!compact_budget)return std::min(uint64_t(4u<<20),resident_budget/32);
-        uint64_t budget=std::min(uint64_t(4u<<20),resident_budget/8),anon=0;bool found=false;
+    uint64_t block_cache_budget(uint64_t cap=4u<<20)const{
+        if(!compact_budget){uint64_t fixed=std::min(cap,resident_budget/32),used=secondary_entries.capacity()*sizeof(SecondaryEntry);return fixed>used?fixed-used:0;}
+        uint64_t budget=std::min(cap,resident_budget/8),anon=0;bool found=false;
         std::ifstream status("/proc/self/status");std::string line;
         while(std::getline(status,line))if(line.rfind("RssAnon:",0)==0){std::istringstream input(line.substr(8));uint64_t kb;std::string unit;if(input>>kb>>unit&&unit=="kB"&&kb<=UINT64_MAX/1024){anon=kb*1024;found=true;}break;}
-        if(!found)return resident_budget<(64u<<20)?0:std::min(uint64_t(4u<<20),resident_budget/32);
+        uint64_t secondary_bytes=secondary_entries.capacity()*sizeof(SecondaryEntry);
+        if(!found){uint64_t fallback=resident_budget<(64u<<20)?0:std::min(cap,resident_budget/32);return fallback>secondary_bytes?fallback-secondary_bytes:0;}
+        budget=budget>secondary_bytes?budget-secondary_bytes:0;
         return std::min(budget,anon<resident_budget?resident_budget-anon:0);
     }
-    bool blocked_topk(const LogTable &table,const unsigned char *view,size_t physical,const BoundExpr &expr,size_t k,const std::vector<BoundCondition> &conditions,::TopK &heap,bool require_scores){
-        if(!blocks_enabled||postings_enabled||!quant_enabled||!view||expr.query.size()!=128||physical<1024||resident_budget<(compact_budget?(8u<<20):(64u<<20))||!mv_quant_available())return false;
+    bool secondary_topk(const LogTable &table,const unsigned char *view,size_t physical,const std::vector<BoundCondition> &conditions,::TopK &heap){
+        static const bool enabled=!std::getenv("MINIDB_SECONDARY_FILTER")||std::string(std::getenv("MINIDB_SECONDARY_FILTER"))!="0";
+        if(!enabled||!view||physical<1024||conditions.empty())return false;
+        size_t column=conditions.front().column;if(column==table.schema.pk||table.schema.columns[column].type!="BIGINT")return false;
+        bool equality=false;for(auto &c:conditions){if(c.column!=column||!std::holds_alternative<int64_t>(c.value))return false;if(c.op=="=")equality=true;else if(c.op!="<"&&c.op!="<="&&c.op!=">"&&c.op!=">=")return false;}
+        if(secondary_owner!=&table||secondary_column!=column){clear_secondary();secondary_owner=&table;secondary_column=column;}
+        if(!secondary_attempted){
+            // Preserve the existing small dictionary path. Build this index
+            // only after that dictionary has demonstrated >256 distinct values.
+            if(!equality||integer_column.owner!=&table||integer_column.column!=column||!integer_column.attempted||integer_column.ready||integer_column.distinct!=256)return false;
+            secondary_attempted=true;size_t budget=std::min(size_t(512u<<10),size_t(resident_budget/64));
+            if(budget<=128||physical>(budget-128)/sizeof(SecondaryEntry))return false;
+            try{
+                // Optional representations share the resident budget. Release
+                // vector copies before constructing the replacement index.
+                block_vectors.clear();Bytes().swap(quant_cache);quant_name.clear();quant_uses=0;quant_rejected=false;
+                std::vector<SecondaryEntry> entries;entries.reserve(physical);if(entries.capacity()>(budget-128)/sizeof(SecondaryEntry))return false;
+                for(auto &e:table.extents){uint64_t row=e.rows+8;for(size_t i=0;i<e.count;i++){
+                    uint32_t n;read(&n,4,row,view);if(row>e.rows+e.keys||e.rows+e.keys-row<4||n>e.rows+e.keys-row-4)throw std::runtime_error("secondary row outside extent");
+                    if(e.visible(i)){size_t pos=0;int64_t value=0;
+                        auto field=[&](void *dest,size_t bytes){if(pos>n||bytes>n-pos)throw std::runtime_error("incomplete secondary field");read(dest,bytes,row+4+pos,view);pos+=bytes;};
+                        for(size_t col=0;col<=column;col++){auto &type=table.schema.columns[col].type;if(type=="VECTOR")continue;
+                            if(type=="BIGINT"){if(col==column)field(&value,8);else{if(pos>n||n-pos<8)throw std::runtime_error("incomplete secondary integer");pos+=8;}}
+                            else{uint32_t length;field(&length,4);if(length>n-pos)throw std::runtime_error("incomplete secondary text");pos+=length;}}
+                        entries.push_back({value,e.vectors+8+i*(8+4*table.schema.dimension())});
+                    }row+=4+uint64_t(n);
+                }}
+                std::sort(entries.begin(),entries.end(),[](auto &a,auto &b){return a.value<b.value||(a.value==b.value&&a.offset<b.offset);});secondary_entries=std::move(entries);++secondary_builds;secondary_peak=std::max(secondary_peak,uint64_t(secondary_entries.capacity()*sizeof(SecondaryEntry)));
+            }catch(const std::bad_alloc&){return false;}
+        }
+        if(secondary_entries.empty())return false;
+        size_t first=0,last=secondary_entries.size();for(auto &c:conditions){int64_t value=std::get<int64_t>(c.value);
+            size_t lower=std::lower_bound(secondary_entries.begin(),secondary_entries.end(),value,[](auto &e,int64_t v){return e.value<v;})-secondary_entries.begin();
+            size_t upper=std::upper_bound(secondary_entries.begin(),secondary_entries.end(),value,[](int64_t v,auto &e){return v<e.value;})-secondary_entries.begin();
+            if(c.op=="="||c.op==">=")first=std::max(first,lower);if(c.op==">")first=std::max(first,upper);
+            if(c.op=="="||c.op=="<=")last=std::min(last,upper);if(c.op=="<")last=std::min(last,lower);
+        }
+        if(first>=last){++secondary_scans;return true;}if(last-first>64)return false;
+        for(size_t i=first;i<last;i++)heap.offer(view+secondary_entries[i].offset);++secondary_scans;return true;
+    }
+
+    bool blocked_topk(const LogTable &table,const unsigned char *view,size_t physical,const BoundExpr &expr,size_t k,const std::vector<BoundCondition> &conditions,::TopK &heap,bool require_scores,bool &partial){
+        partial=false;size_t dimension=expr.query.size();bool dynamic=dimension!=128;
+        if(!blocks_enabled||postings_enabled||!quant_enabled||!view||(dynamic&&!mv_dynamic_available(dimension))||physical<1024||resident_budget<(compact_budget?(8u<<20):(64u<<20))||!mv_quant_available())return false;
         auto &cache=block_vectors;if(cache.owner!=&table){cache.clear();cache.owner=&table;}if(cache.rejected)return false;
         // A first scan may precede any filter. Allow one transition from an
         // ungrouped layout to the first observed compatible filter column.
@@ -519,22 +581,29 @@ class LogDatabase {
             if(cache.uses<2||(col!=SIZE_MAX&&!codes&&!integer_column.attempted))return false;
             if(codes)++integer_hits;
             size_t groups=codes?codes->distinct:1;std::array<size_t,256> counts{},cursor{};size_t ordinal=0;
-            for(auto &e:table.extents){for(size_t i=0;i<e.count;i++)if(e.visible(i))++counts[codes?codes->codes[ordinal+i]:0];ordinal+=e.count;}
+            size_t budget=block_cache_budget(dynamic?(8u<<20):(4u<<20));
+            if(budget<=sizeof(BlockVectors)){cache.rejected=true;return false;}
+            size_t maxslots=(budget-sizeof(BlockVectors))/(dimension+(tile_bounds?25:24));
+            size_t covered=physical;const char *partial_flag=std::getenv("MINIDB_PARTIAL_BLOCKS");
+            if((!partial_flag||std::strcmp(partial_flag,"0"))&&maxslots>groups*15&&physical>maxslots-groups*15){
+                size_t limit=maxslots-groups*15;covered=0;for(auto &e:table.extents){if(e.count>limit-covered)break;covered+=e.count;}
+                if(covered<1024){cache.rejected=true;return false;}
+            }
+            for(auto &e:table.extents){if(ordinal>=covered)break;for(size_t i=0;i<e.count;i++)if(e.visible(i))++counts[codes?codes->codes[ordinal+i]:0];ordinal+=e.count;}
             size_t slots=0;for(size_t g=0;g<groups;g++){cache.starts[g]=slots;cache.counts[g]=counts[g];cursor[g]=slots;slots+=(counts[g]+15)/16*16;}
-            size_t budget=block_cache_budget();
-            if(budget<=sizeof(BlockVectors)||!slots||slots>(budget-sizeof(BlockVectors))/(tile_bounds?153:152)){cache.rejected=true;return false;}
+            if(budget<=sizeof(BlockVectors)||!slots||slots>(budget-sizeof(BlockVectors))/(dimension+(tile_bounds?25:24))){cache.rejected=true;return false;}
             try{
                 // Formats share one budget. Release the previous row cache
                 // before allocating its blocked replacement.
                 Bytes().swap(quant_cache);quant_name.clear();quant_uses=0;quant_rejected=false;
-                cache.data.resize(slots*144);cache.records.resize(slots);if(tile_bounds)cache.bounds.resize(slots/16);
+                cache.data.resize(slots*(dimension+16));cache.records.resize(slots);if(tile_bounds)cache.bounds.resize(slots/16);
                 if(cache.data.capacity()+cache.records.capacity()*8+cache.bounds.capacity()*16+sizeof(BlockVectors)>budget){cache.clear();cache.owner=&table;cache.rejected=true;return false;}
-                ordinal=0;for(auto &e:table.extents){for(size_t i=0;i<e.count;i++)if(e.visible(i)){
-                    size_t g=codes?codes->codes[ordinal+i]:0,slot=cursor[g]++;uint64_t offset=e.vectors+8+i*520;
-                    cache.records[slot]=offset;double &norm=tile_bounds?cache.bounds[slot/16][0]:cache.norm,&error=tile_bounds?cache.bounds[slot/16][1]:cache.error;if(!mv_quant_pack_block_row(view+offset,cache.data.data(),slot,&norm,&error)){cache.clear();cache.owner=&table;cache.rejected=true;return false;}
+                ordinal=0;for(auto &e:table.extents){if(ordinal>=covered)break;for(size_t i=0;i<e.count;i++)if(e.visible(i)){
+                    size_t g=codes?codes->codes[ordinal+i]:0,slot=cursor[g]++;uint64_t offset=e.vectors+8+i*(8+4*dimension);
+                    cache.records[slot]=offset;double &norm=tile_bounds?cache.bounds[slot/16][0]:cache.norm,&error=tile_bounds?cache.bounds[slot/16][1]:cache.error;if(!(dynamic?mv_dynamic_pack_row(view+offset,dimension,cache.data.data(),slot,&norm,&error):mv_quant_pack_block_row(view+offset,cache.data.data(),slot,&norm,&error))){cache.clear();cache.owner=&table;cache.rejected=true;return false;}
                 }ordinal+=e.count;}
                 if(tile_bounds){double minimum=INFINITY;for(auto &bound:cache.bounds){cache.norm=std::max(cache.norm,bound[0]);cache.error=std::max(cache.error,bound[1]);if(bound[0]>0)minimum=std::min(minimum,bound[0]);}cache.heterogeneous=cache.norm>4*minimum;}
-                cache.groups=groups;cache.preferred=col;if(codes)cache.dictionary=codes->dictionary;cache.column=codes?col:SIZE_MAX;cache.ready=true;++block_builds;block_peak=std::max(block_peak,uint64_t(cache.data.capacity()+cache.records.capacity()*8+cache.bounds.capacity()*16+sizeof(BlockVectors)));block_slots=slots;block_groups=groups;
+                cache.covered=covered;cache.groups=groups;cache.preferred=col;if(codes)cache.dictionary=codes->dictionary;cache.column=codes?col:SIZE_MAX;cache.ready=true;++block_builds;block_peak=std::max(block_peak,uint64_t(cache.data.capacity()+cache.records.capacity()*8+cache.bounds.capacity()*16+sizeof(BlockVectors)));block_slots=slots;block_groups=groups;
             }catch(const std::bad_alloc&){cache.clear();cache.owner=&table;cache.rejected=true;return false;}
         }
         for(auto &c:conditions)if(c.column!=cache.column||!std::holds_alternative<int64_t>(c.value))return false;
@@ -543,10 +612,18 @@ class LogDatabase {
             bool accept=true;for(auto &c:conditions){auto actual=cache.dictionary[g],value=std::get<int64_t>(c.value);accept=accept&&accepts(actual<value?-1:actual>value?1:0,c.op);}
             if(accept){ranges[n++]=cache.starts[g];ranges[n++]=cache.counts[g];}
         }
-        if(!n)return true;
+        if(!n){partial=cache.covered<physical;return !partial;}
         size_t active=0;for(size_t i=1;i<n;i+=2)active+=ranges[i];
+        if(dynamic){
+            if(tile_bounds&&cache.heterogeneous)return false;
+            heap.positions.resize(cache.records.size());
+            size_t found=mv_dynamic_topk(cache.data.data(),cache.records.size(),dimension,heap.query.data(),cache.norm,cache.error,view+cache.records[0]+8,ranges.data(),n/2,k,heap.positions.data());
+            if(found==SIZE_MAX)return false;if(found>cache.records.size())throw std::runtime_error("invalid dynamic block result");
+            for(size_t i=0;i<found;i++)heap.offer(view+cache.records[heap.positions[i]]);
+            ++block_scans;block_refined+=found;block_precise_candidates+=found;partial=cache.covered<physical;return !partial;
+        }
         const char *tiny_flag=std::getenv("MINIDB_TINY_EXACT");
-        if(certify_enabled&&!require_scores&&active<=64&&(!tiny_flag||std::strcmp(tiny_flag,"0"))){
+        if(cache.covered==physical&&certify_enabled&&!require_scores&&active<=64&&(!tiny_flag||std::strcmp(tiny_flag,"0"))){
             heap.positions.clear();for(size_t r=0;r<n;r+=2)for(size_t i=0;i<ranges[r+1];i++)heap.positions.push_back(ranges[r]+i);
             std::array<double,1024> scores;int certified=0;
             size_t found=mv_refine_block_candidates(view,cache.records.data(),heap.query.data(),k,heap.positions.data(),active,scores.data(),&certified);
@@ -556,7 +633,7 @@ class LogDatabase {
         heap.positions.resize(cache.records.size());size_t found=granular?mv_quant_topk_bound_blocks(cache.data.data(),cache.records.size(),cache.bounds[0].data(),ranges.data(),n/2,k,heap.positions.data()):mv_quant_topk_blocks(cache.data.data(),cache.records.size(),ranges.data(),n/2,k,heap.positions.data());
         if(found==SIZE_MAX||found>cache.records.size())throw std::runtime_error("invalid blocked query result");
         block_precise_candidates+=found;
-        if(certify_enabled&&found&&found<=std::max(size_t(256),4*k)&&(!require_scores||found>k)){
+        if(cache.covered==physical&&certify_enabled&&found&&found<=std::max(size_t(256),4*k)&&(!require_scores||found>k)){
             std::array<double,1024> scores;int certified=0;
             size_t narrowed=mv_refine_block_candidates(view,cache.records.data(),heap.query.data(),k,heap.positions.data(),found,scores.data(),&certified);
             if(narrowed!=SIZE_MAX){
@@ -568,7 +645,7 @@ class LogDatabase {
             }
         }
         for(size_t i=0;i<found;i++)heap.offer(view+cache.records[heap.positions[i]]);
-        ++block_scans;block_refined+=found;return true;
+        ++block_scans;block_refined+=found;partial=cache.covered<physical;return !partial;
     }
     size_t mutate(LogTable &table,const Statement &st){
         auto predicate=conditions(table.schema,st);std::vector<std::pair<size_t,Cell>> assignments;
@@ -627,14 +704,15 @@ class LogDatabase {
         size_t physical=0;bool filtering=!conditions.empty();for(auto &e:table.extents){physical+=e.count;filtering=filtering||!e.excluded.empty();}
         ::TopK heap(expr.query.data(),expr.query.size(),k);
         const unsigned char *vector_view=mapped(table);
-        if(uniform_topk(table,vector_view,physical,expr,k,conditions,heap)||blocked_topk(table,vector_view,physical,expr,k,conditions,heap,require_scores)){std::sort(heap.heap.begin(),heap.heap.end());return heap.heap;}
+        bool partial=false;
+        if((!conditions.empty()&&!(integer_column.owner==&table&&integer_column.ready&&integer_column.column==conditions.front().column)&&secondary_topk(table,vector_view,physical,conditions,heap))||uniform_topk(table,vector_view,physical,expr,k,conditions,heap)||blocked_topk(table,vector_view,physical,expr,k,conditions,heap,require_scores,partial)){std::sort(heap.heap.begin(),heap.heap.end());return heap.heap;}
         size_t stride=8+expr.query.size()*4;Bytes data;LogPredicate predicate(table.schema,conditions);
         std::string key=quote(name);for(auto &c:conditions)key+='|'+std::to_string(c.column)+c.op+cell_json(c.value);
         const std::string *cached=nullptr;const std::vector<uint32_t> *postings=nullptr;size_t posting_cursor=0;
         if(filtering)for(auto it=masks.begin();it!=masks.end();++it)if(it->key==key){masks.splice(masks.end(),masks,it);if(masks.back().empty)return {};cached=&masks.back().bytes;if(!masks.back().positions.empty())postings=&masks.back().positions;break;}
         size_t cache_bytes=physical/8+(physical%8!=0);if(cached&&cached->size()!=cache_bytes)throw std::runtime_error("invalid query predicate bitmap");
         size_t mask_limit=std::min(size_t(128u<<10),size_t(resident_budget/128));
-        std::string pending;bool build=filtering&&!cached&&cache_bytes+key.size()+sizeof(Mask)+48<=mask_limit;
+        std::string pending;bool build=filtering&&!partial&&!cached&&cache_bytes+key.size()+sizeof(Mask)+48<=mask_limit;
         if(build)try{pending.assign(cache_bytes,char(0));}catch(const std::bad_alloc&){build=false;}
         const auto *view=mapped(table);if(!view)postings=nullptr;const LogIntColumn *column=nullptr;std::array<unsigned char,256> selected{};
         if(!cached&&!conditions.empty()){
@@ -664,6 +742,7 @@ class LogDatabase {
         if(quant&&!mv_quant_prepare(heap.query.data(),quant_norm,quant_error,view+table.extents.front().vectors+16))quant=nullptr;
         size_t base_row=0;
         for(auto &e:table.extents){
+            if(partial&&base_row+e.count<=block_vectors.covered){base_row+=e.count;continue;}
             uint64_t row=e.rows+8;LogReadWindow scalar_window(log.descriptor(),e.rows+e.keys);
             for(size_t first=0;first<e.count;){size_t count=std::min(block-queued,size_t(e.count-first));const unsigned char *filter=nullptr;const uint32_t *indices=nullptr;size_t index_count=0;
                 if(postings){++posting_scans;size_t begin=posting_cursor;while(posting_cursor<postings->size()&&(*postings)[posting_cursor]<base_row+first+count)++posting_cursor;index_count=posting_cursor-begin;if(!index_count){first+=count;continue;}indices=postings->data()+begin;}
@@ -783,6 +862,8 @@ public:
         uint64_t limit=memory_limit();resident_budget=limit-limit/8;
     }
     ~LogDatabase(){
+        if(std::getenv("MINIDB_DIAGNOSTICS"))std::fprintf(stderr,"SECONDARY_PATH {\"builds\":%llu,\"scans\":%llu,\"peak_bytes\":%llu}\n",(unsigned long long)secondary_builds,(unsigned long long)secondary_scans,(unsigned long long)secondary_peak);
+        if(std::getenv("MINIDB_DIAGNOSTICS"))std::fprintf(stderr,"DYNAMIC_BLOCK_PATH {\"scans\":%llu}\n",(unsigned long long)mv_dynamic_scans());
         if(std::getenv("MINIDB_DIAGNOSTICS"))std::fprintf(stderr,"BOUND_PRECISION_PATH {\"fp64\":%llu,\"legacy\":%llu}\n",(unsigned long long)mv_fp64_bound_calls(),(unsigned long long)mv_legacy_bound_calls());
         if(std::getenv("MINIDB_DIAGNOSTICS"))std::fprintf(stderr,"REFINE_FOUR_PATH {\"calls\":%llu,\"points\":%llu}\n",(unsigned long long)mv_refine_four_calls(),(unsigned long long)mv_refine_four_points());
         if(std::getenv("MINIDB_DIAGNOSTICS"))std::fprintf(stderr,"SPARSE_QUERY_PATH {\"scans\":%llu,\"zero_scans\":%llu,\"pairs\":%llu}\n",(unsigned long long)mv_sparse_scan_calls(),(unsigned long long)mv_sparse_zero_calls(),(unsigned long long)mv_sparse_pair_total());

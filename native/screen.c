@@ -741,3 +741,5 @@ size_t mv_id_mask(const unsigned char *data, size_t bytes, size_t dim,
 #include "graph.c"
 
 #include "approx.c"
+
+#include "block_dynamic_impl.h"

@@ -1,3 +1,12 @@
+当前交付状态（2026-11-16）：五项查询优化本地验收 PASS，按第二轮候选冻结。
+最新验收依据：FIVE_QUERY_ACCEPTANCE.zh.txt / FIVE_QUERY_ACCEPTANCE.json。
+冻结镜像：sha256:079a7dee6a422afecb08f7c4fb4a68833da86e0b84bd54d3b44ad1767a08a023
+源码指纹：8d269d08f6985c088c84273c97fb38424b6a9c13b91e8ed65afaebb90f43ce26
+二进制 SHA256：1e71d8a10d24329521e7d129b69acf82f1abbb44ada11af299e257ccb3e07957
+默认入口 /app/minivectordb-log，postings=0；其他优化开关保持受测默认，不再调参。
+两轮基线、收益、首次使用/内存/写入/尾延迟代价和适用边界在新验收记录中分开保存；未提交、推送或正式提测。
+以下原说明原样保留。下文 de2 等“当前”版本/指纹属于当时的历史记录，不替代以上交付状态。
+
 MiniVectorDB：可查询日志 C++ 引擎
 
 分支 minivectordb-rewrite。默认入口 /app/minivectordb-log，默认数据目录 /data。
