@@ -48,13 +48,16 @@ inline std::string quote(std::string_view source){
     }
     out+='"';return out;
 }
-inline std::string real(double value){
+inline std::string_view real_chars(double value,char (&bytes)[64]){
     if(!std::isfinite(value))throw std::runtime_error("nonfinite output");
     if(!value&&std::signbit(value))return "-0.0";
-    char bytes[64];auto result=std::to_chars(bytes,bytes+sizeof(bytes),value);
+    auto result=std::to_chars(bytes,bytes+sizeof(bytes)-2,value);
     if(result.ec!=std::errc())throw std::runtime_error("float formatting failed");
-    std::string out(bytes,result.ptr);if(out.find_first_of(".eE")==out.npos)out+=".0";return out;
+    if(std::string_view(bytes,size_t(result.ptr-bytes)).find_first_of(".eE")==std::string_view::npos){*result.ptr++='.';*result.ptr++='0';}
+    return {bytes,size_t(result.ptr-bytes)};
 }
+inline std::string real(double value){char bytes[64];return std::string(real_chars(value,bytes));}
+
 struct Json {
     // Protocol IDs are JSON values, not SQL BIGINTs. Retain large integer
     // tokens exactly; metadata integer() still enforces signed 64-bit values.

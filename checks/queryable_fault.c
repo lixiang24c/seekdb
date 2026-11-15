@@ -40,7 +40,7 @@ ssize_t write(int fd,const void *buf,size_t n) {
     if(!real_write)real_write=dlsym(RTLD_NEXT,"write");
     if(!fired&&named(fd,"queryable.log")){
         char point[32];
-        for(int i=1;i<=4;i++){snprintf(point,sizeof(point),"write-%d",i);
+        for(int i=1;i<=8;i++){snprintf(point,sizeof(point),"write-%d",i);
             if(armed(point)){if(++writes==i){size_t half=n/2;if(half)real_write(fd,buf,half);pause_at(point);}break;}}
     }
     if(!fired&&named(fd,"queryable.next")&&armed("checkpoint-write")){size_t half=n/2;if(half)real_write(fd,buf,half);pause_at("checkpoint-write");}

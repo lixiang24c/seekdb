@@ -5,7 +5,9 @@
 #include <string.h>
 #include <float.h>
 #include <math.h>
+#include <stdlib.h>
 #include <immintrin.h>
+#include <cpuid.h>
 
 unsigned mv_screen_abi(void) { return 5; }
 
@@ -189,7 +191,7 @@ __attribute__((target("avx2"),always_inline)) static inline int32_t dot8(const s
 /* Auxiliary quantization only: authoritative vectors and final ranking remain
    float32/binary64. |dot(x,q)-dot(xhat,qhat)| <= ||q|| Ex+(||x||+Ex) Eq.
    Integer dot accumulates at most 128*127*32767, safely within int32. */
-static double quant_delta=0,quant_query_norm=0,quant_query_scale=0;
+static double quant_delta=0,quant_query_norm=0,quant_query_scale=0,quant_query_length=0,quant_query_error=0;
 static uint64_t quant_scan_calls=0;
 uint64_t mv_quant_scan_calls(void){return quant_scan_calls;}
 static short quant_query[128];
@@ -218,9 +220,217 @@ int mv_quant_prepare(const double *q,double norm,double error,const unsigned cha
  quant_query_scale=largest?largest/32767:1;
  for(size_t j=0;j<128;j++){double rounded=nearbyint(q[j]/quant_query_scale);if(rounded>32767)rounded=32767;if(rounded<-32767)rounded=-32767;quant_query[j]=(short)rounded;double e=q[j]-quant_query[j]*quant_query_scale;qe+=e*e;}
  double qnorm=nextafter(sqrt(quant_query_norm)*(1+1e-12),INFINITY);qe=nextafter(sqrt(qe)*(1+1e-12),INFINITY);
+ quant_query_length=qnorm;quant_query_error=qe;
  quant_delta=nextafter((2*(qnorm*error+(norm+error)*qe)+1e-10*(norm*norm+quant_query_norm))*(1+1e-10),INFINITY);
  double sampled=0;for(size_t j=0;j<128;j++){float x;memcpy(&x,sample+j*4,4);double d=(double)x-q[j];sampled+=d*d;}
  return isfinite(quant_delta)&&quant_delta<=sampled*.03;
+}
+
+/* Sixteen vectors per tile, adjacent dimension pairs per SIMD lane.
+   Same int8/int16 products as dot8; no loss of precision from transposition. */
+int mv_quant_pack_block_row(const unsigned char *row,unsigned char *tiles,size_t slot,double *norm,double *error){
+ unsigned char packed[144];if(!mv_quant_pack(row,1,packed,norm,error))return 0;
+ unsigned char *tile=tiles+(slot/16)*2304;size_t lane=slot%16;
+ for(size_t j=0;j<64;j++)memcpy(tile+j*32+lane*2,packed+j*2,2);
+ memcpy(tile+2048+lane*8,packed+128,8);memcpy(tile+2176+lane*8,packed+136,8);return 1;
+}
+__attribute__((target("avx2"),always_inline))
+static inline void mv_quant_dot16(const unsigned char *tile,int32_t *out){
+ __m256i a=_mm256_setzero_si256(),b=a,c=a,d=a;
+ for(size_t j=0;j<64;j+=2){
+  int x,y;memcpy(&x,quant_query+2*j,4);memcpy(&y,quant_query+2*j+2,4);
+  __m256i u=_mm256_set1_epi32(x),v=_mm256_set1_epi32(y);const unsigned char *p=tile+j*32;
+  a=_mm256_add_epi32(a,_mm256_madd_epi16(_mm256_cvtepi8_epi16(_mm_loadu_si128((const __m128i*)p)),u));
+  b=_mm256_add_epi32(b,_mm256_madd_epi16(_mm256_cvtepi8_epi16(_mm_loadu_si128((const __m128i*)(p+16))),u));
+  c=_mm256_add_epi32(c,_mm256_madd_epi16(_mm256_cvtepi8_epi16(_mm_loadu_si128((const __m128i*)(p+32))),v));
+  d=_mm256_add_epi32(d,_mm256_madd_epi16(_mm256_cvtepi8_epi16(_mm_loadu_si128((const __m128i*)(p+48))),v));
+ }
+ _mm256_storeu_si256((__m256i*)out,_mm256_add_epi32(a,c));
+ _mm256_storeu_si256((__m256i*)(out+8),_mm256_add_epi32(b,d));
+}
+static int mv_block_wide_available(void){
+ static int cached=-1;if(cached>=0)return cached;
+ const char *flag=getenv("MINIDB_WIDE_SCAN");if(flag&&!strcmp(flag,"0"))return cached=0;
+ if(!__builtin_cpu_supports("avx512f")||!__builtin_cpu_supports("avx512bw"))return cached=0;
+ unsigned a,b,c,d;if(!__get_cpuid(1,&a,&b,&c,&d)||!(c&bit_OSXSAVE))return cached=0;
+ unsigned lo,hi;__asm__ volatile("xgetbv":"=a"(lo),"=d"(hi):"c"(0));
+ return cached=(lo&0xe6)==0xe6;
+}
+const char *mv_block_kernel(void){return mv_block_wide_available()?"avx512bw":"avx2";}
+__attribute__((target("avx2,avx512f,avx512bw"),always_inline))
+static inline void mv_quant_dot16_wide(const unsigned char *tile,int32_t *out){
+ __m512i a=_mm512_setzero_si512(),b=a,c=a,d=a;
+ for(size_t j=0;j<64;j+=4){
+  int q0,q1,q2,q3;memcpy(&q0,quant_query+2*j,4);memcpy(&q1,quant_query+2*j+2,4);memcpy(&q2,quant_query+2*j+4,4);memcpy(&q3,quant_query+2*j+6,4);
+  const unsigned char *p=tile+j*32;
+  a=_mm512_add_epi32(a,_mm512_madd_epi16(_mm512_cvtepi8_epi16(_mm256_loadu_si256((const __m256i*)p)),_mm512_set1_epi32(q0)));
+  b=_mm512_add_epi32(b,_mm512_madd_epi16(_mm512_cvtepi8_epi16(_mm256_loadu_si256((const __m256i*)(p+32))),_mm512_set1_epi32(q1)));
+  c=_mm512_add_epi32(c,_mm512_madd_epi16(_mm512_cvtepi8_epi16(_mm256_loadu_si256((const __m256i*)(p+64))),_mm512_set1_epi32(q2)));
+  d=_mm512_add_epi32(d,_mm512_madd_epi16(_mm512_cvtepi8_epi16(_mm256_loadu_si256((const __m256i*)(p+96))),_mm512_set1_epi32(q3)));
+ }
+ _mm512_storeu_si512((void*)out,_mm512_add_epi32(_mm512_add_epi32(a,b),_mm512_add_epi32(c,d)));
+}
+__attribute__((target("avx2"),always_inline))
+static inline void mv_block_scores_avx2(const unsigned char *tile,const int32_t *dots,double *scores){
+   for(size_t lane=0;lane<16;lane+=4){
+    __m256d norm=_mm256_loadu_pd((const double*)(tile+2048+lane*8)),scale=_mm256_loadu_pd((const double*)(tile+2176+lane*8));
+    __m256d product=_mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(2),scale),_mm256_set1_pd(quant_query_scale));
+    product=_mm256_mul_pd(product,_mm256_cvtepi32_pd(_mm_loadu_si128((const __m128i*)(dots+lane))));
+    __m256d sum=_mm256_sub_pd(_mm256_add_pd(norm,_mm256_set1_pd(quant_query_norm)),product);
+    _mm256_storeu_pd(scores+lane,_mm256_max_pd(_mm256_setzero_pd(),sum));
+   }
+}
+__attribute__((target("avx2,avx512f,avx512bw"),always_inline))
+static inline void mv_block_scores_wide(const unsigned char *tile,const int32_t *dots,double *scores){
+ for(size_t lane=0;lane<16;lane+=8){
+  __m512d norm=_mm512_loadu_pd((const double*)(tile+2048+lane*8)),scale=_mm512_loadu_pd((const double*)(tile+2176+lane*8));
+  __m512d product=_mm512_mul_pd(_mm512_mul_pd(_mm512_set1_pd(2),scale),_mm512_set1_pd(quant_query_scale));
+  product=_mm512_mul_pd(product,_mm512_cvtepi32_pd(_mm256_loadu_si256((const __m256i*)(dots+lane))));
+  __m512d sum=_mm512_sub_pd(_mm512_add_pd(norm,_mm512_set1_pd(quant_query_norm)),product);
+  _mm512_storeu_pd(scores+lane,_mm512_max_pd(_mm512_setzero_pd(),sum));
+ }
+}
+__attribute__((target("avx2"),always_inline))
+static inline unsigned mv_block_mask_avx2(const double *scores,double cutoff){
+ unsigned result=0;for(size_t lane=0;lane<16;lane+=4)result|=(unsigned)_mm256_movemask_pd(_mm256_cmp_pd(_mm256_loadu_pd(scores+lane),_mm256_set1_pd(cutoff),_CMP_LE_OQ))<<lane;return result;
+}
+__attribute__((target("avx2,avx512f,avx512bw"),always_inline))
+static inline unsigned mv_block_mask_wide(const double *scores,double cutoff){
+ return (unsigned)_mm512_cmp_pd_mask(_mm512_loadu_pd(scores),_mm512_set1_pd(cutoff),_CMP_LE_OQ)|((unsigned)_mm512_cmp_pd_mask(_mm512_loadu_pd(scores+8),_mm512_set1_pd(cutoff),_CMP_LE_OQ)<<8);
+}
+static unsigned char sparse_pairs[16];static size_t sparse_pair_count=0;
+static uint64_t sparse_scan_calls=0,sparse_zero_calls=0,sparse_pair_total=0;
+uint64_t mv_sparse_scan_calls(void){return sparse_scan_calls;}
+uint64_t mv_sparse_zero_calls(void){return sparse_zero_calls;}
+uint64_t mv_sparse_pair_total(void){return sparse_pair_total;}
+static int mv_prepare_sparse_query(void){
+ static int enabled=-1;if(enabled<0){const char *flag=getenv("MINIDB_SPARSE_QUERY");enabled=!flag||strcmp(flag,"0");}if(!enabled)return 0;
+ size_t count=0;for(size_t j=0;j<64;j++){int32_t pair;memcpy(&pair,quant_query+2*j,4);if(pair){if(count==16)return 0;sparse_pairs[count++]=(unsigned char)j;}}
+ sparse_pair_count=count;++sparse_scan_calls;sparse_pair_total+=count;if(!count)++sparse_zero_calls;return 1;
+}
+__attribute__((target("avx2"),always_inline))
+static inline void mv_quant_dot16_sparse(const unsigned char *tile,int32_t *out){
+ __m256i a=_mm256_setzero_si256(),b=a;
+ for(size_t i=0;i<sparse_pair_count;i++){
+  size_t j=sparse_pairs[i];int32_t word;memcpy(&word,quant_query+2*j,4);__m256i q=_mm256_set1_epi32(word);const unsigned char *p=tile+j*32;
+  a=_mm256_add_epi32(a,_mm256_madd_epi16(_mm256_cvtepi8_epi16(_mm_loadu_si128((const __m128i*)p)),q));
+  b=_mm256_add_epi32(b,_mm256_madd_epi16(_mm256_cvtepi8_epi16(_mm_loadu_si128((const __m128i*)(p+16))),q));
+ }
+ _mm256_storeu_si256((__m256i*)out,a);_mm256_storeu_si256((__m256i*)(out+8),b);
+}
+__attribute__((target("avx2,avx512f,avx512bw"),always_inline))
+static inline void mv_quant_dot16_sparse_wide(const unsigned char *tile,int32_t *out){
+ __m512i a=_mm512_setzero_si512();
+ for(size_t i=0;i<sparse_pair_count;i++){
+  size_t j=sparse_pairs[i];int32_t word;memcpy(&word,quant_query+2*j,4);const unsigned char *p=tile+j*32;
+  a=_mm512_add_epi32(a,_mm512_madd_epi16(_mm512_cvtepi8_epi16(_mm256_loadu_si256((const __m256i*)p)),_mm512_set1_epi32(word)));
+ }
+ _mm512_storeu_si512((void*)out,a);
+}
+static uint64_t fp64_bound_calls=0,legacy_bound_calls=0;
+uint64_t mv_fp64_bound_calls(void){return fp64_bound_calls;}
+uint64_t mv_legacy_bound_calls(void){return legacy_bound_calls;}
+/* Block scores use exact integer dot products and binary64 norm/scale
+   arithmetic. The existing 1e-10*(norm^2+query_norm) term already exceeds
+   binary64 arithmetic and reconstruction-rounding errors for 128 float32
+   coordinates. Do not inherit the float32 accumulation floor of raw screens. */
+static int mv_fp64_integer_bounds(void){static int enabled=-1;if(enabled<0){const char *flag=getenv("MINIDB_F64_QUANT_BOUNDS");enabled=!flag||strcmp(flag,"0");}if(enabled)++fp64_bound_calls;else ++legacy_bound_calls;return enabled;}
+#define MV_BLOCK_TARGET __attribute__((target("avx2")))
+#define MV_BLOCK_NAME mv_sparse_blocks_avx2
+#define MV_BLOCK_DOT mv_quant_dot16_sparse
+#define MV_BLOCK_SCORES mv_block_scores_avx2
+#define MV_BLOCK_MASK mv_block_mask_avx2
+#include "block_scan_impl.h"
+#undef MV_BLOCK_TARGET
+#undef MV_BLOCK_NAME
+#undef MV_BLOCK_DOT
+#undef MV_BLOCK_SCORES
+#undef MV_BLOCK_MASK
+#define MV_BLOCK_TARGET __attribute__((target("avx2,avx512f,avx512bw")))
+#define MV_BLOCK_NAME mv_sparse_blocks_wide
+#define MV_BLOCK_DOT mv_quant_dot16_sparse_wide
+#define MV_BLOCK_SCORES mv_block_scores_wide
+#define MV_BLOCK_MASK mv_block_mask_wide
+#include "block_scan_impl.h"
+#undef MV_BLOCK_TARGET
+#undef MV_BLOCK_NAME
+#undef MV_BLOCK_DOT
+#undef MV_BLOCK_SCORES
+#undef MV_BLOCK_MASK
+#define MV_BLOCK_TARGET __attribute__((target("avx2")))
+#define MV_BLOCK_NAME mv_sparse_bounds_avx2
+#define MV_BLOCK_DOT mv_quant_dot16_sparse
+#define MV_BLOCK_SCORES mv_block_scores_avx2
+#define MV_BLOCK_MASK mv_block_mask_avx2
+#include "block_bounds_impl.h"
+#undef MV_BLOCK_TARGET
+#undef MV_BLOCK_NAME
+#undef MV_BLOCK_DOT
+#undef MV_BLOCK_SCORES
+#undef MV_BLOCK_MASK
+#define MV_BLOCK_TARGET __attribute__((target("avx2,avx512f,avx512bw")))
+#define MV_BLOCK_NAME mv_sparse_bounds_wide
+#define MV_BLOCK_DOT mv_quant_dot16_sparse_wide
+#define MV_BLOCK_SCORES mv_block_scores_wide
+#define MV_BLOCK_MASK mv_block_mask_wide
+#include "block_bounds_impl.h"
+#undef MV_BLOCK_TARGET
+#undef MV_BLOCK_NAME
+#undef MV_BLOCK_DOT
+#undef MV_BLOCK_SCORES
+#undef MV_BLOCK_MASK
+#define MV_BLOCK_TARGET __attribute__((target("avx2")))
+#define MV_BLOCK_NAME mv_quant_blocks_avx2
+#define MV_BLOCK_DOT mv_quant_dot16
+#define MV_BLOCK_SCORES mv_block_scores_avx2
+#define MV_BLOCK_MASK mv_block_mask_avx2
+#include "block_scan_impl.h"
+#undef MV_BLOCK_TARGET
+#undef MV_BLOCK_NAME
+#undef MV_BLOCK_DOT
+#undef MV_BLOCK_SCORES
+#undef MV_BLOCK_MASK
+#define MV_BLOCK_TARGET __attribute__((target("avx2,avx512f,avx512bw")))
+#define MV_BLOCK_NAME mv_quant_blocks_wide
+#define MV_BLOCK_DOT mv_quant_dot16_wide
+#define MV_BLOCK_SCORES mv_block_scores_wide
+#define MV_BLOCK_MASK mv_block_mask_wide
+#include "block_scan_impl.h"
+#undef MV_BLOCK_TARGET
+#undef MV_BLOCK_NAME
+#undef MV_BLOCK_DOT
+#undef MV_BLOCK_SCORES
+#undef MV_BLOCK_MASK
+#define MV_BLOCK_TARGET __attribute__((target("avx2")))
+#define MV_BLOCK_NAME mv_quant_bounds_avx2
+#define MV_BLOCK_DOT mv_quant_dot16
+#define MV_BLOCK_SCORES mv_block_scores_avx2
+#define MV_BLOCK_MASK mv_block_mask_avx2
+#include "block_bounds_impl.h"
+#undef MV_BLOCK_TARGET
+#undef MV_BLOCK_NAME
+#undef MV_BLOCK_DOT
+#undef MV_BLOCK_SCORES
+#undef MV_BLOCK_MASK
+#define MV_BLOCK_TARGET __attribute__((target("avx2,avx512f,avx512bw")))
+#define MV_BLOCK_NAME mv_quant_bounds_wide
+#define MV_BLOCK_DOT mv_quant_dot16_wide
+#define MV_BLOCK_SCORES mv_block_scores_wide
+#define MV_BLOCK_MASK mv_block_mask_wide
+#include "block_bounds_impl.h"
+#undef MV_BLOCK_TARGET
+#undef MV_BLOCK_NAME
+#undef MV_BLOCK_DOT
+#undef MV_BLOCK_SCORES
+#undef MV_BLOCK_MASK
+static uint64_t tile_bound_calls=0;
+uint64_t mv_tile_bound_calls(void){return tile_bound_calls;}
+size_t mv_quant_topk_bound_blocks(const unsigned char *tiles,size_t slots,const double *bounds,const uint32_t *ranges,size_t range_count,size_t k,uint32_t *selected){
+ ++tile_bound_calls;if(mv_prepare_sparse_query())return mv_block_wide_available()?mv_sparse_bounds_wide(tiles,slots,bounds,ranges,range_count,k,selected):mv_sparse_bounds_avx2(tiles,slots,bounds,ranges,range_count,k,selected);return mv_block_wide_available()?mv_quant_bounds_wide(tiles,slots,bounds,ranges,range_count,k,selected):mv_quant_bounds_avx2(tiles,slots,bounds,ranges,range_count,k,selected);
+}
+size_t mv_quant_topk_blocks(const unsigned char *tiles,size_t slots,const uint32_t *ranges,size_t range_count,size_t k,uint32_t *selected){
+ if(mv_prepare_sparse_query())return mv_block_wide_available()?mv_sparse_blocks_wide(tiles,slots,ranges,range_count,k,selected):mv_sparse_blocks_avx2(tiles,slots,ranges,range_count,k,selected);
+ return mv_block_wide_available()?mv_quant_blocks_wide(tiles,slots,ranges,range_count,k,selected):mv_quant_blocks_avx2(tiles,slots,ranges,range_count,k,selected);
 }
 
 typedef double (*distance_fn)(const unsigned char *, const double *, size_t, double);
@@ -266,6 +476,86 @@ static distance_fn choose_screen_distance(size_t dim, size_t active, const doubl
        therefore does not reduce the work available within an active vector. */
     return dim >= 32 && active >= 16 && mv_screen_simd()
         ? avx2_distance : scalar_distance;
+}
+
+static uint64_t refine_four_calls=0,refine_four_points=0;
+uint64_t mv_refine_four_calls(void){return refine_four_calls;}
+uint64_t mv_refine_four_points(void){return refine_four_points;}
+__attribute__((target("avx2,fma"),noinline))
+static void mv_refine_four_avx2(const unsigned char *const *rows,const double *query,double *scores){
+ __m256d a=_mm256_setzero_pd(),b=a,c=a,d=a;
+ for(size_t j=0;j<128;j+=4){
+  __m256d q=_mm256_loadu_pd(query+j);
+  __m256d x0=_mm256_sub_pd(_mm256_cvtps_pd(_mm_loadu_ps((const float*)(rows[0]+j*4))),q);a=_mm256_fmadd_pd(x0,x0,a);
+  __m256d x1=_mm256_sub_pd(_mm256_cvtps_pd(_mm_loadu_ps((const float*)(rows[1]+j*4))),q);b=_mm256_fmadd_pd(x1,x1,b);
+  __m256d x2=_mm256_sub_pd(_mm256_cvtps_pd(_mm_loadu_ps((const float*)(rows[2]+j*4))),q);c=_mm256_fmadd_pd(x2,x2,c);
+  __m256d x3=_mm256_sub_pd(_mm256_cvtps_pd(_mm_loadu_ps((const float*)(rows[3]+j*4))),q);d=_mm256_fmadd_pd(x3,x3,d);
+ }
+ double lanes[4];
+ _mm256_storeu_pd(lanes,a);scores[0]=(lanes[0]+lanes[1])+(lanes[2]+lanes[3]);
+ _mm256_storeu_pd(lanes,b);scores[1]=(lanes[0]+lanes[1])+(lanes[2]+lanes[3]);
+ _mm256_storeu_pd(lanes,c);scores[2]=(lanes[0]+lanes[1])+(lanes[2]+lanes[3]);
+ _mm256_storeu_pd(lanes,d);scores[3]=(lanes[0]+lanes[1])+(lanes[2]+lanes[3]);
+}
+__attribute__((target("avx2,avx512f,avx512bw"),noinline))
+static void mv_refine_four_wide(const unsigned char *const *rows,const double *query,double *scores){
+ __m512d a=_mm512_setzero_pd(),b=a,c=a,d=a;
+ for(size_t j=0;j<128;j+=8){
+  __m512d q=_mm512_loadu_pd(query+j);
+  __m512d x0=_mm512_sub_pd(_mm512_cvtps_pd(_mm256_loadu_ps((const float*)(rows[0]+j*4))),q);a=_mm512_fmadd_pd(x0,x0,a);
+  __m512d x1=_mm512_sub_pd(_mm512_cvtps_pd(_mm256_loadu_ps((const float*)(rows[1]+j*4))),q);b=_mm512_fmadd_pd(x1,x1,b);
+  __m512d x2=_mm512_sub_pd(_mm512_cvtps_pd(_mm256_loadu_ps((const float*)(rows[2]+j*4))),q);c=_mm512_fmadd_pd(x2,x2,c);
+  __m512d x3=_mm512_sub_pd(_mm512_cvtps_pd(_mm256_loadu_ps((const float*)(rows[3]+j*4))),q);d=_mm512_fmadd_pd(x3,x3,d);
+ }
+ double lanes[8];
+ _mm512_storeu_pd(lanes,a);scores[0]=((lanes[0]+lanes[1])+(lanes[2]+lanes[3]))+((lanes[4]+lanes[5])+(lanes[6]+lanes[7]));
+ _mm512_storeu_pd(lanes,b);scores[1]=((lanes[0]+lanes[1])+(lanes[2]+lanes[3]))+((lanes[4]+lanes[5])+(lanes[6]+lanes[7]));
+ _mm512_storeu_pd(lanes,c);scores[2]=((lanes[0]+lanes[1])+(lanes[2]+lanes[3]))+((lanes[4]+lanes[5])+(lanes[6]+lanes[7]));
+ _mm512_storeu_pd(lanes,d);scores[3]=((lanes[0]+lanes[1])+(lanes[2]+lanes[3]))+((lanes[4]+lanes[5])+(lanes[6]+lanes[7]));
+}
+struct mv_refine_item {double score;uint32_t slot;};
+static int mv_compare_refine(const void *a,const void *b){
+ const struct mv_refine_item *x=a,*y=b;
+ if(x->score<y->score)return -1;if(x->score>y->score)return 1;
+ return x->slot<y->slot?-1:x->slot>y->slot;
+}
+/* Certify ranks using outward intervals around the binary64 SIMD sum.
+   The four-row FMA estimator additionally changes product rounding. With 128
+   nonnegative squared terms, its accumulation plus the reference product
+   rounding is bounded well inside the existing 64*DBL_EPSILON*129 envelope.
+   Authoritative distances still use separately rounded products/PositiveSum.
+   Overlapping intervals always retain the exact-reduction fallback. */
+size_t mv_refine_block_candidates(const unsigned char *view,const uint64_t *records,const double *query,size_t k,uint32_t *positions,size_t count,double *scores,int *certified){
+ if(!view||!records||!query||!positions||!scores||!certified||!k||k>1024||!count||count>4096)return SIZE_MAX;
+ *certified=0;struct mv_refine_item items[count];size_t first=0;
+ static int four_enabled=-1;if(four_enabled<0){const char *flag=getenv("MINIDB_REFINE_FOUR");four_enabled=!flag||strcmp(flag,"0");}
+ if(four_enabled&&mv_screen_simd()&&__builtin_cpu_supports("fma")){
+  int wide=mv_block_wide_available();
+  for(;first+4<=count;first+=4){
+   const unsigned char *rows[4];double sums[4];for(size_t j=0;j<4;j++)rows[j]=view+records[positions[first+j]]+8;
+   if(wide)mv_refine_four_wide(rows,query,sums);else mv_refine_four_avx2(rows,query,sums);
+   for(size_t j=0;j<4;j++){if(!isfinite(sums[j]))return SIZE_MAX;items[first+j]=(struct mv_refine_item){sums[j],positions[first+j]};}
+   ++refine_four_calls;refine_four_points+=4;
+  }
+ }
+ for(size_t i=first;i<count;i++){
+  const unsigned char *row=view+records[positions[i]]+8;
+  double score=mv_screen_simd()?avx2_distance(row,query,128,INFINITY):scalar_distance(row,query,128,INFINITY);
+  if(!isfinite(score))return SIZE_MAX;items[i]=(struct mv_refine_item){score,positions[i]};
+ }
+ qsort(items,count,sizeof(*items),mv_compare_refine);
+ double error=64.0*DBL_EPSILON*129;size_t take=count<k?count:k;
+ double upper=nextafter(items[take-1].score*(1+error)+DBL_MIN,INFINITY);
+ size_t kept=take;while(kept<count&&nextafter(items[kept].score*(1-error)-DBL_MIN,-INFINITY)<=upper)++kept;
+ int certain=kept==take;
+ for(size_t i=1;i<take&&certain;i++){
+  double previous=nextafter(items[i-1].score*(1+error)+DBL_MIN,INFINITY);
+  double next=nextafter(items[i].score*(1-error)-DBL_MIN,-INFINITY);
+  if(!(previous<next))certain=0;
+ }
+ for(size_t i=0;i<kept;i++)positions[i]=items[i].slot;
+ if(certain){for(size_t i=0;i<take;i++)scores[i]=items[i].score;*certified=1;}
+ return kept;
 }
 
 int mv_screen_begin_query(const unsigned char *data,size_t bytes,size_t dim,const double *query,size_t active){

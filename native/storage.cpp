@@ -120,7 +120,7 @@ extern "C" int mv_storage_merge(const char *row_path,const char *vector_path,con
 #include <cfloat>
 // Fast successful ASCII literals only. Any uncertain syntax, dimension, or
 // conversion returns 1 so Python preserves its established error precedence.
-extern "C" int mv_vector_parse(const char *text,size_t size,size_t dim,float *out) noexcept {
+static int vector_parse_reference(const char *text,size_t size,size_t dim,float *out,bool bare) noexcept {
     if(!text||!out||!dim||dim>4096||size>65536)return 1;
     const char *p=text,*end=text+size;
     auto space=[&](){while(p<end&&(*p==' '||*p=='\t'||*p=='\r'||*p=='\n'||*p=='\f'||*p=='\v'))++p;};
@@ -129,10 +129,10 @@ extern "C" int mv_vector_parse(const char *text,size_t size,size_t dim,float *ou
     for(size_t i=0;i<dim;++i){
         space();if(p==end)return 1;const char *first=p;
         if(*p=='+'||*p=='-')++p;
-        size_t digits=0;while(p<end&&digit(*p)){++p;++digits;}
-        if(p<end&&*p=='.'){++p;while(p<end&&digit(*p)){++p;++digits;}}
+        bool integral=true;size_t digits=0;while(p<end&&digit(*p)){++p;++digits;}
+        if(p<end&&*p=='.'){integral=false;++p;while(p<end&&digit(*p)){++p;++digits;}}
         if(!digits)return 1;
-        if(p<end&&(*p=='e'||*p=='E')){
+        if(p<end&&(*p=='e'||*p=='E')){integral=false;
             ++p;if(p<end&&(*p=='+'||*p=='-'))++p;
             const char *exp=p;while(p<end&&digit(*p))++p;if(p==exp)return 1;
         }
@@ -142,11 +142,31 @@ extern "C" int mv_vector_parse(const char *text,size_t size,size_t dim,float *ou
         if(result.ec!=std::errc()||result.ptr!=p||!std::isfinite(value)||std::fabs(value)>FLT_MAX)return 1;
         float converted=static_cast<float>(value);
         if(!std::isfinite(converted))return 1;
-        out[i]=converted;
+        out[i]=bare&&integral&&converted==0?0.0f:converted;
         space();if(p==end||*p++!=(i+1==dim?']':','))return 1;
     }
     space();return p==end?0:1;
 }
+
+static int vector_parse_impl(const char *text,size_t size,size_t dim,float *out,bool bare) noexcept {
+    static const bool direct=!std::getenv("MINIDB_DIRECT_NUMBERS")||std::string(std::getenv("MINIDB_DIRECT_NUMBERS"))!="0";
+    if(!direct)return vector_parse_reference(text,size,dim,out,bare);
+    if(!text||!out||!dim||dim>4096||size>65536)return 1;
+    const char *p=text,*end=text+size;
+    auto space=[&](){while(p<end&&(*p==' '||*p=='\t'||*p=='\r'||*p=='\n'||*p=='\f'||*p=='\v'))++p;};
+    space();if(p==end||*p++!='[')return 1;
+    for(size_t i=0;i<dim;i++){
+        space();if(p==end)return 1;const char *first=p,*number=p+(*p=='+');double value=0;
+        if(*p=='+'&&number<end&&*number=='-')return 1;
+        auto result=std::from_chars(number,end,value,std::chars_format::general);
+        if(result.ec!=std::errc()||result.ptr==number||!std::isfinite(value)||std::fabs(value)>FLT_MAX)return 1;
+        p=result.ptr;float converted=static_cast<float>(value);if(!std::isfinite(converted))return 1;
+        if(bare&&converted==0){bool integral=true;for(auto q=first;q<p;q++)if(*q=='.'||*q=='e'||*q=='E'){integral=false;break;}if(integral)converted=0.0f;}
+        out[i]=converted;space();if(p==end||*p++!=(i+1==dim?']':','))return 1;
+    }space();return p==end?0:1;
+}
+
+extern "C" int mv_vector_parse(const char *text,size_t size,size_t dim,float *out) noexcept {return vector_parse_impl(text,size,dim,out,false);}
 
 extern "C" { struct mv_column { const char *name; uint32_t kind; uint32_t width; }; }
 namespace {
@@ -185,6 +205,8 @@ template<class T> void put(std::vector<unsigned char>& data,const T &value){cons
 extern "C" void *mv_insert_prepare(const char *text,size_t size,const mv_column *cols,size_t count,size_t pk) noexcept {
     try{
         if(!text||!cols||!count||count>256||pk>=count)return nullptr;
+        static const bool fused=!std::getenv("MINIDB_FUSED_LITERAL")||std::string(std::getenv("MINIDB_FUSED_LITERAL"))!="0";
+        static const bool boundary=!std::getenv("MINIDB_VECTOR_BOUNDARY")||std::string(std::getenv("MINIDB_VECTOR_BOUNDARY"))!="0";
         InsertParser in{text,text+size};std::vector<size_t> order;
         if(in.take('(')){
             do{
@@ -222,15 +244,17 @@ extern "C" void *mv_insert_prepare(const char *text,size_t size,const mv_column 
                     bool is_quoted=in.p<in.end&&*in.p=='\'';
                     if(is_quoted){if(!in.plain_string(v,length)){quoted=in.string();v=quoted.data();length=quoted.size();}}
                     else{
-                        const char *start=in.p;in.need('[');while(in.p<in.end&&*in.p!=']')++in.p;
+                        const char *start=in.p;in.need('[');
+                        if(boundary){auto *close=static_cast<const char*>(std::memchr(in.p,']',in.end-in.p));if(!close)return nullptr;in.p=close;}
+                        else while(in.p<in.end&&*in.p!=']')++in.p;
                         if(in.p==in.end)return nullptr;++in.p;v=start;length=in.p-start;
                     }
                     std::vector<float> values(cols[c].width);
-                    if(mv_vector_parse(v,length,values.size(),values.data()))return nullptr;
+                    if(vector_parse_impl(v,length,values.size(),values.data(),fused&&!is_quoted))return nullptr;
                     // Bare SQL integer tokens pass through Python int in the
                     // reference parser: -0 becomes +0. Quoted vector text and
                     // decimal/exponent tokens preserve their negative zero.
-                    if(!is_quoted){
+                    if(!is_quoted&&!fused){
                         const char *token=v+1;
                         for(size_t i=0;i<values.size();++i){
                             const char *stop=token;bool integer=true;

@@ -8,8 +8,22 @@ extern "C" int mv_quant_available(void);
 extern "C" int mv_screen_simd(void);
 extern "C" uint64_t mv_quant_scan_calls(void);
 extern "C" int mv_quant_pack(const unsigned char*,size_t,unsigned char*,double*,double*);
+extern "C" const char *mv_block_kernel(void);
 extern "C" int mv_quant_prepare(const double*,double,double,const unsigned char*);
 extern "C" size_t mv_screen_topk_spans(const mv_record_span*,size_t,size_t,const double*,double,size_t,uint32_t*);
+
+extern "C" size_t mv_refine_block_candidates(const unsigned char*,const uint64_t*,const double*,size_t,uint32_t*,size_t,double*,int*);
+extern "C" size_t mv_quant_topk_bound_blocks(const unsigned char*,size_t,const double*,const uint32_t*,size_t,size_t,uint32_t*);
+extern "C" uint64_t mv_tile_bound_calls(void);
+extern "C" uint64_t mv_sparse_scan_calls(void);
+extern "C" uint64_t mv_sparse_zero_calls(void);
+extern "C" uint64_t mv_sparse_pair_total(void);
+extern "C" uint64_t mv_refine_four_calls(void);
+extern "C" uint64_t mv_refine_four_points(void);
+extern "C" uint64_t mv_fp64_bound_calls(void);
+extern "C" uint64_t mv_legacy_bound_calls(void);
+extern "C" int mv_quant_pack_block_row(const unsigned char*,unsigned char*,size_t,double*,double*);
+extern "C" size_t mv_quant_topk_blocks(const unsigned char*,size_t,const uint32_t*,size_t,size_t,uint32_t*);
 
 #include "range_directory.hpp"
 #include "range_reads.hpp"
@@ -88,11 +102,11 @@ class QueryableLog {
             crc=crc_bytes(crc_bytes(0,header,12),meta.data(),meta.size());write_all(fd,header,12);write_all(fd,meta.data(),meta.size());pending.reserve(65536);
         }
         void put(const void *data,size_t n){
-            crc=crc_bytes(crc,data,n);auto *p=static_cast<const unsigned char*>(data);
-            while(n){size_t take=std::min(n,65536-pending.size());pending.insert(pending.end(),p,p+take);p+=take;n-=take;if(pending.size()==65536){write_all(fd,pending.data(),pending.size());pending.clear();}}
+            auto *p=static_cast<const unsigned char*>(data);
+            while(n){size_t take=std::min(n,65536-pending.size());pending.insert(pending.end(),p,p+take);p+=take;n-=take;if(pending.size()==65536){crc=crc_bytes(crc,pending.data(),pending.size());write_all(fd,pending.data(),pending.size());pending.clear();}}
         }
         template<class T>void integer(T n){put(&n,sizeof(n));}
-        void finish(){if(!pending.empty())write_all(fd,pending.data(),pending.size());unsigned char tail[12];std::memcpy(tail,&crc,4);std::memcpy(tail+4,"MVCMT001",8);write_all(fd,tail,12);}
+        void finish(){if(!pending.empty()){crc=crc_bytes(crc,pending.data(),pending.size());write_all(fd,pending.data(),pending.size());}unsigned char tail[12];std::memcpy(tail,&crc,4);std::memcpy(tail+4,"MVCMT001",8);write_all(fd,tail,12);}
     };
 public:
     LogCatalog recovered;
@@ -171,8 +185,27 @@ public:
     void truncate(uint64_t position){if(position<confirmed||position>size())throw std::runtime_error("invalid statement savepoint");if(::ftruncate(fd.fd,position))::error("truncate statement tail");}
     void rollback(){truncate(confirmed);}
 };
+struct CompiledProjection {std::string columns_json;std::vector<unsigned char> fields;};
 struct LogResponse {
     Json status=Json::object();bool query=false;std::vector<std::string> columns,rows;size_t memory=0;std::filesystem::path spill;std::unique_ptr<::File> writer;
+    std::shared_ptr<const CompiledProjection> compiled;std::vector<std::pair<double,int64_t>> values;std::array<int64_t,8> constants{};
+    bool adopt_compiled(const std::shared_ptr<const CompiledProjection> &projection,std::vector<std::pair<double,int64_t>> &ranked){
+        if(!query||!status.is_object()||!status.fields().empty()||!rows.empty()||writer||!spill.empty()||projection->fields.empty()||projection->fields.size()>8)return false;
+        size_t reserve=std::min(size_t(16896),projection->columns_json.size()+128+ranked.size()*(3+projection->fields.size()*32));
+        if(ranked.capacity()>(65536-reserve)/sizeof(std::pair<double,int64_t>))return false;
+        compiled=projection;values=std::move(ranked);memory=values.capacity()*sizeof(std::pair<double,int64_t>);return true;
+    }
+    void emit_compiled(std::ostream &stream,const Json &id)const{
+        std::string out;out.reserve(std::min(size_t(16896),compiled->columns_json.size()+128+values.size()*(3+compiled->fields.size()*32)));
+        auto flush=[&](){if(!out.empty()){stream<<out;out.clear();}};
+        out+="{\"columns\":";out+=compiled->columns_json;out+=",\"id\":";id.append_to(out);out+=",\"ok\":true,\"rows\":[";if(out.size()>=16384)flush();
+        bool first=true;for(auto &[score,key]:values){if(!first)out+=',';first=false;out+='[';
+            for(size_t i=0;i<compiled->fields.size();i++){if(i)out+=',';
+                if(compiled->fields[i]==1){char bytes[64];auto text=real_chars(std::sqrt(score),bytes);out.append(text.data(),text.size());}
+                else{char bytes[32];auto encoded=std::to_chars(bytes,bytes+sizeof(bytes),compiled->fields[i]==0?key:constants.at(compiled->fields[i]-2));if(encoded.ec!=std::errc())throw std::runtime_error("integer formatting failed");out.append(bytes,size_t(encoded.ptr-bytes));}
+            }out+=']';if(out.size()>=16384)flush();
+        }out+="]}\n";flush();
+    }
     ~LogResponse(){writer.reset();if(!spill.empty()){std::error_code ec;std::filesystem::remove(spill,ec);}}
     void append(std::string value,const std::filesystem::path &root){
         memory+=sizeof(std::string)+value.size();if(!writer&&memory>65536){static uint64_t sequence=0;spill=root/("query-result-"+std::to_string(++sequence));writer=std::make_unique<::File>(spill.c_str(),"wbx");for(auto &row:rows){writer->write(row.data(),row.size());writer->write("\n",1);}rows.clear();}
@@ -181,9 +214,22 @@ struct LogResponse {
     void finish(){if(writer){writer->close();writer.reset();}}
 };
 class LogDatabase {
-    QueryableLog log;LogCatalog tables,committed;bool transaction=false;void *mapping=nullptr;size_t mapped_bytes=0;uint64_t resident_budget=0;
+    QueryableLog log;LogCatalog tables,committed;bool transaction=false;void *mapping=nullptr;bool large_mapping_refused=false;size_t mapped_bytes=0;uint64_t resident_budget=0;
     std::unique_ptr<::RangeDirectory> ranges;const LogTable *range_owner=nullptr;int range_order=0;
     LogIntColumn integer_column;
+    struct BlockVectors {
+        const LogTable *owner=nullptr;Bytes data;std::vector<uint64_t> records;std::vector<std::array<double,2>> bounds;bool heterogeneous=false;std::array<uint32_t,256> starts{},counts{};std::array<int64_t,256> dictionary{};
+        size_t uses=0,column=SIZE_MAX,preferred=SIZE_MAX,groups=0;bool rejected=false,ready=false,regrouped=false;double norm=0,error=0;
+        void clear(){owner=nullptr;Bytes().swap(data);std::vector<uint64_t>().swap(records);decltype(bounds)().swap(bounds);heterogeneous=false;uses=groups=0;column=preferred=SIZE_MAX;rejected=ready=regrouped=false;norm=error=0;}
+    } block_vectors;
+    bool tile_bounds=!std::getenv("MINIDB_TILE_BOUNDS")||std::string(std::getenv("MINIDB_TILE_BOUNDS"))!="0";
+    const LogTable *uniform_owner=nullptr;bool uniform_checked=false,uniform_value=false;uint64_t uniform_point=0,uniform_scans=0;
+    bool uniform_enabled=!std::getenv("MINIDB_UNIFORM_SCAN")||std::string(std::getenv("MINIDB_UNIFORM_SCAN"))!="0";
+    bool compact_budget=!std::getenv("MINIDB_COMPACT_BUDGET")||std::string(std::getenv("MINIDB_COMPACT_BUDGET"))!="0";
+    bool large_maps=!std::getenv("MINIDB_LARGE_MAP")||std::string(std::getenv("MINIDB_LARGE_MAP"))!="0";
+    bool blocks_enabled=!std::getenv("MINIDB_BLOCK_SCAN")||std::string(std::getenv("MINIDB_BLOCK_SCAN"))!="0";
+    bool certify_enabled=!std::getenv("MINIDB_CERTIFY")||std::string(std::getenv("MINIDB_CERTIFY"))!="0";
+    uint64_t block_scans=0,block_builds=0,block_refined=0,block_peak=0,block_slots=0,block_groups=0,block_certified=0,block_precise_candidates=0;
     bool quant_enabled=!std::getenv("MINIDB_QUANT_SCREEN")||std::string(std::getenv("MINIDB_QUANT_SCREEN"))!="0";
     uint64_t quant_builds=0,quant_hits=0,quant_peak=0,quant_budget_rejects=0,quant_numeric_rejects=0,map_opens=0;
     uint64_t posting_scans=0,buffered_scans=0,integer_hits=0;
@@ -194,32 +240,188 @@ class LogDatabase {
         if(name!=quant_name){Bytes().swap(quant_cache);quant_name=name;quant_uses=0;quant_rejected=false;}
         if(quant_rejected)return nullptr;if(!quant_cache.empty()){++quant_hits;return quant_cache.data();}
         if(++quant_uses<2)return nullptr;size_t budget=std::min(uint64_t(4u<<20),resident_budget/32);
+        size_t occupied=block_vectors.data.capacity()+block_vectors.records.capacity()*8+block_vectors.bounds.capacity()*16+(block_vectors.ready?sizeof(BlockVectors):0);
+        budget=occupied<budget?budget-occupied:0;
         if(count>budget/144){++quant_budget_rejects;quant_rejected=true;return nullptr;}
         try{quant_cache.resize(count*144);}catch(const std::bad_alloc &){Bytes().swap(quant_cache);quant_rejected=true;return nullptr;}if(quant_cache.capacity()>budget){++quant_budget_rejects;Bytes().swap(quant_cache);quant_rejected=true;return nullptr;}
         quant_peak=std::max(quant_peak,uint64_t(quant_cache.capacity()));quant_norm=quant_error=0;size_t offset=0;
         for(auto &e:table.extents){if(!mv_quant_pack(view+e.vectors+8,e.count,quant_cache.data()+offset*144,&quant_norm,&quant_error)){++quant_numeric_rejects;Bytes().swap(quant_cache);quant_rejected=true;return nullptr;}offset+=e.count;}
         ++quant_builds;quant_peak=std::max(quant_peak,uint64_t(quant_cache.capacity()));return quant_cache.data();
     }
+    struct Prepared {std::shared_ptr<const CompiledProjection> compiled;bool parameterized=false,scores=false,materialized=false;std::vector<size_t> columns;std::vector<bool> needed;std::vector<std::string> labels;std::vector<unsigned char> projection;std::string prefix,suffix,name,label;std::vector<std::string> pieces;std::vector<BoundCondition> conditions;size_t column,dimension,k,charge;};
+    std::list<Prepared> plans;size_t plan_bytes=0;uint64_t plan_hits=0,plan_builds=0,batch_hits=0;
+    bool plans_enabled=!std::getenv("MINIDB_QUERY_PLANS")||std::string(std::getenv("MINIDB_QUERY_PLANS"))!="0";
+    bool batch_output_enabled=!std::getenv("MINIDB_BATCH_OUTPUT")||std::string(std::getenv("MINIDB_BATCH_OUTPUT"))!="0";
+    static std::shared_ptr<const CompiledProjection> compile_projection(const std::vector<std::string> &columns,const std::vector<BoundExpr> &outputs,const std::vector<unsigned char> *fields=nullptr){
+        auto projection=std::make_shared<CompiledProjection>();Json labels=Json::array();for(auto &name:columns)labels.push(name);projection->columns_json=labels.dump();if(fields)projection->fields=*fields;else for(auto &output:outputs)projection->fields.push_back(output.distance);return projection;
+    }
+    bool selective_lookup_enabled=!std::getenv("MINIDB_SELECTIVE_LOOKUP")||std::string(std::getenv("MINIDB_SELECTIVE_LOOKUP"))!="0";
+    bool point_keys_enabled=!std::getenv("MINIDB_POINT_KEYS")||std::string(std::getenv("MINIDB_POINT_KEYS"))!="0";
+    bool projected_lookup_enabled=!std::getenv("MINIDB_PROJECTED_LOOKUP")||std::string(std::getenv("MINIDB_PROJECTED_LOOKUP"))!="0";
+    bool scalar_plans_enabled=!std::getenv("MINIDB_SCALAR_PLANS")||std::string(std::getenv("MINIDB_SCALAR_PLANS"))!="0";
+    bool predicate_projection_enabled=!std::getenv("MINIDB_PREDICATE_PROJECTION")||std::string(std::getenv("MINIDB_PREDICATE_PROJECTION"))!="0";
+    int projection_field(const Table &schema,const BoundExpr &output,const BoundExpr &order,const std::vector<BoundCondition> &conditions)const{
+        if(output.distance)return output.column==order.column&&output.query==order.query?1:-1;
+        if(output.column==schema.pk)return 0;
+        if(predicate_projection_enabled&&schema.columns[output.column].type=="BIGINT")for(size_t i=0;i<std::min(size_t(8),conditions.size());i++)if(conditions[i].column==output.column&&conditions[i].op=="="&&std::holds_alternative<int64_t>(conditions[i].value))return int(i)+2;
+        return -1;
+    }
+    bool covering_plans_enabled=!std::getenv("MINIDB_COVERING_PLANS")||std::string(std::getenv("MINIDB_COVERING_PLANS"))!="0";
+    bool parameter_plans_enabled=!std::getenv("MINIDB_PARAMETER_PLANS")||std::string(std::getenv("MINIDB_PARAMETER_PLANS"))!="0";
+    bool prepared_select(std::string_view sql,LogResponse &response){
+        if(!plans_enabled)return false;
+        for(auto &plan:plans){
+            if(sql.size()<plan.suffix.size()+2||sql.substr(sql.size()-plan.suffix.size())!=plan.suffix)continue;
+            size_t prefix_size=plan.prefix.size();std::array<int64_t,8> bindings{};
+            if(!plan.parameterized){
+                if(sql.size()<prefix_size+plan.suffix.size()+2||sql.substr(0,prefix_size)!=plan.prefix)continue;
+            }else{
+                size_t position=0;bool matched=true;
+                for(size_t i=0;i<plan.pieces.size();i++){
+                    auto &piece=plan.pieces[i];if(position>sql.size()||sql.substr(position,piece.size())!=piece){matched=false;break;}position+=piece.size();
+                    if(i==plan.conditions.size())break;
+                    if(position>=sql.size()){matched=false;break;}
+                    const char *start=sql.data()+position,*end=sql.data()+sql.size();
+                    if(*start=='+'){++start;if(start==end||*start=='-'){matched=false;break;}}
+                    auto parsed=std::from_chars(start,end,bindings[i]);
+                    if(parsed.ec!=std::errc()||parsed.ptr==start){matched=false;break;}position=size_t(parsed.ptr-sql.data());
+                }
+                if(!matched||position+plan.suffix.size()+2>sql.size())continue;prefix_size=position;
+            }
+            auto text=sql.substr(prefix_size,sql.size()-prefix_size-plan.suffix.size());
+            std::vector<float> values(plan.dimension);if(mv_vector_parse(text.data(),text.size(),values.size(),values.data()))return false;
+            auto table=tables.find(plan.name);if(table==tables.end())return false;
+            BoundExpr order;order.column=plan.column;order.distance=true;order.query.assign(values.begin(),values.end());
+            response.query=true;if(plan.labels.empty())response.columns.push_back(plan.label);else response.columns=plan.labels;
+            std::vector<BoundCondition> dynamic;const auto *predicate=&plan.conditions;
+            if(plan.parameterized){dynamic=plan.conditions;for(size_t i=0;i<dynamic.size();i++)dynamic[i].value=bindings[i];predicate=&dynamic;}
+            auto ranked=topk(plan.name,table->second,order,plan.k,*predicate,plan.scores);
+            for(size_t i=0;i<std::min(size_t(8),predicate->size());i++)if(std::holds_alternative<int64_t>((*predicate)[i].value))response.constants[i]=std::get<int64_t>((*predicate)[i].value);
+            if(plan.compiled&&response.adopt_compiled(plan.compiled,ranked)){response.finish();++batch_hits;++plan_hits;return true;}
+            const unsigned char *row_view=plan.materialized?mapped(table->second):nullptr;
+            for(auto &[score,id]:ranked){
+                std::optional<Row> stored;if(plan.materialized){stored=lookup(table->second,id,false,row_view,true,&plan.needed);if(!stored||!matches(*stored,*predicate))throw std::runtime_error("invalid prepared TopK row");}
+                if(plan.projection.empty())response.append("["+std::to_string(id)+"]",log.root());
+                else{std::string row="[";for(size_t i=0;i<plan.projection.size();i++){if(i)row+=',';row+=plan.projection[i]==255?cell_json((*stored)[plan.columns[i]]):plan.projection[i]==1?real(std::sqrt(score)):std::to_string(plan.projection[i]==0?id:response.constants.at(plan.projection[i]-2));}response.append(row+"]",log.root());}
+            }response.finish();++plan_hits;return true;
+        }return false;
+    }
+    void remember_select(std::string_view sql,const Statement &st,const Table &schema,const BoundExpr &order,const std::vector<BoundExpr> &outputs,const std::vector<BoundCondition> &conditions,const LogResponse &response){
+        if(!plans_enabled||outputs.empty()||outputs.size()>8||conditions.size()>8||schema.dimension()>4096||!schema.dimension())return;
+        bool legacy=outputs.size()==1&&!outputs[0].distance&&outputs[0].column==schema.pk&&st.order[0].expr.distance;
+        if(!covering_plans_enabled&&!legacy)return;
+        bool materialized=false;std::vector<unsigned char> fields;for(auto &output:outputs){int field=projection_field(schema,output,order,conditions);if(field<0){if(!scalar_plans_enabled||output.distance||schema.columns[output.column].type=="VECTOR")return;field=255;materialized=true;}fields.push_back(field);}
+        for(auto &c:conditions)if(!std::holds_alternative<int64_t>(c.value))return;
+        const Value *source=st.order[0].expr.distance?&st.order[0].expr.query:nullptr;
+        if(!source)for(auto &item:st.projection)if(item.expr.distance){source=&item.expr.query;break;}
+        if(!source)return;const auto &value=*source;if(value.kind!=Value::Vector||value.text.empty())return;
+        size_t first=sql.find('['),last=sql.find(']');
+        if(first==sql.npos||last==sql.npos||last<first||sql.find('[',first+1)!=sql.npos||sql.find(']',last+1)!=sql.npos||sql.substr(first,last-first+1)!=value.text)return;
+        if(first+sql.size()-last-1>4096)return;
+        Prepared plan;plan.prefix=std::string(sql.substr(0,first));plan.suffix=std::string(sql.substr(last+1));plan.name=fold(st.table);plan.label=response.columns[0];plan.conditions=conditions;plan.column=order.column;plan.dimension=schema.dimension();plan.k=*st.limit;
+        if(outputs.size()!=1||fields[0]!=0){plan.labels=response.columns;plan.projection=fields;for(auto &output:outputs)plan.scores=plan.scores||output.distance;}
+        if(materialized){plan.materialized=true;plan.needed.assign(schema.columns.size(),false);for(auto &output:outputs){plan.columns.push_back(output.column);if(!output.distance)plan.needed[output.column]=true;}for(auto &condition:conditions)plan.needed[condition.column]=true;}
+        plan.charge=sizeof(Prepared)+48+plan.prefix.capacity()+plan.suffix.capacity()+plan.name.capacity()+plan.label.capacity()+plan.conditions.capacity()*sizeof(BoundCondition);for(auto &c:plan.conditions)plan.charge+=c.op.capacity();
+        plan.charge+=plan.columns.capacity()*sizeof(size_t)+(plan.needed.capacity()+7)/8;plan.charge+=plan.labels.capacity()*sizeof(std::string)+plan.projection.capacity();for(auto &label:plan.labels)plan.charge+=label.capacity();
+        if(parameter_plans_enabled&&!conditions.empty()){
+            Lexer lexer(plan.prefix);std::vector<std::pair<size_t,size_t>> numbers;bool usable=true;
+            for(auto token=lexer.next();token.kind!=Token::End;token=lexer.next())if(token.kind==Token::Number){
+                size_t end=lexer.position();if(end<token.text.size()||numbers.size()>=conditions.size()||plan.prefix.substr(end-token.text.size(),token.text.size())!=token.text||!Value::number(token.text).integral){usable=false;break;}
+                if(Value::number(token.text).bigint()!=std::get<int64_t>(conditions[numbers.size()].value)){usable=false;break;}
+                numbers.emplace_back(end-token.text.size(),end);
+            }
+            if(usable&&numbers.size()==conditions.size()){
+                size_t last=0,extra=0;for(auto [begin,end]:numbers){plan.pieces.push_back(plan.prefix.substr(last,begin-last));last=end;}plan.pieces.push_back(plan.prefix.substr(last));
+                extra=plan.pieces.capacity()*sizeof(std::string);for(auto &piece:plan.pieces)extra+=piece.capacity();
+                if(plan.charge+extra<=8192)plan.charge+=extra;else std::vector<std::string>().swap(plan.pieces);
+            }
+        }
+        if(plan.charge>8192)return;
+        if(batch_output_enabled&&!plan.materialized){
+            auto projection=response.compiled?response.compiled:compile_projection(response.columns,outputs,&fields);
+            size_t extra=sizeof(CompiledProjection)+64+projection->columns_json.capacity()+projection->fields.capacity();
+            if(extra<=8192-plan.charge){plan.compiled=std::move(projection);plan.charge+=extra;}
+        }
+        for(auto &old:plans)if(old.suffix==plan.suffix&&(old.prefix==plan.prefix||(old.parameterized&&!plan.pieces.empty()&&old.pieces==plan.pieces)))return;
+        if(!plan.pieces.empty()){
+            size_t variants=0;for(auto &old:plans)if(old.suffix==plan.suffix&&old.pieces==plan.pieces)++variants;
+            if(variants>=5){
+                plan.parameterized=true;
+                for(auto it=plans.begin();it!=plans.end();)if(it->suffix==plan.suffix&&it->pieces==plan.pieces){plan_bytes-=it->charge;it=plans.erase(it);}else ++it;
+            }
+        }
+        while(!plans.empty()&&(plans.size()>=8||plan_bytes+plan.charge>65536)){plan_bytes-=plans.front().charge;plans.pop_front();}
+        plans.push_back(std::move(plan));plan_bytes+=plans.back().charge;++plan_builds;
+    }
     struct Mask {std::string key,bytes;size_t charge;bool empty;std::vector<uint32_t> positions;};
     bool postings_enabled=!std::getenv("MINIDB_POSTINGS")||std::string(std::getenv("MINIDB_POSTINGS"))!="0";std::list<Mask> masks;size_t mask_bytes=0;
-    void invalidate(){Bytes().swap(quant_cache);quant_name.clear();quant_uses=0;quant_rejected=false;integer_column.clear();ranges.reset();range_owner=nullptr;if(mapping)::munmap(mapping,mapped_bytes);mapping=nullptr;mapped_bytes=0;masks.clear();mask_bytes=0;}
+    void invalidate(){uniform_owner=nullptr;uniform_checked=uniform_value=false;uniform_point=0;block_vectors.clear();plans.clear();plan_bytes=0;Bytes().swap(quant_cache);quant_name.clear();quant_uses=0;quant_rejected=false;integer_column.clear();ranges.reset();range_owner=nullptr;if(mapping)::munmap(mapping,mapped_bytes);mapping=nullptr;large_mapping_refused=false;mapped_bytes=0;masks.clear();mask_bytes=0;}
     void collect(){if(log.needs_checkpoint(tables)){invalidate();log.checkpoint(tables);committed=tables;}}
     void publish(){if(!transaction){log.commit(tables,committed);committed=tables;collect();}}
     const unsigned char *mapped(const LogTable &table){
         if(std::getenv("MINIDB_INDEX_MMAP")&&std::string(std::getenv("MINIDB_INDEX_MMAP"))=="0")return nullptr;
-        if(mapping)return static_cast<const unsigned char*>(mapping);uint64_t size=log.size();if(size>(64u<<20))return nullptr;uint64_t left=resident_budget;
+        if(mapping)return static_cast<const unsigned char*>(mapping);if(large_mapping_refused)return nullptr;uint64_t size=log.size(),map_limit=uint64_t(PTRDIFF_MAX);if(resident_budget<=map_limit/32)map_limit=std::max(uint64_t(64u<<20),resident_budget*32);if((!large_maps&&size>(64u<<20))||size>map_limit)return nullptr;uint64_t left=resident_budget;
         for(auto &e:table.extents){if(e.vector_bytes>left)return nullptr;left-=e.vector_bytes;}
-        void *out=::mmap(nullptr,size,PROT_READ,MAP_PRIVATE,log.descriptor(),0);if(out==MAP_FAILED)return nullptr;mapping=out;mapped_bytes=size;++map_opens;return static_cast<const unsigned char*>(out);
+        void *out=::mmap(nullptr,size,PROT_READ,MAP_PRIVATE,log.descriptor(),0);if(out==MAP_FAILED){if(size>(64u<<20))large_mapping_refused=true;return nullptr;}mapping=out;mapped_bytes=size;++map_opens;return static_cast<const unsigned char*>(out);
     }
     void read(void *out,size_t n,uint64_t offset,const unsigned char *view)const{if(view){if(offset>mapped_bytes||n>mapped_bytes-offset)throw std::runtime_error("extent read outside mapping");std::memcpy(out,view+offset,n);}else read_at(log.descriptor(),out,n,offset);}
+    bool uniform_topk(const LogTable &table,const unsigned char *view,size_t physical,const BoundExpr &expr,size_t k,const std::vector<BoundCondition> &conditions,::TopK &heap){
+        if(!uniform_enabled||!view||physical<1024||expr.query.empty()||expr.query.size()>4096)return false;
+        size_t width=expr.query.size()*4,stride=width+8;
+        if(uniform_owner!=&table){uniform_owner=&table;uniform_checked=uniform_value=false;uniform_point=0;}
+        if(!uniform_checked){
+            uniform_checked=true;bool found=false;
+            for(auto &e:table.extents)for(size_t i=0;i<e.count;i++)if(e.visible(i)){
+                uint64_t point=e.vectors+16+i*stride;
+                if(point>mapped_bytes||width>mapped_bytes-point)throw std::runtime_error("uniform vector outside mapping");
+                if(!found){uniform_point=point;found=true;}
+                else if(std::memcmp(view+uniform_point,view+point,width))return false;
+            }
+            uniform_value=found;
+        }
+        if(!uniform_value)return false;
+        ::PositiveSum sum;for(size_t j=0;j<expr.query.size();j++){float x;std::memcpy(&x,view+uniform_point+j*4,4);double delta=double(x)-expr.query[j];sum.add(delta*delta);}double score=sum.result();
+        LogPredicate predicate(table.schema,conditions);
+        for(auto &e:table.extents){
+            if(heap.heap.size()==k&&e.minimum>=heap.heap.front().second)continue;
+            auto span=scan_interval(e,table.schema,conditions);
+            for(size_t i=span.first;i<span.second;i++)if(e.visible(i)){
+                int64_t id;read(&id,8,e.rows+e.keys+8+i*16,view);
+                if(heap.heap.size()==k&&id>=heap.heap.front().second)break;
+                if(!conditions.empty()){
+                    uint64_t row;read(&row,8,e.rows+e.keys+16+i*16,view);uint32_t n;read(&n,4,e.rows+row,view);uint64_t offset=e.rows+row+4;
+                    if(offset>mapped_bytes||n>mapped_bytes-offset)throw std::runtime_error("uniform scalar outside mapping");
+                    if(!predicate.matches(view+offset,n))continue;
+                }
+                heap.offer_score(score,id);
+            }
+        }
+        ++uniform_scans;return true;
+    }
     bool accepts_scalar(const Table &table,const Bytes &scalar,const std::vector<BoundCondition> &conditions){for(auto &c:conditions)if(!accepts(compare_cell(scalar_field(table,scalar,c.column),c.value),c.op))return false;return true;}
-    std::optional<Row> lookup(const LogTable &table,int64_t id,bool vectors,const unsigned char *view,bool indexed=true){
-        std::optional<Row> result;
-        auto visit=[&](size_t ordinal){auto &e=table.extents[ordinal];if(id<e.minimum||id>e.maximum)return false;size_t lo=0,hi=e.count;bool found=false;
-            while(lo<hi){size_t mid=lo+(hi-lo)/2;int64_t key;read(&key,8,e.rows+e.keys+8+mid*16,view);if(key<id)lo=mid+1;else if(key>id)hi=mid;else{lo=mid;found=true;break;}}
-            if(!found||!e.visible(lo))return false;uint64_t offset;read(&offset,8,e.rows+e.keys+8+lo*16+8,view);uint32_t n;read(&n,4,e.rows+offset,view);Bytes scalar(n),vector(vectors?table.schema.dimension()*4:0);read(scalar.data(),n,e.rows+offset+4,view);
-            if(vectors&&table.schema.vector_column>=0)read(vector.data(),vector.size(),e.vectors+8+lo*(8+table.schema.dimension()*4)+8,view);
-            std::vector<bool> wanted(table.schema.columns.size(),true);if(!vectors&&table.schema.vector_column>=0)wanted[table.schema.vector_column]=false;result=Codec{table.schema}.decode(scalar,vector,&wanted);return true;
+    Row selective_row(const Table &schema,uint64_t scalar,size_t size,uint64_t vector,size_t width,const std::vector<bool> &needed){
+        std::array<unsigned char,256> prefix;size_t available=std::min(size,prefix.size());read(prefix.data(),available,scalar,nullptr);
+        auto field=[&](void *out,size_t bytes,size_t position){if(position>size||bytes>size-position)throw std::runtime_error("incomplete projected field");if(position<=available&&bytes<=available-position)std::memcpy(out,prefix.data()+position,bytes);else read(out,bytes,scalar+position,nullptr);};
+        Row row(schema.columns.size());size_t position=0;
+        for(size_t i=0;i<schema.columns.size();i++){
+            auto &column=schema.columns[i];bool keep=needed.at(i);
+            if(column.type=="VECTOR"){if(keep){if(width!=column.n*4)throw std::runtime_error("invalid projected vector");std::vector<float> value(column.n);read(value.data(),width,vector,nullptr);row[i]=std::move(value);}continue;}
+            if(column.type=="BIGINT"){if(position>size||size-position<8)throw std::runtime_error("incomplete projected integer");if(keep){int64_t value;field(&value,8,position);row[i]=value;}position+=8;}
+            else{uint32_t length;field(&length,4,position);position+=4;if(length>size-position)throw std::runtime_error("incomplete projected text");if(keep){std::string value(length,'\0');field(value.data(),length,position);row[i]=std::move(value);}position+=length;}
+        }
+        if(position!=size)throw std::runtime_error("extra projected scalar bytes");return row;
+    }
+    std::optional<Row> lookup(const LogTable &table,int64_t id,bool vectors,const unsigned char *view,bool indexed=true,const std::vector<bool> *needed=nullptr){
+        std::optional<Row> result;std::array<unsigned char,4096> key_buffer;
+        auto visit=[&](size_t ordinal){auto &e=table.extents[ordinal];if(id<e.minimum||id>e.maximum)return false;const unsigned char *keys=nullptr;if(point_keys_enabled&&!view&&e.count<=key_buffer.size()/16){read(key_buffer.data(),e.count*16,e.rows+e.keys+8,nullptr);keys=key_buffer.data();}size_t lo=0,hi=e.count;bool found=false;
+            while(lo<hi){size_t mid=lo+(hi-lo)/2;int64_t key;if(keys)std::memcpy(&key,keys+mid*16,8);else read(&key,8,e.rows+e.keys+8+mid*16,view);if(key<id)lo=mid+1;else if(key>id)hi=mid;else{lo=mid;found=true;break;}}
+            if(!found||!e.visible(lo))return false;uint64_t offset;if(keys)std::memcpy(&offset,keys+lo*16+8,8);else read(&offset,8,e.rows+e.keys+8+lo*16+8,view);uint32_t n;read(&n,4,e.rows+offset,view);
+            if(!projected_lookup_enabled){Bytes scalar(n),vector(vectors?table.schema.dimension()*4:0);read(scalar.data(),n,e.rows+offset+4,view);if(vectors&&table.schema.vector_column>=0)read(vector.data(),vector.size(),e.vectors+16+lo*(8+table.schema.dimension()*4),view);std::vector<bool> wanted(table.schema.columns.size(),true);if(!vectors&&table.schema.vector_column>=0)wanted[table.schema.vector_column]=false;result=Codec{table.schema}.decode(scalar,vector,&wanted);return true;}
+            std::vector<bool> defaults;if(!needed){defaults.assign(table.schema.columns.size(),true);if(!vectors&&table.schema.vector_column>=0)defaults[table.schema.vector_column]=false;}
+            const auto *mask=needed?needed:&defaults;size_t width=vectors?table.schema.dimension()*4:0;uint64_t vector_offset=e.vectors+16+lo*(8+table.schema.dimension()*4),scalar_offset=e.rows+offset+4;
+            if(!view&&selective_lookup_enabled&&n>=1024){bool skip=false;for(size_t i=0;i<table.schema.columns.size();i++)if(table.schema.columns[i].type=="VARCHAR"&&!mask->at(i)){skip=true;break;}if(skip){result=selective_row(table.schema,scalar_offset,n,vector_offset,width,*mask);return true;}}
+            if(view){if(scalar_offset>mapped_bytes||n>mapped_bytes-scalar_offset||(width&&(vector_offset>mapped_bytes||width>mapped_bytes-vector_offset)))throw std::runtime_error("projected row outside mapping");result=Codec{table.schema}.decode_view(view+scalar_offset,n,width?view+vector_offset:nullptr,width,mask);}
+            else{Bytes scalar(n),vector(width);read(scalar.data(),n,scalar_offset,nullptr);if(width)read(vector.data(),width,vector_offset,nullptr);result=Codec{table.schema}.decode(scalar,vector,mask);}return true;
         };
         if(indexed&&table.extents.size()>=16){
             if(range_owner!=&table){
@@ -281,6 +483,93 @@ class LogDatabase {
         cache.ready=true;return &cache;
         }catch(const std::bad_alloc&){integer_column.clear();return nullptr;}
     }
+    uint64_t block_cache_budget()const{
+        if(!compact_budget)return std::min(uint64_t(4u<<20),resident_budget/32);
+        uint64_t budget=std::min(uint64_t(4u<<20),resident_budget/8),anon=0;bool found=false;
+        std::ifstream status("/proc/self/status");std::string line;
+        while(std::getline(status,line))if(line.rfind("RssAnon:",0)==0){std::istringstream input(line.substr(8));uint64_t kb;std::string unit;if(input>>kb>>unit&&unit=="kB"&&kb<=UINT64_MAX/1024){anon=kb*1024;found=true;}break;}
+        if(!found)return resident_budget<(64u<<20)?0:std::min(uint64_t(4u<<20),resident_budget/32);
+        return std::min(budget,anon<resident_budget?resident_budget-anon:0);
+    }
+    bool blocked_topk(const LogTable &table,const unsigned char *view,size_t physical,const BoundExpr &expr,size_t k,const std::vector<BoundCondition> &conditions,::TopK &heap,bool require_scores){
+        if(!blocks_enabled||postings_enabled||!quant_enabled||!view||expr.query.size()!=128||physical<1024||resident_budget<(compact_budget?(8u<<20):(64u<<20))||!mv_quant_available())return false;
+        auto &cache=block_vectors;if(cache.owner!=&table){cache.clear();cache.owner=&table;}if(cache.rejected)return false;
+        // A first scan may precede any filter. Allow one transition from an
+        // ungrouped layout to the first observed compatible filter column.
+        if(cache.ready&&cache.column==SIZE_MAX&&!cache.regrouped&&!conditions.empty()){
+            size_t candidate=conditions.front().column;bool compatible=candidate!=table.schema.pk&&table.schema.columns[candidate].type=="BIGINT";
+            for(auto &condition:conditions)compatible=compatible&&condition.column==candidate;
+            if(compatible&&cache.preferred!=candidate){cache.clear();cache.owner=&table;cache.preferred=candidate;cache.regrouped=true;}
+        }
+        if(!cache.ready){
+            if(!conditions.empty()){
+                size_t candidate=conditions.front().column;bool compatible=candidate!=table.schema.pk&&table.schema.columns[candidate].type=="BIGINT";
+                for(auto &condition:conditions)compatible=compatible&&condition.column==candidate;
+                if(compatible)cache.preferred=candidate;
+            }
+            ++cache.uses;
+            const LogIntColumn *codes=nullptr;size_t col=cache.preferred;
+            // Bound preparation when alternating predicates keep replacing
+            // the single-column dictionary before it can become ready.
+            if(cache.uses>4){col=SIZE_MAX;cache.regrouped=true;}
+            else{
+                if(col==SIZE_MAX)for(size_t i=0;i<table.schema.columns.size();i++)if(i!=table.schema.pk&&table.schema.columns[i].type=="BIGINT"){col=i;break;}
+                if(col!=SIZE_MAX)codes=cached_integer_column(table,col,physical,view);
+            }
+            if(cache.uses<2||(col!=SIZE_MAX&&!codes&&!integer_column.attempted))return false;
+            if(codes)++integer_hits;
+            size_t groups=codes?codes->distinct:1;std::array<size_t,256> counts{},cursor{};size_t ordinal=0;
+            for(auto &e:table.extents){for(size_t i=0;i<e.count;i++)if(e.visible(i))++counts[codes?codes->codes[ordinal+i]:0];ordinal+=e.count;}
+            size_t slots=0;for(size_t g=0;g<groups;g++){cache.starts[g]=slots;cache.counts[g]=counts[g];cursor[g]=slots;slots+=(counts[g]+15)/16*16;}
+            size_t budget=block_cache_budget();
+            if(budget<=sizeof(BlockVectors)||!slots||slots>(budget-sizeof(BlockVectors))/(tile_bounds?153:152)){cache.rejected=true;return false;}
+            try{
+                // Formats share one budget. Release the previous row cache
+                // before allocating its blocked replacement.
+                Bytes().swap(quant_cache);quant_name.clear();quant_uses=0;quant_rejected=false;
+                cache.data.resize(slots*144);cache.records.resize(slots);if(tile_bounds)cache.bounds.resize(slots/16);
+                if(cache.data.capacity()+cache.records.capacity()*8+cache.bounds.capacity()*16+sizeof(BlockVectors)>budget){cache.clear();cache.owner=&table;cache.rejected=true;return false;}
+                ordinal=0;for(auto &e:table.extents){for(size_t i=0;i<e.count;i++)if(e.visible(i)){
+                    size_t g=codes?codes->codes[ordinal+i]:0,slot=cursor[g]++;uint64_t offset=e.vectors+8+i*520;
+                    cache.records[slot]=offset;double &norm=tile_bounds?cache.bounds[slot/16][0]:cache.norm,&error=tile_bounds?cache.bounds[slot/16][1]:cache.error;if(!mv_quant_pack_block_row(view+offset,cache.data.data(),slot,&norm,&error)){cache.clear();cache.owner=&table;cache.rejected=true;return false;}
+                }ordinal+=e.count;}
+                if(tile_bounds){double minimum=INFINITY;for(auto &bound:cache.bounds){cache.norm=std::max(cache.norm,bound[0]);cache.error=std::max(cache.error,bound[1]);if(bound[0]>0)minimum=std::min(minimum,bound[0]);}cache.heterogeneous=cache.norm>4*minimum;}
+                cache.groups=groups;cache.preferred=col;if(codes)cache.dictionary=codes->dictionary;cache.column=codes?col:SIZE_MAX;cache.ready=true;++block_builds;block_peak=std::max(block_peak,uint64_t(cache.data.capacity()+cache.records.capacity()*8+cache.bounds.capacity()*16+sizeof(BlockVectors)));block_slots=slots;block_groups=groups;
+            }catch(const std::bad_alloc&){cache.clear();cache.owner=&table;cache.rejected=true;return false;}
+        }
+        for(auto &c:conditions)if(c.column!=cache.column||!std::holds_alternative<int64_t>(c.value))return false;
+        std::array<uint32_t,512> ranges{};size_t n=0;
+        for(size_t g=0;g<cache.groups;g++)if(cache.counts[g]){
+            bool accept=true;for(auto &c:conditions){auto actual=cache.dictionary[g],value=std::get<int64_t>(c.value);accept=accept&&accepts(actual<value?-1:actual>value?1:0,c.op);}
+            if(accept){ranges[n++]=cache.starts[g];ranges[n++]=cache.counts[g];}
+        }
+        if(!n)return true;
+        size_t active=0;for(size_t i=1;i<n;i+=2)active+=ranges[i];
+        const char *tiny_flag=std::getenv("MINIDB_TINY_EXACT");
+        if(certify_enabled&&!require_scores&&active<=64&&(!tiny_flag||std::strcmp(tiny_flag,"0"))){
+            heap.positions.clear();for(size_t r=0;r<n;r+=2)for(size_t i=0;i<ranges[r+1];i++)heap.positions.push_back(ranges[r]+i);
+            std::array<double,1024> scores;int certified=0;
+            size_t found=mv_refine_block_candidates(view,cache.records.data(),heap.query.data(),k,heap.positions.data(),active,scores.data(),&certified);
+            if(found!=SIZE_MAX&&certified){for(size_t i=0;i<found;i++){int64_t id;std::memcpy(&id,view+cache.records[heap.positions[i]],8);heap.offer_score(scores[i],id);}++block_scans;++block_certified;block_precise_candidates+=active;return true;}
+        }
+        bool prepared=mv_quant_prepare(heap.query.data(),cache.norm,cache.error,view+cache.records[0]+8),granular=tile_bounds&&cache.heterogeneous;if(!prepared&&!granular)return false;
+        heap.positions.resize(cache.records.size());size_t found=granular?mv_quant_topk_bound_blocks(cache.data.data(),cache.records.size(),cache.bounds[0].data(),ranges.data(),n/2,k,heap.positions.data()):mv_quant_topk_blocks(cache.data.data(),cache.records.size(),ranges.data(),n/2,k,heap.positions.data());
+        if(found==SIZE_MAX||found>cache.records.size())throw std::runtime_error("invalid blocked query result");
+        block_precise_candidates+=found;
+        if(certify_enabled&&found&&found<=std::max(size_t(256),4*k)&&(!require_scores||found>k)){
+            std::array<double,1024> scores;int certified=0;
+            size_t narrowed=mv_refine_block_candidates(view,cache.records.data(),heap.query.data(),k,heap.positions.data(),found,scores.data(),&certified);
+            if(narrowed!=SIZE_MAX){
+                found=narrowed;
+                if(certified&&!require_scores){
+                    for(size_t i=0;i<found;i++){int64_t id;std::memcpy(&id,view+cache.records[heap.positions[i]],8);heap.offer_score(scores[i],id);}
+                    ++block_scans;++block_certified;return true;
+                }
+            }
+        }
+        for(size_t i=0;i<found;i++)heap.offer(view+cache.records[heap.positions[i]]);
+        ++block_scans;block_refined+=found;return true;
+    }
     size_t mutate(LogTable &table,const Statement &st){
         auto predicate=conditions(table.schema,st);std::vector<std::pair<size_t,Cell>> assignments;
         for(auto &[name,value]:st.sets){size_t col=table.schema.column(name);if(col==table.schema.pk)fail("primary key update unsupported");
@@ -321,7 +610,7 @@ class LogDatabase {
         for(;done+8<=count;done+=8){size_t pos=first+done,index=pos/8,shift=pos%8;unsigned byte=input[index]>>shift;if(shift)byte|=unsigned(input[index+1])<<(8-shift);std::memcpy(out+done,table[byte&255].data(),8);}
         for(;done<count;done++){size_t pos=first+done;out[done]=(input[pos/8]>>(pos%8))&1;}
     }
-    std::vector<std::pair<double,int64_t>> topk(const std::string &name,const LogTable &table,const BoundExpr &expr,size_t k,const std::vector<BoundCondition> &conditions){
+    std::vector<std::pair<double,int64_t>> topk(const std::string &name,const LogTable &table,const BoundExpr &expr,size_t k,const std::vector<BoundCondition> &conditions,bool require_scores=true){
         // Narrow key ranges use the same bounded scanner as SQL and DML.
         // Count physical candidates (including hidden versions) before choosing
         // this route; a sparse logical count must not admit an unbounded scan.
@@ -336,7 +625,10 @@ class LogDatabase {
             }
         }
         size_t physical=0;bool filtering=!conditions.empty();for(auto &e:table.extents){physical+=e.count;filtering=filtering||!e.excluded.empty();}
-        ::TopK heap(expr.query.data(),expr.query.size(),k);size_t stride=8+expr.query.size()*4;Bytes data;LogPredicate predicate(table.schema,conditions);
+        ::TopK heap(expr.query.data(),expr.query.size(),k);
+        const unsigned char *vector_view=mapped(table);
+        if(uniform_topk(table,vector_view,physical,expr,k,conditions,heap)||blocked_topk(table,vector_view,physical,expr,k,conditions,heap,require_scores)){std::sort(heap.heap.begin(),heap.heap.end());return heap.heap;}
+        size_t stride=8+expr.query.size()*4;Bytes data;LogPredicate predicate(table.schema,conditions);
         std::string key=quote(name);for(auto &c:conditions)key+='|'+std::to_string(c.column)+c.op+cell_json(c.value);
         const std::string *cached=nullptr;const std::vector<uint32_t> *postings=nullptr;size_t posting_cursor=0;
         if(filtering)for(auto it=masks.begin();it!=masks.end();++it)if(it->key==key){masks.splice(masks.end(),masks,it);if(masks.back().empty)return {};cached=&masks.back().bytes;if(!masks.back().positions.empty())postings=&masks.back().positions;break;}
@@ -491,11 +783,18 @@ public:
         uint64_t limit=memory_limit();resident_budget=limit-limit/8;
     }
     ~LogDatabase(){
-        if(std::getenv("MINIDB_DIAGNOSTICS"))std::fprintf(stderr,"MINIDB_PATH {\"budget_bytes\":%llu,\"mapped_opens\":%llu,\"quant_scan_calls\":%llu,\"quant_builds\":%llu,\"quant_hits\":%llu,\"quant_peak_bytes\":%llu,\"quant_budget_rejects\":%llu,\"quant_numeric_rejects\":%llu,\"posting_scans\":%llu,\"buffered_scans\":%llu,\"integer_hits\":%llu,\"simd\":%d,\"compact_vectors\":%llu}\n",(unsigned long long)resident_budget,(unsigned long long)map_opens,(unsigned long long)mv_quant_scan_calls(),(unsigned long long)quant_builds,(unsigned long long)quant_hits,(unsigned long long)quant_peak,(unsigned long long)quant_budget_rejects,(unsigned long long)quant_numeric_rejects,(unsigned long long)posting_scans,(unsigned long long)buffered_scans,(unsigned long long)integer_hits,mv_screen_simd(),(unsigned long long)compact_vector_accepts);
+        if(std::getenv("MINIDB_DIAGNOSTICS"))std::fprintf(stderr,"BOUND_PRECISION_PATH {\"fp64\":%llu,\"legacy\":%llu}\n",(unsigned long long)mv_fp64_bound_calls(),(unsigned long long)mv_legacy_bound_calls());
+        if(std::getenv("MINIDB_DIAGNOSTICS"))std::fprintf(stderr,"REFINE_FOUR_PATH {\"calls\":%llu,\"points\":%llu}\n",(unsigned long long)mv_refine_four_calls(),(unsigned long long)mv_refine_four_points());
+        if(std::getenv("MINIDB_DIAGNOSTICS"))std::fprintf(stderr,"SPARSE_QUERY_PATH {\"scans\":%llu,\"zero_scans\":%llu,\"pairs\":%llu}\n",(unsigned long long)mv_sparse_scan_calls(),(unsigned long long)mv_sparse_zero_calls(),(unsigned long long)mv_sparse_pair_total());
+        if(std::getenv("MINIDB_DIAGNOSTICS"))std::fprintf(stderr,"UNIFORM_PATH {\"scans\":%llu}\n",(unsigned long long)uniform_scans);
+        if(std::getenv("MINIDB_DIAGNOSTICS"))std::fprintf(stderr,"TILE_BOUND_PATH {\"scans\":%llu}\n",(unsigned long long)mv_tile_bound_calls());
+        if(std::getenv("MINIDB_DIAGNOSTICS"))std::fprintf(stderr,"BLOCK_PATH {\"kernel\":\"%s\",\"scans\":%llu,\"builds\":%llu,\"refined\":%llu,\"peak_bytes\":%llu,\"slots\":%llu,\"groups\":%llu,\"certified\":%llu,\"coarse_candidates\":%llu}\n",mv_block_kernel(),(unsigned long long)block_scans,(unsigned long long)block_builds,(unsigned long long)block_refined,(unsigned long long)block_peak,(unsigned long long)block_slots,(unsigned long long)block_groups,(unsigned long long)block_certified,(unsigned long long)block_precise_candidates);
+        if(std::getenv("MINIDB_DIAGNOSTICS"))std::fprintf(stderr,"MINIDB_PATH {\"plan_hits\":%llu,\"batch_hits\":%llu,\"plan_builds\":%llu,\"budget_bytes\":%llu,\"mapped_opens\":%llu,\"quant_scan_calls\":%llu,\"quant_builds\":%llu,\"quant_hits\":%llu,\"quant_peak_bytes\":%llu,\"quant_budget_rejects\":%llu,\"quant_numeric_rejects\":%llu,\"posting_scans\":%llu,\"buffered_scans\":%llu,\"integer_hits\":%llu,\"simd\":%d,\"compact_vectors\":%llu}\n",(unsigned long long)plan_hits,(unsigned long long)batch_hits,(unsigned long long)plan_builds,(unsigned long long)resident_budget,(unsigned long long)map_opens,(unsigned long long)mv_quant_scan_calls(),(unsigned long long)quant_builds,(unsigned long long)quant_hits,(unsigned long long)quant_peak,(unsigned long long)quant_budget_rejects,(unsigned long long)quant_numeric_rejects,(unsigned long long)posting_scans,(unsigned long long)buffered_scans,(unsigned long long)integer_hits,mv_screen_simd(),(unsigned long long)compact_vector_accepts);
         invalidate();}
     void close(){invalidate();tables=committed;log.rollback();transaction=false;}
     std::unique_ptr<LogResponse> execute(std::string_view sql,const std::string &mode="exact"){
         if(mode!="exact"&&mode!="ann")fail("invalid mode","invalid_request");auto response=std::make_unique<LogResponse>();
+        if(prepared_select(sql,*response))return response;
         {Parser head(sql);if(head.take("INSERT")&&head.take("INTO")){
             auto name=fold(head.ident());auto it=tables.find(name);if(it==tables.end())fail("unknown table","unknown_table");auto &table=it->second.schema;std::vector<mv_column> cols;
             bool eligible=true;
@@ -530,18 +829,21 @@ public:
         else for(auto &p:st.projection){auto expr=bind(schema,p.expr);response->columns.push_back(p.alias&&!p.alias->empty()?*p.alias:expr.distance?"L2_DISTANCE":schema.columns[expr.column].name);outputs.push_back(std::move(expr));}
         if(st.limit&&!*st.limit)return response;
         if(st.order.empty())for(auto &c:predicate)if(c.column==schema.pk&&c.op=="="){
-            bool vectors=false;for(auto &e:outputs)if(e.distance||int(e.column)==schema.vector_column)vectors=true;auto row=lookup(table,std::get<int64_t>(c.value),vectors,mapped(table));
+            bool vectors=false;for(auto &e:outputs)if(e.distance||int(e.column)==schema.vector_column)vectors=true;std::vector<bool> needed;if(selective_lookup_enabled){needed.assign(schema.columns.size(),false);for(auto &e:outputs)needed[e.column]=true;for(auto &condition:predicate)needed[condition.column]=true;}auto row=lookup(table,std::get<int64_t>(c.value),vectors,mapped(table),true,needed.empty()?nullptr:&needed);
             if(row&&matches(*row,predicate))response->append(project(*row,outputs),log.root());response->finish();return response;
         }
         if(!st.limit||*st.limit>1024||st.order.size()!=1||st.order[0].descending)return generic_select(table,st,std::move(response),outputs,predicate);
         std::optional<BoundExpr> order;if(!st.order[0].expr.distance){auto name=fold(st.order[0].expr.name);for(size_t i=0;i<response->columns.size();i++)if(fold(response->columns[i])==name){order=outputs[i];break;}}
         if(!order)order=bind(schema,st.order[0].expr);if(!order->distance)return generic_select(table,st,std::move(response),outputs,predicate);
-        auto ranked=topk(fold(st.table),table,*order,*st.limit,predicate);bool covering=true,vectors=false;
+        bool require_scores=std::any_of(outputs.begin(),outputs.end(),[](auto &e){return e.distance;});auto ranked=topk(fold(st.table),table,*order,*st.limit,predicate,require_scores);bool covering=true,vectors=false;
         for(auto &e:outputs){bool known=e.distance&&e.column==order->column&&e.query==order->query;if(e.distance?!known:e.column!=schema.pk)covering=false;if(int(e.column)==schema.vector_column&&!known)vectors=true;}
-        for(auto &[score,id]:ranked){
+        bool batched=false;
+        if(batch_output_enabled&&outputs.size()<=8){try{std::vector<unsigned char> fields;for(auto &output:outputs){int field=projection_field(schema,output,*order,predicate);if(field<0){fields.clear();break;}fields.push_back(field);}if(!fields.empty()){for(size_t i=0;i<std::min(size_t(8),predicate.size());i++)if(std::holds_alternative<int64_t>(predicate[i].value))response->constants[i]=std::get<int64_t>(predicate[i].value);auto projection=compile_projection(response->columns,outputs,&fields);batched=response->adopt_compiled(projection,ranked);}}catch(const std::bad_alloc&){}if(batched)++batch_hits;}
+        std::vector<bool> needed;if(!batched&&!covering&&selective_lookup_enabled){needed.assign(schema.columns.size(),false);for(auto &e:outputs)if(!e.distance||e.column!=order->column||e.query!=order->query)needed[e.column]=true;for(auto &condition:predicate)needed[condition.column]=true;}
+        if(!batched)for(auto &[score,id]:ranked){
             if(covering){std::string row="[";for(size_t i=0;i<outputs.size();i++){if(i)row+=',';row+=outputs[i].distance?real(std::sqrt(score)):std::to_string(id);}response->append(row+"]",log.root());}
-            else{auto row=lookup(table,id,vectors,mapped(table));if(!row||!matches(*row,predicate))throw std::runtime_error("invalid queryable TopK row");response->append(project(*row,outputs,&*order,score),log.root());}
-        }response->finish();return response;
+            else{auto row=lookup(table,id,vectors,mapped(table),true,needed.empty()?nullptr:&needed);if(!row||!matches(*row,predicate))throw std::runtime_error("invalid queryable TopK row");response->append(project(*row,outputs,&*order,score),log.root());}
+        }response->finish();try{remember_select(sql,st,schema,*order,outputs,predicate,*response);}catch(const std::bad_alloc&){}return response;
     }
 };
 }

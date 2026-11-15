@@ -13,3 +13,5 @@
 !native/vendor/**
 
 !native/*.inc
+!native/block_scan_impl.h
+!native/block_bounds_impl.h

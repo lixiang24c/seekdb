@@ -14,9 +14,28 @@ docker build --platform=linux/amd64 --no-cache --network=none -t minivectordb:qu
 运行（使用空数据卷）
 docker volume create minivectordb-queryable-data
 docker run --rm -i --network=none --cpus=1 --memory=2g --memory-swap=2g --pids-limit=128 --read-only --cap-drop=ALL --security-opt=no-new-privileges --mount type=volume,src=minivectordb-queryable-data,dst=/data minivectordb:queryable
-也可设置 2 CPU；实际测评的内存限额可能更小，已补测 16/64 MiB。
+也可设置 2 CPU；实际测评的内存限额可能更小。当前保留版已完成受限容器验收，见 DE2_QUERY_ACCEPTANCE.zh.txt；历史记录不替代当前验收。
 
-当前默认组合
+当前保留版本（de2 基线之后，本地验收通过，未提交）
+最终镜像：sha256:684a1d7c762d44b86698db5ce439eaee2dd03e7284363cfc80e44d79484a
+保留整套优化及默认低内存缓存准入；停止调参。MINIDB_COMPACT_BUDGET 保持不设置，按源码默认开启。
+源码/二进制指纹、相对 de2 的整体收益、同候选缓存开关收益及代价见 DE2_QUERY_ACCEPTANCE.zh.txt。
+分块精确扫描默认开启：16 条向量一块，按观察到的低基数 BIGINT 过滤列分组，
+整次查询统一筛选并回读原始 float32 精算。可丢弃缓存，不改变日志格式。
+AVX-512F/BW 与 OS XCR0 同时可用时使用融合宽内核；MINIDB_WIDE_SCAN=0 强制 AVX2。
+同一前缀形状出现六种常量变体后升级参数化计划；MINIDB_PARAMETER_PLANS=0 关闭。
+窄过滤不超过 64 条时尝试直接 binary64 顺序认证；MINIDB_TINY_EXACT=0 关闭。
+MINIDB_TILE_MASK=0 关闭分块 SIMD 候选掩码（默认开启）；
+MINIDB_BLOCK_SCAN=0 恢复原跨度扫描；无 AVX2、预算不足或不适用时回退。
+分块后的候选使用保守 binary64 区间缩减精算；只有证明顺序时，
+不输出距离的查询才能跳过精确累加。距离投影始终返回原精确累加结果，
+区间重叠回退精算；MINIDB_CERTIFY=0 可单独关闭该层。
+分块缓存默认要求 resident_budget 至少 8 MiB，预算为 min(4 MiB, resident_budget/8)，
+并受当前 RssAnon 剩余空间约束；读取不到该指标时低内存拒绝准入，高内存使用旧预算。
+构建分块缓存前释放旧行式量化缓存；MINIDB_COMPACT_BUDGET=0 使用旧 64 MiB 门槛及 /32 预算。
+继续保持 MINIDB_POSTINGS=0。当前验收及取舍见 DE2_QUERY_ACCEPTANCE.zh.txt；原始迁入记录保留在 DE2_QUERY_MIGRATION.zh.txt。
+
+基线默认组合（与本地追加兼容）
 整数辅助筛选与紧凑解析开启；MINIDB_POSTINGS=0 关闭候选列表，使用已验证位图路径。
 列表在本次三对实验中没有稳定收益，因此不默认启用。保留代码供显式开关复核。
 MINIDB_QUANT_SCREEN=0、MINIDB_COMPACT_VECTOR=0 分别禁用整数筛选、紧凑解析；
@@ -24,18 +43,21 @@ MINIDB_INDEX_MMAP=0 禁用映射，MINIDB_SIMD=0 禁用 SIMD，MINIDB_FLOAT_SCRE
 MINIDB_DIAGNOSTICS=1 输出实际路径计数。优化不适用、预算不足时回退到原始向量精算。
 
 验收与证据
-QUERYABLE_LOG_ACCEPTANCE.zh.txt：本轮完整阶段、I/O、峰值、长尾、消融及已知回退。
+DE2_QUERY_ACCEPTANCE.zh.txt / DE2_QUERY_ACCEPTANCE.json：当前保留版本的验收结论、指纹及性能边界。
+DE2_QUERY_MIGRATION.zh.txt：迁入初期的历史记录，保留当时宿主通过、容器待测状态，不代表当前状态。
+QUERYABLE_LOG_ACCEPTANCE.zh.txt：de2 历史完整阶段、I/O、峰值、长尾、消融及已知回退。
 QUERYABLE_LOG_MIGRATION_RESULT.json：原始报告、冻结镜像、源码指纹和默认组合。
 QUERYABLE_LOG_MIGRATION.zh.txt：迁移细节和验收脚本。
 历史 standalone/e5 说明不再描述默认入口；历史代码与原始记录只用于复核。
 新格式使用独立 queryable.log，不执行旧数据的原地迁移。
 
-最终交付确认（不重跑性能）
-python3 /home/chenyifu/OceanBase/competition_seekdb/checks/verify_queryable_delivery.py
+既有正确性验收入口（本次收口未重跑；只有实际源码/覆盖缺口才补查）
+python3 /home/chenyifu/OceanBase/competition_seekdb/checks/verify_de2_query_delivery.py
 脚本按根 Dockerfile 构建唯一最终镜像，验证镜像自身默认开关，无需手工添加关闭参数。
-公开、事务及恢复检查全部通过后，自动更新本文镜像 ID，并生成 QUERYABLE_LOG_DELIVERY.json 和冻结源码归档。
+只生成新的报告及源码快照，不覆盖历史交付记录，不自动提交或推送。
 未通过时保留 FAILED_OR_BLOCKED 状态，不生成交付通过结论。可用 --resume /绝对路径/report.json 续跑。
 
+de2 基线历史冻结记录（不代表当前追加版本验收）：
 最终交付镜像：
 sha256:541777658fa67770dcd8c8de07e1bd36556e1b22530bce8a0ffe36eb44d20a57
 由根 Dockerfile 断网、无缓存构建。默认入口 /app/minivectordb-log；
@@ -49,4 +71,21 @@ sha256:541777658fa67770dcd8c8de07e1bd36556e1b22530bce8a0ffe36eb44d20a57
 建索引回退、个别轮次变慢、已知长尾和压力场景峰值/I/O缺失继续保留。
 实验 Dockerfile 仅供历史消融复核，生产构建使用根 Dockerfile。
 
-版本冻结。未提交、未推送、未正式提测。
+以上为基线历史记录。当前本地追加版本未提交、未推送、未正式提测。
+
+本地追加：覆盖型 TopK 计划支持主键/距离多列及别名；类型化结果批次按约16KiB分块编码。
+MINIDB_COVERING_PLANS=0 / MINIDB_BATCH_OUTPUT=0 分别关闭；通用查询保留原结果临时文件回退。
+最新适用边界与本轮证据见 DE2_QUERY_MIGRATION.zh.txt，历史验收不替代当前版本验收。
+等值 BIGINT 谓词可提供投影值以省去整行读取；MINIDB_PREDICATE_PROJECTION=0 关闭。参数化命中使用当前绑定值。
+普通 execute 请求直接使用 yyjson 文档字段，复杂请求保留原解码；MINIDB_REQUEST_VIEW=0 关闭。
+普通标量 TopK 计划与按需映射解码：MINIDB_SCALAR_PLANS=0 / MINIDB_PROJECTED_LOOKUP=0 分别回退。
+非 mmap 且小于等于256条的段一次读取主键目录，固定4KiB临时缓冲；MINIDB_POINT_KEYS=0 关闭。
+非 mmap 宽行使用最多256字节前缀并跳读未请求文本；MINIDB_SELECTIVE_LOOKUP=0 关闭。相关冷热缓存偏差已排除后保留CPU收益。
+大文件可按预算懒映射，MINIDB_LARGE_MAP=0 恢复64MiB文件阈值；映射失败仍走缓冲读取。
+低内存分块缓存准入使用当前匿名内存和总预算，MINIDB_COMPACT_BUDGET=0 回到旧门槛。
+异质模长按16行计算块使用局部误差界，MINIDB_TILE_BOUNDS=0 关闭；最终排序仍精确。
+可见向量逐字节一致时只计算一次距离并按主键选取，MINIDB_UNIFORM_SCAN=0 关闭。
+量化查询最多16个非零坐标对时使用稀疏扫描，MINIDB_SPARSE_QUERY=0 关闭；不改变编码或误差界。
+候选精化支持四条成批 FMA 估计，沿用保守区间认证；MINIDB_REFINE_FOUR=0 回退逐条核。最终距离仍由原精确累加器计算。
+
+Integer block screening uses binary64 error bounds; MINIDB_F64_QUANT_BOUNDS=0 restores the prior conservative float32 bound for diagnosis. Raw float32 screens and authoritative distances are unchanged.
