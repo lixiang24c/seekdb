@@ -8,6 +8,18 @@ namespace cppdb {
 using Bytes=std::vector<unsigned char>;
 using Cell=std::variant<int64_t,std::string,std::vector<float>>;
 using Row=std::vector<Cell>;
+inline bool text_compressed(uint32_t tag){return (tag&0x40000000u)!=0;}
+inline size_t text_payload_size(uint32_t tag){return text_compressed(tag)?4+size_t(tag&0x3fffffffu):size_t(tag);}
+inline std::string read_text_value(uint32_t tag,const unsigned char *data,size_t available,size_t &consumed){
+    if(text_compressed(tag)){
+        size_t bytes=tag&0x3fffffffu;if(available<4+bytes)throw std::runtime_error("incomplete compressed text");
+        uint32_t original;std::memcpy(&original,data,4);if(original>0x3fffffffu)throw std::runtime_error("invalid compressed text size");
+        std::string out(original,'\0');uLongf size=original;
+        if(uncompress(reinterpret_cast<Bytef*>(out.data()),&size,data+4,bytes)!=Z_OK||size!=original)throw std::runtime_error("invalid compressed text");
+        consumed=4+bytes;return out;
+    }
+    if(tag>available)throw std::runtime_error("incomplete text");consumed=tag;return std::string(reinterpret_cast<const char*>(data),tag);
+}
 inline std::vector<float> vector_value(const Value &value,size_t dimension){
     std::vector<Value> numbers;
     if(value.kind==Value::Text||(value.kind==Value::Vector&&!value.text.empty())){
@@ -88,7 +100,7 @@ struct Codec {
         Bytes out;for(size_t i=0;i<table.columns.size();i++){
             auto &c=table.columns[i];if(c.type=="VECTOR")continue;
             if(c.type=="BIGINT"){auto id=std::get<int64_t>(row[i]);::put(out,id);}
-            else{auto &s=std::get<std::string>(row[i]);if(s.size()>UINT32_MAX)fail("VARCHAR value too large","invalid_value");uint32_t size=s.size();::put(out,size);out.insert(out.end(),s.begin(),s.end());}
+            else{auto &s=std::get<std::string>(row[i]);::mv_put_text(out,s.data(),s.size());}
         }return out;
     }
     Row decode_view(const unsigned char *scalar,size_t scalar_size,const unsigned char *vector,size_t vector_size,const std::vector<bool> *wanted=nullptr)const{
@@ -96,7 +108,10 @@ struct Codec {
         for(size_t i=0;i<table.columns.size();i++){
             auto &c=table.columns[i];bool keep=!wanted||wanted->at(i);
             if(c.type=="BIGINT"){if(pos>scalar_size||scalar_size-pos<8)throw std::runtime_error("incomplete integer");if(keep){int64_t x;std::memcpy(&x,scalar+pos,8);out[i]=x;}pos+=8;}
-            else if(c.type=="VARCHAR"){if(pos>scalar_size||scalar_size-pos<4)throw std::runtime_error("incomplete text size");uint32_t n;std::memcpy(&n,scalar+pos,4);pos+=4;if(n>scalar_size-pos)throw std::runtime_error("incomplete text");if(keep)out[i]=std::string(reinterpret_cast<const char*>(scalar+pos),n);pos+=n;}
+            else if(c.type=="VARCHAR"){
+                if(pos>scalar_size||scalar_size-pos<4)throw std::runtime_error("incomplete text size");uint32_t tag;std::memcpy(&tag,scalar+pos,4);pos+=4;
+                size_t consumed;if(keep)out[i]=read_text_value(tag,scalar+pos,scalar_size-pos,consumed);else{consumed=text_payload_size(tag);if(consumed>scalar_size-pos)throw std::runtime_error("incomplete text");}pos+=consumed;
+            }
             else if(keep){if(c.n>SIZE_MAX/4||vector_size!=c.n*4)throw std::runtime_error("invalid vector stream");std::vector<float> v(c.n);std::memcpy(v.data(),vector,vector_size);out[i]=std::move(v);}
         }
         if(pos!=scalar_size)throw std::runtime_error("extra scalar bytes");return out;
@@ -106,7 +121,10 @@ struct Codec {
         size_t pos=0;for(size_t i=0;i<table.columns.size();i++){
             auto &c=table.columns[i];if(c.type=="VECTOR")continue;
             if(c.type=="BIGINT"){if(pos>scalar.size()||scalar.size()-pos<8)throw std::runtime_error("incomplete scalar integer");if(i==table.pk){int64_t id;std::memcpy(&id,scalar.data()+pos,8);return id;}pos+=8;}
-            else{if(pos>scalar.size()||scalar.size()-pos<4)throw std::runtime_error("incomplete scalar text");uint32_t n;std::memcpy(&n,scalar.data()+pos,4);pos+=4;if(n>scalar.size()-pos)throw std::runtime_error("incomplete scalar text");pos+=n;}
+            else{
+                if(pos>scalar.size()||scalar.size()-pos<4)throw std::runtime_error("incomplete scalar text");uint32_t tag;std::memcpy(&tag,scalar.data()+pos,4);pos+=4;
+                size_t payload=text_payload_size(tag);if(payload>scalar.size()-pos)throw std::runtime_error("incomplete scalar text");pos+=payload;
+            }
         }throw std::runtime_error("missing primary key");
     }
 };

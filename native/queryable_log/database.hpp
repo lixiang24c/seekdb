@@ -548,7 +548,16 @@ class LogDatabase {
             auto &column=schema.columns[i];bool keep=needed.at(i);
             if(column.type=="VECTOR"){if(keep){if(width!=column.n*4)throw std::runtime_error("invalid projected vector");std::vector<float> value(column.n);if(codec){Bytes packed(mv_codec_width(column.n,codec));read(packed.data(),packed.size(),vector,nullptr);uint32_t actual;std::memcpy(&actual,packed.data(),4);if(actual!=codec||!mv_codec_decode(packed.data(),column.n,reinterpret_cast<unsigned char*>(value.data())))throw std::runtime_error("invalid projected packed vector");}else read(value.data(),width,vector,nullptr);row[i]=std::move(value);}continue;}
             if(column.type=="BIGINT"){if(position>size||size-position<8)throw std::runtime_error("incomplete projected integer");if(keep){int64_t value;field(&value,8,position);row[i]=value;}position+=8;}
-            else{uint32_t length;field(&length,4,position);position+=4;if(length>size-position)throw std::runtime_error("incomplete projected text");if(keep){std::string value(length,'\0');field(value.data(),length,position);row[i]=std::move(value);}position+=length;}
+            else{
+                uint32_t tag;field(&tag,4,position);position+=4;
+                if(text_compressed(tag)){
+                    uint32_t original;field(&original,4,position);position+=4;size_t bytes=tag&0x3fffffffu;
+                    if(bytes>size-position)throw std::runtime_error("incomplete projected compressed text");
+                    if(keep){std::vector<unsigned char> packed(bytes);field(packed.data(),bytes,position);std::string value(original,'\0');uLongf length=original;if(uncompress(reinterpret_cast<Bytef*>(value.data()),&length,packed.data(),bytes)!=Z_OK||length!=original)throw std::runtime_error("invalid projected compressed text");row[i]=std::move(value);}position+=bytes;
+                }else{
+                    if(tag>size-position)throw std::runtime_error("incomplete projected text");if(keep){std::string value(tag,'\0');field(value.data(),tag,position);row[i]=std::move(value);}position+=tag;
+                }
+            }
         }
         if(position!=size)throw std::runtime_error("extra projected scalar bytes");return row;
     }
@@ -617,7 +626,11 @@ class LogDatabase {
                 for(size_t col=0;col<=column;col++){
                     auto &type=table.schema.columns[col].type;if(type=="VECTOR")continue;
                     if(type=="BIGINT"){if(col==column)field(&value,8);else{if(pos>n||n-pos<8)throw std::runtime_error("incomplete integer prefix");pos+=8;}}
-                    else{uint32_t length;field(&length,4);if(length>n-pos)throw std::runtime_error("incomplete text prefix");pos+=length;}
+                    else{
+                        uint32_t tag;field(&tag,4);
+                        if(text_compressed(tag)){size_t bytes=tag&0x3fffffffu;if(pos>n||n-pos<4+bytes)throw std::runtime_error("incomplete compressed text prefix");pos+=4+bytes;}
+                        else{if(tag>n-pos)throw std::runtime_error("incomplete text prefix");pos+=tag;}
+                    }
                 }
                 if(!cache.append(value)){Bytes().swap(cache.codes);return nullptr;}row+=4+uint64_t(n);
             }
@@ -635,8 +648,18 @@ class LogDatabase {
             for(auto &e:table.extents){uint64_t row=e.rows+8;LogReadWindow window(log.descriptor(),e.rows+e.keys);
                 for(size_t i=0;i<e.count;i++){
                     uint32_t n;read(&n,4,row,view);if(row>e.rows+e.keys||e.rows+e.keys-row<4||n>e.rows+e.keys-row-4)throw std::runtime_error("text column outside extent");
-                    size_t pos=0;std::string_view value;auto get=[&](size_t length){if(pos>n||length>n-pos)throw std::runtime_error("incomplete text column");const unsigned char *p=view?view+row+4+pos:window.get(row+4+pos,length);pos+=length;return p;};
-                    for(size_t col=0;col<=column;col++){auto &type=table.schema.columns[col].type;if(type=="VECTOR")continue;if(type=="BIGINT"){if(pos>n||n-pos<8)throw std::runtime_error("incomplete integer prefix");pos+=8;}else{uint32_t length;std::memcpy(&length,get(4),4);if(col==column){auto *p=get(length);value=std::string_view(reinterpret_cast<const char*>(p),length);}else{if(length>n-pos)throw std::runtime_error("incomplete string prefix");pos+=length;}}}
+                    size_t pos=0;std::string value;auto get=[&](size_t length){if(pos>n||length>n-pos)throw std::runtime_error("incomplete text column");const unsigned char *p=view?view+row+4+pos:window.get(row+4+pos,length);pos+=length;return p;};
+                    for(size_t col=0;col<=column;col++){auto &type=table.schema.columns[col].type;if(type=="VECTOR")continue;if(type=="BIGINT"){if(pos>n||n-pos<8)throw std::runtime_error("incomplete integer prefix");pos+=8;}else{
+                        uint32_t tag;std::memcpy(&tag,get(4),4);
+                        if(text_compressed(tag)){
+                            uint32_t original;std::memcpy(&original,get(4),4);size_t bytes=tag&0x3fffffffu;
+                            if(col==column){const unsigned char *packed=get(bytes);std::string decoded(original,'\0');uLongf length=original;if(uncompress(reinterpret_cast<Bytef*>(decoded.data()),&length,packed,bytes)!=Z_OK||length!=original)throw std::runtime_error("invalid compressed text column");value=std::move(decoded);}
+                            else pos+=bytes;
+                        }else{
+                            if(tag>n-pos)throw std::runtime_error("incomplete string prefix");
+                            if(col==column){const unsigned char *p=get(tag);value.assign(reinterpret_cast<const char*>(p),tag);}else pos+=tag;
+                        }
+                    }}
                     size_t code=0;while(code<cache.dictionary.size()&&value!=cache.dictionary[code])++code;
                     if(code==cache.dictionary.size()){
                         if(code==256||value.size()>budget-cache.codes.capacity()-sizeof(TextColumn))return reject();
@@ -687,7 +710,11 @@ class LogDatabase {
                         auto field=[&](void *dest,size_t bytes){if(pos>n||bytes>n-pos)throw std::runtime_error("incomplete secondary field");read(dest,bytes,row+4+pos,view);pos+=bytes;};
                         for(size_t col=0;col<=column;col++){auto &type=table.schema.columns[col].type;if(type=="VECTOR")continue;
                             if(type=="BIGINT"){if(col==column)field(&value,8);else{if(pos>n||n-pos<8)throw std::runtime_error("incomplete secondary integer");pos+=8;}}
-                            else{uint32_t length;field(&length,4);if(length>n-pos)throw std::runtime_error("incomplete secondary text");pos+=length;}}
+                            else{
+                                uint32_t tag;field(&tag,4);
+                                if(text_compressed(tag)){size_t bytes=tag&0x3fffffffu;if(pos>n||n-pos<4+bytes)throw std::runtime_error("incomplete secondary compressed text");pos+=4+bytes;}
+                                else{if(tag>n-pos)throw std::runtime_error("incomplete secondary text");pos+=tag;}
+                            }}
                         entries.push_back({value,e.record(i,table.schema.dimension())});
                     }row+=4+uint64_t(n);
                 }}
@@ -1036,7 +1063,7 @@ class LogDatabase {
                 while(lo<hi){size_t mid=lo+(hi-lo)/2;int64_t key;read_at(log.descriptor(),&key,8,e.rows+e.keys+8+mid*16);if(key<*first)lo=mid+1;else hi=mid;}
                 if(lo<e.count&&e.visible(lo)){int64_t key;read_at(log.descriptor(),&key,8,e.rows+e.keys+8+lo*16);if(key==*first)fail("duplicate primary key","duplicate_key");}
             }
-        }invalidate();auto extent=log.append(batch,table.schema.dimension(),ids.size());table.extents.push_back(extent);table.schema.count+=ids.size();publish();return ids.size();
+        }invalidate();auto extent=std::getenv("MINIDB_FORCE_CODEC") ? log.append_encoded(batch,table.schema.dimension(),ids.size()) : log.append(batch,table.schema.dimension(),ids.size());table.extents.push_back(extent);table.schema.count+=ids.size();publish();return ids.size();
     }
 public:
     explicit LogDatabase(std::filesystem::path root):log(std::move(root)),tables(std::move(log.recovered)),committed(tables){mv_storage_set_durable(0);
