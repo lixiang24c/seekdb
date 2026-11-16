@@ -29,7 +29,7 @@ public:
             for(size_t col=0;col<table.columns.size();col++){
                 auto &column=table.columns[col];bool keep=wanted[col];
                 if(column.type=="VECTOR"){
-                    if(keep){size_t width=table.dimension()*4;auto *data=vectors.get(extent.vectors+16+position*(8+width),width);std::vector<float> value(table.dimension());std::memcpy(value.data(),data,width);row[col]=std::move(value);}continue;
+                    if(keep){size_t width=table.dimension()*4;std::vector<float> value(table.dimension());if(extent.codec){size_t packed=extent.width(table.dimension());auto *data=vectors.get(extent.vectors+16+position*extent.stride(table.dimension()),packed);if(!mv_codec_decode(data,table.dimension(),reinterpret_cast<unsigned char*>(value.data())))throw std::runtime_error("invalid scanned packed vector");}else{auto *data=vectors.get(extent.vectors+16+position*(8+width),width);std::memcpy(value.data(),data,width);}row[col]=std::move(value);}continue;
                 }
                 if(column.type=="BIGINT"){
                     if(pos>n||n-pos<8)throw std::runtime_error("incomplete projected integer");

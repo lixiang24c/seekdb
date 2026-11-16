@@ -163,10 +163,24 @@ static int vector_parse_reference(const char *text,size_t size,size_t dim,float 
     space();return p==end?0:1;
 }
 
+static bool decimal4(const char *first,const char *end,const char *&after,double &value);
 static int vector_parse_impl(const char *text,size_t size,size_t dim,float *out,bool bare) noexcept {
     static const bool direct=!std::getenv("MINIDB_DIRECT_NUMBERS")||std::string(std::getenv("MINIDB_DIRECT_NUMBERS"))!="0";
     if(!direct)return vector_parse_reference(text,size,dim,out,bare);
     if(!text||!out||!dim||dim>4096||size>65536)return 1;
+    static const bool decimal4_enabled=!std::getenv("MINIDB_DECIMAL4")||std::string(std::getenv("MINIDB_DECIMAL4"))!="0";
+    if(decimal4_enabled&&size>=7*dim+1&&size<=10*dim+2){
+        const char *cursor=text,*limit=text+size;
+        auto skip=[&](){while(cursor<limit&&(*cursor==' '||*cursor=='\t'||*cursor=='\r'||*cursor=='\n'||*cursor=='\f'||*cursor=='\v'))++cursor;};
+        skip();bool matched=cursor<limit&&*cursor++=='[';
+        for(size_t i=0;i<dim&&matched;i++){
+            skip();double value;const char *after;
+            if(!decimal4(cursor,limit,after,value)){matched=false;break;}
+            out[i]=static_cast<float>(value);cursor=after;skip();
+            if(cursor==limit||*cursor++!=(i+1==dim?']':','))matched=false;
+        }
+        skip();if(matched&&cursor==limit)return 0;
+    }
     const char *p=text,*end=text+size;
     auto space=[&](){while(p<end&&(*p==' '||*p=='\t'||*p=='\r'||*p=='\n'||*p=='\f'||*p=='\v'))++p;};
     space();if(p==end||*p++!='[')return 1;
@@ -182,6 +196,20 @@ static int vector_parse_impl(const char *text,size_t size,size_t dim,float *out,
 }
 
 extern "C" int mv_vector_parse(const char *text,size_t size,size_t dim,float *out) noexcept {return vector_parse_impl(text,size,dim,out,false);}
+
+// Recognize a bounded common decimal shape without changing numeric
+// semantics. All coefficients and the divisor are exactly binary64;
+// binary64 division precedes the same float32 conversion as from_chars.
+static bool decimal4(const char *first,const char *end,const char *&after,double &value){
+ const char *p=first;bool negative=false;if(p<end&&(*p=='+'||*p=='-')){negative=*p=='-';++p;}
+ if(end-p<7||p[1]!='.'||(unsigned char)p[0]<'0'||(unsigned char)p[0]>'9')return false;
+ unsigned char stop=p[6];if(stop!=','&&stop!=']'&&stop!=' '&&stop!='\t'&&stop!='\r'&&stop!='\n'&&stop!='\f'&&stop!='\v')return false;
+ uint32_t digits;memcpy(&digits,p+2,4);
+ if(((digits+0x46464646u)|(digits-0x30303030u))&0x80808080u)return false;
+ digits-=0x30303030u;digits=(digits*10+(digits>>8))&0x00ff00ffu;digits=(digits*100+(digits>>16))&0xffffu;
+ uint32_t coefficient=((unsigned char)p[0]-'0')*10000u+digits;
+ value=double(coefficient)/10000.0;if(negative)value=-value;after=p+6;return true;
+}
 
 extern "C" { struct mv_column { const char *name; uint32_t kind; uint32_t width; }; }
 namespace {

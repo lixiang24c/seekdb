@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include "vector_codec.h"
 /* Screening and reference terms; Python resolves inexact sums and ranking. */
 #include <stdint.h>
 #include <stddef.h>
@@ -558,6 +559,39 @@ size_t mv_refine_block_candidates(const unsigned char *view,const uint64_t *reco
  return kept;
 }
 
+size_t mv_refine_packed_block_candidates(const unsigned char *view,const uint64_t *records,const double *query,size_t k,uint32_t *positions,size_t count,double *scores,int *certified){
+ if(!view||!records||!query||!positions||!scores||!certified||!k||k>1024||!count||count>4096)return SIZE_MAX;
+ *certified=0;struct mv_refine_item items[count];size_t first=0;
+ static int four_enabled=-1;if(four_enabled<0){const char *flag=getenv("MINIDB_REFINE_FOUR");four_enabled=!flag||strcmp(flag,"0");}
+ if(four_enabled&&mv_screen_simd()&&__builtin_cpu_supports("fma")){
+  int wide=mv_block_wide_available();
+  for(;first+4<=count;first+=4){
+   const unsigned char *rows[4];unsigned char decoded[4][512];double sums[4];for(size_t j=0;j<4;j++){uint64_t record=records[positions[first+j]];rows[j]=view+(record&MV_CODEC_OFFSET)+8;if(record&MV_CODEC_PACKED){if(!mv_codec_decode(rows[j],128,decoded[j]))return SIZE_MAX;rows[j]=decoded[j];}}
+   if(wide)mv_refine_four_wide(rows,query,sums);else mv_refine_four_avx2(rows,query,sums);
+   for(size_t j=0;j<4;j++){if(!isfinite(sums[j]))return SIZE_MAX;items[first+j]=(struct mv_refine_item){sums[j],positions[first+j]};}
+   ++refine_four_calls;refine_four_points+=4;
+  }
+ }
+ for(size_t i=first;i<count;i++){
+  uint64_t record=records[positions[i]];const unsigned char *row=view+(record&MV_CODEC_OFFSET)+8;unsigned char decoded[512];if(record&MV_CODEC_PACKED){if(!mv_codec_decode(row,128,decoded))return SIZE_MAX;row=decoded;}
+  double score=mv_screen_simd()?avx2_distance(row,query,128,INFINITY):scalar_distance(row,query,128,INFINITY);
+  if(!isfinite(score))return SIZE_MAX;items[i]=(struct mv_refine_item){score,positions[i]};
+ }
+ qsort(items,count,sizeof(*items),mv_compare_refine);
+ double error=64.0*DBL_EPSILON*129;size_t take=count<k?count:k;
+ double upper=nextafter(items[take-1].score*(1+error)+DBL_MIN,INFINITY);
+ size_t kept=take;while(kept<count&&nextafter(items[kept].score*(1-error)-DBL_MIN,-INFINITY)<=upper)++kept;
+ int certain=kept==take;
+ for(size_t i=1;i<take&&certain;i++){
+  double previous=nextafter(items[i-1].score*(1+error)+DBL_MIN,INFINITY);
+  double next=nextafter(items[i].score*(1-error)-DBL_MIN,-INFINITY);
+  if(!(previous<next))certain=0;
+ }
+ for(size_t i=0;i<kept;i++)positions[i]=items[i].slot;
+ if(certain){for(size_t i=0;i<take;i++)scores[i]=items[i].score;*certified=1;}
+ return kept;
+}
+
 int mv_screen_begin_query(const unsigned char *data,size_t bytes,size_t dim,const double *query,size_t active){
     mv_screen_end_query();if(!data||!query||!dim||dim>4096||bytes<(8+dim*4)||bytes%(8+dim*4))return 0;
     distance_fn selected=choose_screen_distance(dim,active,query,data,bytes);
@@ -741,3 +775,5 @@ size_t mv_id_mask(const unsigned char *data, size_t bytes, size_t dim,
 #include "graph.c"
 
 #include "approx.c"
+
+#include "vector_codec_impl.h"

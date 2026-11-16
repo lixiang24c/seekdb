@@ -1,5 +1,6 @@
 #pragma once
 #include "../standalone/engine.hpp"
+#include "../vector_codec.h"
 #include <tuple>
 #include <zlib.h>
 using cppdb::text_compressed;
@@ -16,6 +17,7 @@ extern "C" int mv_quant_prepare(const double*,double,double,const unsigned char*
 extern "C" size_t mv_screen_topk_spans(const mv_record_span*,size_t,size_t,const double*,double,size_t,uint32_t*);
 
 extern "C" size_t mv_refine_block_candidates(const unsigned char*,const uint64_t*,const double*,size_t,uint32_t*,size_t,double*,int*);
+extern "C" size_t mv_refine_packed_block_candidates(const unsigned char*,const uint64_t*,const double*,size_t,uint32_t*,size_t,double*,int*);
 extern "C" size_t mv_quant_topk_bound_blocks(const unsigned char*,size_t,const double*,const uint32_t*,size_t,size_t,uint32_t*);
 extern "C" uint64_t mv_tile_bound_calls(void);
 extern "C" uint64_t mv_sparse_scan_calls(void);
@@ -38,12 +40,21 @@ extern "C" size_t mv_quant_topk_blocks(const unsigned char*,size_t,const uint32_
 namespace cppdb {
 struct LogExtent {
     uint64_t rows=0,row_bytes=0,vectors=0,vector_bytes=0,count=0,keys=0;
-    int64_t minimum=0,maximum=0;std::vector<uint64_t> excluded;
+    int64_t minimum=0,maximum=0;std::vector<uint64_t> excluded;uint32_t codec=0;
+    size_t width(size_t dimension)const{if(!codec)return dimension*4;size_t n=mv_codec_width(dimension,codec);if(n==SIZE_MAX||(!n&&dimension))throw std::runtime_error("invalid vector encoding");return n;}
+    size_t stride(size_t dimension)const{return 8+width(dimension);}
+    uint64_t record(size_t ordinal,size_t dimension)const{return (vectors+8+ordinal*stride(dimension))|(codec?MV_CODEC_PACKED:0);}
+    void vector_read(int fd,unsigned char *out,size_t dimension,size_t ordinal,const unsigned char *view=nullptr)const{
+        size_t n=width(dimension);uint64_t offset=vectors+16+ordinal*(8+n);
+        if(!codec){if(view)std::memcpy(out,view+offset,n);else read_at(fd,out,n,offset);return;}
+        std::array<unsigned char,16388> packed;const unsigned char *data=view?view+offset:packed.data();if(!view)read_at(fd,packed.data(),n,offset);
+        uint32_t actual;std::memcpy(&actual,data,4);if(actual!=codec||!mv_codec_decode(data,dimension,out))throw std::runtime_error("invalid encoded vector");
+    }
     uint64_t weight()const{return count?(row_bytes/count+vector_bytes/count)*(count-excluded.size()):0;}
     bool visible(size_t ordinal)const{return !std::binary_search(excluded.begin(),excluded.end(),ordinal);}
-    bool operator==(const LogExtent &other)const{return std::tie(rows,row_bytes,vectors,vector_bytes,count,keys,minimum,maximum)==std::tie(other.rows,other.row_bytes,other.vectors,other.vector_bytes,other.count,other.keys,other.minimum,other.maximum)&&excluded==other.excluded;}
-    Json json()const{Json out=Json::array();for(auto v:{rows,row_bytes,vectors,vector_bytes,count,keys})out.push(size_t(v));out.push(minimum);out.push(maximum);Json hidden=Json::array();for(auto ordinal:excluded)hidden.push(size_t(ordinal));out.push(hidden);return out;}
-    static LogExtent from(const Json &json){auto &a=json.items();if(a.size()!=8&&a.size()!=9)throw std::runtime_error("invalid extent metadata");LogExtent out;uint64_t *fields[]={&out.rows,&out.row_bytes,&out.vectors,&out.vector_bytes,&out.count,&out.keys};for(size_t i=0;i<6;i++){auto n=a[i].integer();if(n<0)throw std::runtime_error("negative extent offset");*fields[i]=n;}out.minimum=a[6].integer();out.maximum=a[7].integer();if(a.size()==9)for(auto &v:a[8].items()){auto ordinal=v.integer();if(ordinal<0||uint64_t(ordinal)>=out.count||(!out.excluded.empty()&&uint64_t(ordinal)<=out.excluded.back()))throw std::runtime_error("invalid visibility ordinal");out.excluded.push_back(ordinal);}return out;}
+    bool operator==(const LogExtent &other)const{return std::tie(rows,row_bytes,vectors,vector_bytes,count,keys,minimum,maximum,codec)==std::tie(other.rows,other.row_bytes,other.vectors,other.vector_bytes,other.count,other.keys,other.minimum,other.maximum,other.codec)&&excluded==other.excluded;}
+    Json json()const{Json out=Json::array();for(auto v:{rows,row_bytes,vectors,vector_bytes,count,keys})out.push(size_t(v));out.push(minimum);out.push(maximum);Json hidden=Json::array();for(auto ordinal:excluded)hidden.push(size_t(ordinal));out.push(hidden);if(codec)out.push(size_t(codec));return out;}
+    static LogExtent from(const Json &json){auto &a=json.items();if(a.size()!=8&&a.size()!=9&&a.size()!=10)throw std::runtime_error("invalid extent metadata");LogExtent out;uint64_t *fields[]={&out.rows,&out.row_bytes,&out.vectors,&out.vector_bytes,&out.count,&out.keys};for(size_t i=0;i<6;i++){auto n=a[i].integer();if(n<0)throw std::runtime_error("negative extent offset");*fields[i]=n;}out.minimum=a[6].integer();out.maximum=a[7].integer();if(a.size()>=9)for(auto &v:a[8].items()){auto ordinal=v.integer();if(ordinal<0||uint64_t(ordinal)>=out.count||(!out.excluded.empty()&&uint64_t(ordinal)<=out.excluded.back()))throw std::runtime_error("invalid visibility ordinal");out.excluded.push_back(ordinal);}if(a.size()==10){auto c=a[9].integer();if(c<=0||uint64_t(c)>UINT32_MAX)throw std::runtime_error("invalid vector encoding metadata");out.codec=uint32_t(c);}return out;}
 };
 #include "predicate.hpp"
 #include "block_scan.hpp"
@@ -132,11 +143,45 @@ public:
             else if(parsed.at("kind").string()!="data")throw std::runtime_error("unknown queryable log frame");offset+=24+bytes;
         }
         for(auto &[_,table]:recovered){uint64_t count=0;for(auto &e:table.extents){
-            if(e.rows>confirmed||e.row_bytes>confirmed-e.rows||e.vectors>confirmed||e.vector_bytes>confirmed-e.vectors||e.row_bytes<16||e.keys>e.row_bytes-8||e.count>(e.row_bytes-e.keys-8)/16||e.vector_bytes<8||e.count>(e.vector_bytes-8)/(8+table.schema.dimension()*4)||e.count>UINT64_MAX-count)throw std::runtime_error("extent outside committed prefix");count+=e.count-e.excluded.size();
+            if(e.rows>confirmed||e.row_bytes>confirmed-e.rows||e.vectors>confirmed||e.vector_bytes>confirmed-e.vectors||e.row_bytes<16||e.keys>e.row_bytes-8||e.count>(e.row_bytes-e.keys-8)/16||e.vector_bytes<8||e.count>(e.vector_bytes-8)/e.stride(table.schema.dimension())||e.count>UINT64_MAX-count)throw std::runtime_error("extent outside committed prefix");count+=e.count-e.excluded.size();
         }if(count!=table.schema.count)throw std::runtime_error("catalog extent count mismatch");}
         if(::ftruncate(fd.fd,confirmed))::error("truncate uncommitted queryable data");
         // Only the installed log is authoritative; a leftover checkpoint is disposable.
         std::filesystem::remove(directory/"queryable.next");
+    }
+    template<class Each> __attribute__((noinline))
+    static uint32_t encode_rows(Each &each,size_t dimension,size_t count,size_t width,Bytes &encoded){
+        static const uint64_t staging_budget=std::max(uint64_t(256u<<10),std::min(uint64_t(8u<<20),memory_limit()/64));
+        std::array<uint32_t,15> candidates{};size_t nc=0;candidates[nc++]=0x01000003;
+        for(unsigned scale=0;scale<=6;scale++)candidates[nc++]=0x01000002|(scale<<8);
+        for(unsigned scale=0;scale<=6;scale++)candidates[nc++]=0x01000001|(scale<<8);
+        for(size_t ci=0;ci<nc;ci++){
+            uint32_t codec=candidates[ci];size_t packed=mv_codec_width(dimension,codec);if(!packed||packed>=width||count>SIZE_MAX/packed||count>staging_budget/packed)continue;
+            bool possible=true;size_t ordinal=0;each([&](int64_t,uint32_t,const unsigned char*,const unsigned char *v){if((ordinal==0||ordinal==count/2||ordinal+1==count)&&!mv_codec_test(v,dimension,codec))possible=false;++ordinal;});if(!possible)continue;
+            encoded.resize(count*packed);ordinal=0;each([&](int64_t,uint32_t,const unsigned char*,const unsigned char *v){if(possible&&!mv_codec_encode(v,dimension,codec,encoded.data()+ordinal*packed))possible=false;++ordinal;});
+            if(possible){return codec;}encoded.clear();
+        }
+        Bytes().swap(encoded);return 0;
+    }
+    __attribute__((noinline)) LogExtent append_encoded(const Bytes &batch,size_t dimension,size_t count,int output=-1){
+        int target=output<0?fd.fd:output;struct stat target_stat;if(::fstat(target,&target_stat))::error("stat append target");
+        LogExtent extent;extent.count=count;uint64_t scalar_bytes=0;size_t width=dimension*4;
+        auto each=[&](auto consume){size_t pos=0,seen=0;int64_t previous=0;
+            while(pos<batch.size()){
+                if(batch.size()-pos<12)throw std::runtime_error("incomplete inserted row");int64_t id;uint32_t n;std::memcpy(&id,batch.data()+pos,8);std::memcpy(&n,batch.data()+pos+8,4);pos+=12;
+                if(n>batch.size()-pos||width>batch.size()-pos-n)throw std::runtime_error("incomplete inserted vector");if(seen&&id<=previous)throw std::runtime_error("unsorted inserted keys");
+                consume(id,n,batch.data()+pos,batch.data()+pos+n);previous=id;pos+=n+width;++seen;
+            }if(seen!=count)throw std::runtime_error("inserted row count mismatch");};
+        each([&](int64_t id,uint32_t n,const unsigned char*,const unsigned char*){scalar_bytes+=4+uint64_t(n);if(!scalar_bytes)throw std::runtime_error("scalar length overflow");if(!extent.keys)extent.minimum=id;extent.maximum=id;extent.keys=1;});
+        Bytes encoded;
+        if(dimension&&dimension<=4096&&count)extent.codec=encode_rows(each,dimension,count,width,encoded);
+        extent.keys=8+scalar_bytes;extent.row_bytes=extent.keys+8+16*extent.count;extent.vector_bytes=8+extent.count*extent.stride(dimension);
+        Json metadata=Json::object();metadata["kind"]="data";metadata["row_bytes"]=size_t(extent.row_bytes);metadata["vector_bytes"]=size_t(extent.vector_bytes);std::string meta=metadata.dump();extent.rows=uint64_t(target_stat.st_size)+12+meta.size();extent.vectors=extent.rows+extent.row_bytes;
+        Frame frame(target,extent.row_bytes+extent.vector_bytes,meta);frame.put("MVROW001",8);
+        each([&](int64_t,uint32_t n,const unsigned char *scalar,const unsigned char*){frame.integer(n);frame.put(scalar,n);});
+        frame.put("MVKEY002",8);uint64_t row=8;each([&](int64_t id,uint32_t n,const unsigned char*,const unsigned char*){frame.integer(id);frame.integer(row);row+=4+uint64_t(n);});
+        if(extent.codec){size_t stored_width=extent.width(dimension),ordinal=0;frame.put("MVPAK001",8);each([&](int64_t id,uint32_t,const unsigned char*,const unsigned char*){frame.integer(id);frame.put(encoded.data()+ordinal*stored_width,stored_width);++ordinal;});}
+        else{frame.put("MVFLT001",8);each([&](int64_t id,uint32_t,const unsigned char*,const unsigned char *vector){frame.integer(id);frame.put(vector,width);});}frame.finish();return extent;
     }
     LogExtent append(const Bytes &batch,size_t dimension,size_t count,int output=-1){
         int target=output<0?fd.fd:output;struct stat target_stat;if(::fstat(target,&target_stat))::error("stat append target");
@@ -165,13 +210,14 @@ public:
         for(auto &[_,table]:relocated){::PagedDirectory<LogExtent> compacted;
         for(auto e:table.extents){
             if(!e.excluded.empty()){
-                Bytes batch;size_t count=0;auto flush=[&](){if(count){compacted.push_back(append(batch,table.schema.dimension(),count,next.fd));batch.clear();count=0;}};
+                bool encode=!!e.codec;LogReadWindow key_window(fd.fd,e.rows+e.row_bytes),scalar_window(fd.fd,e.rows+e.keys),vector_window(fd.fd,e.vectors+e.vector_bytes);
+                Bytes batch;size_t count=0;auto flush=[&](){if(count){compacted.push_back(encode?append_encoded(batch,table.schema.dimension(),count,next.fd):append(batch,table.schema.dimension(),count,next.fd));batch.clear();count=0;}};
                 for(size_t i=0;i<e.count;i++)if(e.visible(i)){
-                    int64_t id;uint64_t row;read_at(fd.fd,&id,8,e.rows+e.keys+8+i*16);read_at(fd.fd,&row,8,e.rows+e.keys+16+i*16);
-                    uint32_t n;read_at(fd.fd,&n,4,e.rows+row);size_t width=table.schema.dimension()*4;
+                    int64_t id;uint64_t row;const unsigned char *key=key_window.get(e.rows+e.keys+8+i*16,16);std::memcpy(&id,key,8);std::memcpy(&row,key+8,8);
+                    uint32_t n;std::memcpy(&n,scalar_window.get(e.rows+row,4),4);size_t width=table.schema.dimension()*4;
                     if(!batch.empty()&&batch.size()+12+uint64_t(n)+width>(256u<<10))flush();
-                    ::put(batch,id);::put(batch,n);size_t pos=batch.size();batch.resize(pos+uint64_t(n)+width);read_at(fd.fd,batch.data()+pos,n,e.rows+row+4);
-                    if(width)read_at(fd.fd,batch.data()+pos+n,width,e.vectors+16+i*(8+width));++count;
+                    ::put(batch,id);::put(batch,n);size_t pos=batch.size();batch.resize(pos+uint64_t(n)+width);std::memcpy(batch.data()+pos,scalar_window.get(e.rows+row+4,n),n);
+                    if(width){const unsigned char *packed=vector_window.get(e.vectors+16+i*e.stride(table.schema.dimension()),e.width(table.schema.dimension()));if(e.codec){if(!mv_codec_decode(packed,table.schema.dimension(),batch.data()+pos+n))throw std::runtime_error("invalid checkpoint vector");}else std::memcpy(batch.data()+pos+n,packed,width);}++count;
                 }flush();struct stat current;if(::fstat(next.fd,&current))::error("stat compacted checkpoint");offset=current.st_size;continue;
             }
             Json meta=Json::object();meta["kind"]="data";meta["row_bytes"]=size_t(e.row_bytes);meta["vector_bytes"]=size_t(e.vector_bytes);auto text=meta.dump();
@@ -221,9 +267,9 @@ class LogDatabase {
     std::unique_ptr<::RangeDirectory> ranges;const LogTable *range_owner=nullptr;int range_order=0;
     LogIntColumn integer_column;
     struct BlockVectors {
-        const LogTable *owner=nullptr;Bytes data;std::vector<uint64_t> records;std::vector<std::array<double,2>> bounds;bool heterogeneous=false;std::array<uint32_t,256> starts{},counts{};std::array<int64_t,256> dictionary{};
+        const LogTable *owner=nullptr;Bytes data;std::vector<uint64_t> records;std::vector<std::array<double,2>> bounds;bool heterogeneous=false,packed=false;std::array<uint32_t,256> starts{},counts{};std::array<int64_t,256> dictionary{};
         size_t uses=0,column=SIZE_MAX,preferred=SIZE_MAX,groups=0;bool rejected=false,ready=false,regrouped=false;double norm=0,error=0;
-        void clear(){owner=nullptr;Bytes().swap(data);std::vector<uint64_t>().swap(records);decltype(bounds)().swap(bounds);heterogeneous=false;uses=groups=0;column=preferred=SIZE_MAX;rejected=ready=regrouped=false;norm=error=0;}
+        void clear(){owner=nullptr;Bytes().swap(data);std::vector<uint64_t>().swap(records);decltype(bounds)().swap(bounds);heterogeneous=packed=false;uses=groups=0;column=preferred=SIZE_MAX;rejected=ready=regrouped=false;norm=error=0;}
     } block_vectors;
     bool tile_bounds=!std::getenv("MINIDB_TILE_BOUNDS")||std::string(std::getenv("MINIDB_TILE_BOUNDS"))!="0";
     const LogTable *uniform_owner=nullptr;bool uniform_checked=false,uniform_value=false;uint64_t uniform_point=0,uniform_scans=0;
@@ -238,6 +284,7 @@ class LogDatabase {
     uint64_t posting_scans=0,buffered_scans=0,integer_hits=0;
     Bytes quant_cache;std::string quant_name;size_t quant_uses=0;bool quant_rejected=false;double quant_norm=0,quant_error=0;
     const unsigned char *quant_vectors(const std::string &name,const LogTable &table,size_t count,const unsigned char *view){
+        for(auto &e:table.extents)if(e.codec)return nullptr;
         if(!quant_enabled||!view||table.schema.dimension()!=128||count<1024||!mv_quant_available())return nullptr;
         if(resident_budget<(64u<<20)){++quant_budget_rejects;return nullptr;}
         if(name!=quant_name){Bytes().swap(quant_cache);quant_name=name;quant_uses=0;quant_rejected=false;}
@@ -368,22 +415,28 @@ class LogDatabase {
         void *out=::mmap(nullptr,size,PROT_READ,MAP_PRIVATE,log.descriptor(),0);if(out==MAP_FAILED){if(size>(64u<<20))large_mapping_refused=true;return nullptr;}mapping=out;mapped_bytes=size;++map_opens;return static_cast<const unsigned char*>(out);
     }
     void read(void *out,size_t n,uint64_t offset,const unsigned char *view)const{if(view){if(offset>mapped_bytes||n>mapped_bytes-offset)throw std::runtime_error("extent read outside mapping");std::memcpy(out,view+offset,n);}else read_at(log.descriptor(),out,n,offset);}
+    static const unsigned char *decode_record(const unsigned char *view,uint64_t record,size_t dimension,Bytes &scratch){
+        const unsigned char *raw=view+(record&MV_CODEC_OFFSET);if(!(record&MV_CODEC_PACKED))return raw;
+        scratch.resize(8+4*dimension);std::memcpy(scratch.data(),raw,8);if(!mv_codec_decode(raw+8,dimension,scratch.data()+8))throw std::runtime_error("invalid packed record");return scratch.data();
+    }
+    static void offer_record(::TopK &heap,const unsigned char *view,uint64_t record,Bytes &scratch){heap.offer(decode_record(view,record,heap.query.size(),scratch));}
     bool uniform_topk(const LogTable &table,const unsigned char *view,size_t physical,const BoundExpr &expr,size_t k,const std::vector<BoundCondition> &conditions,::TopK &heap){
         if(!uniform_enabled||!view||physical<1024||expr.query.empty()||expr.query.size()>4096)return false;
-        size_t width=expr.query.size()*4,stride=width+8;
+        size_t width=expr.query.size()*4;
         if(uniform_owner!=&table){uniform_owner=&table;uniform_checked=uniform_value=false;uniform_point=0;}
         if(!uniform_checked){
-            uniform_checked=true;bool found=false;
+            uniform_checked=true;bool found=false;Bytes first_scratch,next_scratch;const unsigned char *first_vector=nullptr;
             for(auto &e:table.extents)for(size_t i=0;i<e.count;i++)if(e.visible(i)){
-                uint64_t point=e.vectors+16+i*stride;
-                if(point>mapped_bytes||width>mapped_bytes-point)throw std::runtime_error("uniform vector outside mapping");
-                if(!found){uniform_point=point;found=true;}
-                else if(std::memcmp(view+uniform_point,view+point,width))return false;
+                uint64_t point=e.record(i,expr.query.size()),offset=point&MV_CODEC_OFFSET;size_t packed=e.stride(expr.query.size());
+                if(offset>mapped_bytes||packed>mapped_bytes-offset)throw std::runtime_error("uniform vector outside mapping");
+                if(!found){uniform_point=point;first_vector=decode_record(view,point,expr.query.size(),first_scratch)+8;found=true;}
+                else if(std::memcmp(first_vector,decode_record(view,point,expr.query.size(),next_scratch)+8,width))return false;
             }
             uniform_value=found;
         }
         if(!uniform_value)return false;
-        ::PositiveSum sum;for(size_t j=0;j<expr.query.size();j++){float x;std::memcpy(&x,view+uniform_point+j*4,4);double delta=double(x)-expr.query[j];sum.add(delta*delta);}double score=sum.result();
+        Bytes uniform_scratch;const unsigned char *uniform_vector=decode_record(view,uniform_point,expr.query.size(),uniform_scratch)+8;
+        ::PositiveSum sum;for(size_t j=0;j<expr.query.size();j++){float x;std::memcpy(&x,uniform_vector+j*4,4);double delta=double(x)-expr.query[j];sum.add(delta*delta);}double score=sum.result();
         LogPredicate predicate(table.schema,conditions);
         for(auto &e:table.extents){
             if(heap.heap.size()==k&&e.minimum>=heap.heap.front().second)continue;
@@ -402,13 +455,13 @@ class LogDatabase {
         ++uniform_scans;return true;
     }
     bool accepts_scalar(const Table &table,const Bytes &scalar,const std::vector<BoundCondition> &conditions){for(auto &c:conditions)if(!accepts(compare_cell(scalar_field(table,scalar,c.column),c.value),c.op))return false;return true;}
-    Row selective_row(const Table &schema,uint64_t scalar,size_t size,uint64_t vector,size_t width,const std::vector<bool> &needed){
+    Row selective_row(const Table &schema,uint64_t scalar,size_t size,uint64_t vector,size_t width,const std::vector<bool> &needed,uint32_t codec){
         std::array<unsigned char,256> prefix;size_t available=std::min(size,prefix.size());read(prefix.data(),available,scalar,nullptr);
         auto field=[&](void *out,size_t bytes,size_t position){if(position>size||bytes>size-position)throw std::runtime_error("incomplete projected field");if(position<=available&&bytes<=available-position)std::memcpy(out,prefix.data()+position,bytes);else read(out,bytes,scalar+position,nullptr);};
         Row row(schema.columns.size());size_t position=0;
         for(size_t i=0;i<schema.columns.size();i++){
             auto &column=schema.columns[i];bool keep=needed.at(i);
-            if(column.type=="VECTOR"){if(keep){if(width!=column.n*4)throw std::runtime_error("invalid projected vector");std::vector<float> value(column.n);read(value.data(),width,vector,nullptr);row[i]=std::move(value);}continue;}
+            if(column.type=="VECTOR"){if(keep){if(width!=column.n*4)throw std::runtime_error("invalid projected vector");std::vector<float> value(column.n);if(codec){Bytes packed(mv_codec_width(column.n,codec));read(packed.data(),packed.size(),vector,nullptr);uint32_t actual;std::memcpy(&actual,packed.data(),4);if(actual!=codec||!mv_codec_decode(packed.data(),column.n,reinterpret_cast<unsigned char*>(value.data())))throw std::runtime_error("invalid projected packed vector");}else read(value.data(),width,vector,nullptr);row[i]=std::move(value);}continue;}
             if(column.type=="BIGINT"){if(position>size||size-position<8)throw std::runtime_error("incomplete projected integer");if(keep){int64_t value;field(&value,8,position);row[i]=value;}position+=8;}
             else{
                 uint32_t tag;field(&tag,4,position);position+=4;
@@ -428,11 +481,12 @@ class LogDatabase {
         auto visit=[&](size_t ordinal){auto &e=table.extents[ordinal];if(id<e.minimum||id>e.maximum)return false;const unsigned char *keys=nullptr;if(point_keys_enabled&&!view&&e.count<=key_buffer.size()/16){read(key_buffer.data(),e.count*16,e.rows+e.keys+8,nullptr);keys=key_buffer.data();}size_t lo=0,hi=e.count;bool found=false;
             while(lo<hi){size_t mid=lo+(hi-lo)/2;int64_t key;if(keys)std::memcpy(&key,keys+mid*16,8);else read(&key,8,e.rows+e.keys+8+mid*16,view);if(key<id)lo=mid+1;else if(key>id)hi=mid;else{lo=mid;found=true;break;}}
             if(!found||!e.visible(lo))return false;uint64_t offset;if(keys)std::memcpy(&offset,keys+lo*16+8,8);else read(&offset,8,e.rows+e.keys+8+lo*16+8,view);uint32_t n;read(&n,4,e.rows+offset,view);
-            if(!projected_lookup_enabled){Bytes scalar(n),vector(vectors?table.schema.dimension()*4:0);read(scalar.data(),n,e.rows+offset+4,view);if(vectors&&table.schema.vector_column>=0)read(vector.data(),vector.size(),e.vectors+16+lo*(8+table.schema.dimension()*4),view);std::vector<bool> wanted(table.schema.columns.size(),true);if(!vectors&&table.schema.vector_column>=0)wanted[table.schema.vector_column]=false;result=Codec{table.schema}.decode(scalar,vector,&wanted);return true;}
+            if(!projected_lookup_enabled){Bytes scalar(n),vector(vectors?table.schema.dimension()*4:0);read(scalar.data(),n,e.rows+offset+4,view);if(vectors&&table.schema.vector_column>=0)e.vector_read(log.descriptor(),vector.data(),table.schema.dimension(),lo,view);std::vector<bool> wanted(table.schema.columns.size(),true);if(!vectors&&table.schema.vector_column>=0)wanted[table.schema.vector_column]=false;result=Codec{table.schema}.decode(scalar,vector,&wanted);return true;}
             std::vector<bool> defaults;if(!needed){defaults.assign(table.schema.columns.size(),true);if(!vectors&&table.schema.vector_column>=0)defaults[table.schema.vector_column]=false;}
-            const auto *mask=needed?needed:&defaults;size_t width=vectors?table.schema.dimension()*4:0;uint64_t vector_offset=e.vectors+16+lo*(8+table.schema.dimension()*4),scalar_offset=e.rows+offset+4;
-            if(!view&&selective_lookup_enabled&&n>=1024){bool skip=false;for(size_t i=0;i<table.schema.columns.size();i++)if(table.schema.columns[i].type=="VARCHAR"&&!mask->at(i)){skip=true;break;}if(skip){result=selective_row(table.schema,scalar_offset,n,vector_offset,width,*mask);return true;}}
-            if(view){if(scalar_offset>mapped_bytes||n>mapped_bytes-scalar_offset||(width&&(vector_offset>mapped_bytes||width>mapped_bytes-vector_offset)))throw std::runtime_error("projected row outside mapping");result=Codec{table.schema}.decode_view(view+scalar_offset,n,width?view+vector_offset:nullptr,width,mask);}
+            const auto *mask=needed?needed:&defaults;size_t width=vectors?table.schema.dimension()*4:0;uint64_t vector_offset=e.vectors+16+lo*e.stride(table.schema.dimension()),scalar_offset=e.rows+offset+4;
+            if(!view&&selective_lookup_enabled&&n>=1024){bool skip=false;for(size_t i=0;i<table.schema.columns.size();i++)if(table.schema.columns[i].type=="VARCHAR"&&!mask->at(i)){skip=true;break;}if(skip){result=selective_row(table.schema,scalar_offset,n,vector_offset,width,*mask,e.codec);return true;}}
+            if(e.codec&&width){Bytes vector(width);e.vector_read(log.descriptor(),vector.data(),table.schema.dimension(),lo,view);if(view){if(scalar_offset>mapped_bytes||n>mapped_bytes-scalar_offset)throw std::runtime_error("projected scalar outside mapping");result=Codec{table.schema}.decode_view(view+scalar_offset,n,vector.data(),width,mask);}else{Bytes scalar(n);read(scalar.data(),n,scalar_offset,nullptr);result=Codec{table.schema}.decode(scalar,vector,mask);}}
+            else if(view){if(scalar_offset>mapped_bytes||n>mapped_bytes-scalar_offset||(width&&(vector_offset>mapped_bytes||width>mapped_bytes-vector_offset)))throw std::runtime_error("projected row outside mapping");result=Codec{table.schema}.decode_view(view+scalar_offset,n,width?view+vector_offset:nullptr,width,mask);}
             else{Bytes scalar(n),vector(width);read(scalar.data(),n,scalar_offset,nullptr);if(width)read(vector.data(),width,vector_offset,nullptr);result=Codec{table.schema}.decode(scalar,vector,mask);}return true;
         };
         if(indexed&&table.extents.size()>=16){
@@ -469,7 +523,7 @@ class LogDatabase {
         uint64_t offset;read_at(log.descriptor(),&offset,8,e.rows+e.keys+16+index*16);
         uint32_t n;read_at(log.descriptor(),&n,4,e.rows+offset);bool vectors=table.schema.vector_column>=0&&(!needed||(*needed)[table.schema.vector_column]);Bytes scalar(n),vector(vectors?table.schema.dimension()*4:0);
         read_at(log.descriptor(),scalar.data(),n,e.rows+offset+4);
-        if(vectors)read_at(log.descriptor(),vector.data(),vector.size(),e.vectors+16+index*(8+table.schema.dimension()*4));
+        if(vectors)e.vector_read(log.descriptor(),vector.data(),table.schema.dimension(),index);
         return Codec{table.schema}.decode(scalar,vector,needed);
     }
     const LogIntColumn *cached_integer_column(const LogTable &table,size_t column,size_t physical,const unsigned char *view){
@@ -545,9 +599,9 @@ class LogDatabase {
                 Bytes().swap(quant_cache);quant_name.clear();quant_uses=0;quant_rejected=false;
                 cache.data.resize(slots*144);cache.records.resize(slots);if(tile_bounds)cache.bounds.resize(slots/16);
                 if(cache.data.capacity()+cache.records.capacity()*8+cache.bounds.capacity()*16+sizeof(BlockVectors)>budget){cache.clear();cache.owner=&table;cache.rejected=true;return false;}
-                ordinal=0;for(auto &e:table.extents){for(size_t i=0;i<e.count;i++)if(e.visible(i)){
-                    size_t g=codes?codes->codes[ordinal+i]:0,slot=cursor[g]++;uint64_t offset=e.vectors+8+i*520;
-                    cache.records[slot]=offset;double &norm=tile_bounds?cache.bounds[slot/16][0]:cache.norm,&error=tile_bounds?cache.bounds[slot/16][1]:cache.error;if(!mv_quant_pack_block_row(view+offset,cache.data.data(),slot,&norm,&error)){cache.clear();cache.owner=&table;cache.rejected=true;return false;}
+                ordinal=0;Bytes packed_scratch;for(auto &e:table.extents){cache.packed=cache.packed||e.codec;for(size_t i=0;i<e.count;i++)if(e.visible(i)){
+                    size_t g=codes?codes->codes[ordinal+i]:0,slot=cursor[g]++;uint64_t offset=e.record(i,expr.query.size());const unsigned char *raw=decode_record(view,offset,expr.query.size(),packed_scratch);
+                    cache.records[slot]=offset;double &norm=tile_bounds?cache.bounds[slot/16][0]:cache.norm,&error=tile_bounds?cache.bounds[slot/16][1]:cache.error;if(!mv_quant_pack_block_row(raw,cache.data.data(),slot,&norm,&error)){cache.clear();cache.owner=&table;cache.rejected=true;return false;}
                 }ordinal+=e.count;}
                 if(tile_bounds){double minimum=INFINITY;for(auto &bound:cache.bounds){cache.norm=std::max(cache.norm,bound[0]);cache.error=std::max(cache.error,bound[1]);if(bound[0]>0)minimum=std::min(minimum,bound[0]);}cache.heterogeneous=cache.norm>4*minimum;}
                 cache.groups=groups;cache.preferred=col;if(codes)cache.dictionary=codes->dictionary;cache.column=codes?col:SIZE_MAX;cache.ready=true;++block_builds;block_peak=std::max(block_peak,uint64_t(cache.data.capacity()+cache.records.capacity()*8+cache.bounds.capacity()*16+sizeof(BlockVectors)));block_slots=slots;block_groups=groups;
@@ -565,25 +619,26 @@ class LogDatabase {
         if(certify_enabled&&!require_scores&&active<=64&&(!tiny_flag||std::strcmp(tiny_flag,"0"))){
             heap.positions.clear();for(size_t r=0;r<n;r+=2)for(size_t i=0;i<ranges[r+1];i++)heap.positions.push_back(ranges[r]+i);
             std::array<double,1024> scores;int certified=0;
-            size_t found=mv_refine_block_candidates(view,cache.records.data(),heap.query.data(),k,heap.positions.data(),active,scores.data(),&certified);
-            if(found!=SIZE_MAX&&certified){for(size_t i=0;i<found;i++){int64_t id;std::memcpy(&id,view+cache.records[heap.positions[i]],8);heap.offer_score(scores[i],id);}++block_scans;++block_certified;block_precise_candidates+=active;return true;}
+            size_t found=(cache.packed?mv_refine_packed_block_candidates:mv_refine_block_candidates)(view,cache.records.data(),heap.query.data(),k,heap.positions.data(),active,scores.data(),&certified);
+            if(found!=SIZE_MAX&&certified){for(size_t i=0;i<found;i++){int64_t id;std::memcpy(&id,view+(cache.records[heap.positions[i]]&MV_CODEC_OFFSET),8);heap.offer_score(scores[i],id);}++block_scans;++block_certified;block_precise_candidates+=active;return true;}
         }
-        bool prepared=mv_quant_prepare(heap.query.data(),cache.norm,cache.error,view+cache.records[0]+8),granular=tile_bounds&&cache.heterogeneous;if(!prepared&&!granular)return false;
+        Bytes sample_scratch;const unsigned char *sample=decode_record(view,cache.records[0],expr.query.size(),sample_scratch)+8;
+        bool prepared=mv_quant_prepare(heap.query.data(),cache.norm,cache.error,sample),granular=tile_bounds&&cache.heterogeneous;if(!prepared&&!granular)return false;
         heap.positions.resize(cache.records.size());size_t found=granular?mv_quant_topk_bound_blocks(cache.data.data(),cache.records.size(),cache.bounds[0].data(),ranges.data(),n/2,k,heap.positions.data()):mv_quant_topk_blocks(cache.data.data(),cache.records.size(),ranges.data(),n/2,k,heap.positions.data());
         if(found==SIZE_MAX||found>cache.records.size())throw std::runtime_error("invalid blocked query result");
         block_precise_candidates+=found;
         if(certify_enabled&&found&&found<=std::max(size_t(256),4*k)&&(!require_scores||found>k)){
             std::array<double,1024> scores;int certified=0;
-            size_t narrowed=mv_refine_block_candidates(view,cache.records.data(),heap.query.data(),k,heap.positions.data(),found,scores.data(),&certified);
+            size_t narrowed=(cache.packed?mv_refine_packed_block_candidates:mv_refine_block_candidates)(view,cache.records.data(),heap.query.data(),k,heap.positions.data(),found,scores.data(),&certified);
             if(narrowed!=SIZE_MAX){
                 found=narrowed;
                 if(certified&&!require_scores){
-                    for(size_t i=0;i<found;i++){int64_t id;std::memcpy(&id,view+cache.records[heap.positions[i]],8);heap.offer_score(scores[i],id);}
+                    for(size_t i=0;i<found;i++){int64_t id;std::memcpy(&id,view+(cache.records[heap.positions[i]]&MV_CODEC_OFFSET),8);heap.offer_score(scores[i],id);}
                     ++block_scans;++block_certified;return true;
                 }
             }
         }
-        for(size_t i=0;i<found;i++)heap.offer(view+cache.records[heap.positions[i]]);
+        Bytes record_scratch;for(size_t i=0;i<found;i++)offer_record(heap,view,cache.records[heap.positions[i]],record_scratch);
         ++block_scans;block_refined+=found;return true;
     }
     size_t mutate(LogTable &table,const Statement &st){
@@ -644,6 +699,7 @@ class LogDatabase {
         ::TopK heap(expr.query.data(),expr.query.size(),k);
         const unsigned char *vector_view=mapped(table);
         if(uniform_topk(table,vector_view,physical,expr,k,conditions,heap)||blocked_topk(table,vector_view,physical,expr,k,conditions,heap,require_scores)){std::sort(heap.heap.begin(),heap.heap.end());return heap.heap;}
+        bool packed_table=false;for(auto &e:table.extents)packed_table=packed_table||e.codec;
         size_t stride=8+expr.query.size()*4;Bytes data;LogPredicate predicate(table.schema,conditions);
         std::string key=quote(name);for(auto &c:conditions)key+='|'+std::to_string(c.column)+c.op+cell_json(c.value);
         const std::string *cached=nullptr;const std::vector<uint32_t> *postings=nullptr;size_t posting_cursor=0;
@@ -652,7 +708,7 @@ class LogDatabase {
         size_t mask_limit=std::min(size_t(128u<<10),size_t(resident_budget/128));
         std::string pending;bool build=filtering&&!cached&&cache_bytes+key.size()+sizeof(Mask)+48<=mask_limit;
         if(build)try{pending.assign(cache_bytes,char(0));}catch(const std::bad_alloc&){build=false;}
-        const auto *view=mapped(table);if(!view)postings=nullptr;const LogIntColumn *column=nullptr;std::array<unsigned char,256> selected{};
+        const auto *view=mapped(table);if(!view||packed_table)postings=nullptr;const LogIntColumn *column=nullptr;std::array<unsigned char,256> selected{};
         if(!cached&&!conditions.empty()){
             size_t col=conditions.front().column;bool eligible=table.schema.columns[col].type=="BIGINT";
             for(auto &condition:conditions)eligible=eligible&&condition.column==col;
@@ -663,7 +719,7 @@ class LogDatabase {
             }
         }
         const unsigned char *quant=quant_vectors(name,table,physical,view);
-        size_t target=view&&resident_budget>=(28u<<20)?(4u<<20):(256u<<10),block=std::max(size_t(1),target/stride);
+        size_t target=!packed_table&&view&&resident_budget>=(28u<<20)?(4u<<20):(256u<<10),block=std::max(size_t(1),target/stride);
         Bytes expanded;if(filtering)expanded.resize(block);std::vector<mv_record_span> spans;spans.reserve(std::min(size_t(1024),table.extents.size()));size_t queued=0;
         auto flush=[&](){
             if(!queued)return;heap.positions.resize(queued);size_t found=mv_screen_topk_spans(spans.data(),spans.size(),expr.query.size(),heap.query.data(),heap.bound(),k,heap.positions.data());
@@ -674,12 +730,14 @@ class LogDatabase {
         struct Plan {~Plan(){mv_screen_end_query();}} plan;
         if(!table.extents.empty()){
             auto &first=table.extents.front();size_t bytes=std::min(block,size_t(first.count))*stride;const unsigned char *sample;
-            if(view)sample=view+first.vectors+8;else{data.resize(bytes);read(data.data(),bytes,first.vectors+8,nullptr);sample=data.data();}
+            if(first.codec){bytes=stride;data.resize(bytes);read(data.data(),8,first.vectors+8,view);first.vector_read(log.descriptor(),data.data()+8,expr.query.size(),0,view);sample=data.data();}
+            else if(view)sample=view+first.vectors+8;else{data.resize(bytes);read(data.data(),bytes,first.vectors+8,nullptr);sample=data.data();}
             if(!mv_screen_begin_query(sample,bytes,expr.query.size(),heap.query.data(),table.schema.count))throw std::runtime_error("invalid shared precision plan");
         }
         if(quant&&!mv_quant_prepare(heap.query.data(),quant_norm,quant_error,view+table.extents.front().vectors+16))quant=nullptr;
         size_t base_row=0;
         for(auto &e:table.extents){
+            if(e.codec)flush();
             uint64_t row=e.rows+8;LogReadWindow scalar_window(log.descriptor(),e.rows+e.keys);
             for(size_t first=0;first<e.count;){size_t count=std::min(block-queued,size_t(e.count-first));const unsigned char *filter=nullptr;const uint32_t *indices=nullptr;size_t index_count=0;
                 if(postings){++posting_scans;size_t begin=posting_cursor;while(posting_cursor<postings->size()&&(*postings)[posting_cursor]<base_row+first+count)++posting_cursor;index_count=posting_cursor-begin;if(!index_count){first+=count;continue;}indices=postings->data()+begin;}
@@ -698,7 +756,14 @@ class LogDatabase {
                     }
                     filter=out;if(!std::memchr(filter,1,count)){first+=count;continue;}
                 }
-                if(view){spans.push_back({view+e.vectors+8+first*stride,filter,count,quant?quant+(base_row+first)*144:nullptr,indices,index_count,base_row+first});queued+=count;if(queued==block)flush();}
+                if(e.codec){
+                    flush();++buffered_scans;size_t packed_stride=e.stride(expr.query.size());data.resize(count*stride);
+                    read(data.data(),count*packed_stride,e.vectors+8+first*packed_stride,view);
+                    std::array<unsigned char,16392> row;
+                    for(size_t i=count;i-->0;){if(filter&&!filter[i])continue;const unsigned char *source=data.data()+i*packed_stride;std::memcpy(row.data(),source,8);if(!mv_codec_decode(source+8,expr.query.size(),row.data()+8))throw std::runtime_error("invalid compressed scan");std::memcpy(data.data()+i*stride,row.data(),stride);}
+                    if(mv_topk_scan(&heap,data.data(),data.size(),filter))throw std::runtime_error("compressed log scan failed");
+                }
+                else if(view){spans.push_back({view+e.vectors+8+first*stride,filter,count,quant?quant+(base_row+first)*144:nullptr,indices,index_count,base_row+first});queued+=count;if(queued==block)flush();}
                 else{
                     ++buffered_scans;uint64_t offset=e.vectors+8+first*stride;::LogRangeReads reads;
                     auto scan=[&](size_t begin,size_t end){data.resize((end-begin)*stride);read(data.data(),data.size(),offset+begin*stride,nullptr);if(mv_topk_scan(&heap,data.data(),data.size(),filter?filter+begin:nullptr))throw std::runtime_error("buffered log scan failed");};
@@ -792,7 +857,7 @@ class LogDatabase {
                 while(lo<hi){size_t mid=lo+(hi-lo)/2;int64_t key;read_at(log.descriptor(),&key,8,e.rows+e.keys+8+mid*16);if(key<*first)lo=mid+1;else hi=mid;}
                 if(lo<e.count&&e.visible(lo)){int64_t key;read_at(log.descriptor(),&key,8,e.rows+e.keys+8+lo*16);if(key==*first)fail("duplicate primary key","duplicate_key");}
             }
-        }invalidate();auto extent=log.append(batch,table.schema.dimension(),ids.size());table.extents.push_back(extent);table.schema.count+=ids.size();publish();return ids.size();
+        }invalidate();const char *all_dims=std::getenv("MINIDB_CODEC_ALL_DIMS");bool encode=std::getenv("MINIDB_FORCE_CODEC")&&(table.schema.dimension()==128||(all_dims&&std::string(all_dims)!="0"));auto extent=encode?log.append_encoded(batch,table.schema.dimension(),ids.size()):log.append(batch,table.schema.dimension(),ids.size());table.extents.push_back(extent);table.schema.count+=ids.size();publish();return ids.size();
     }
 public:
     explicit LogDatabase(std::filesystem::path root):log(std::move(root)),tables(std::move(log.recovered)),committed(tables){mv_storage_set_durable(0);
