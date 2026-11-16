@@ -1,3 +1,12 @@
+当前交付状态（0f5材料两轮最终验收）：本地验收 PASS，全部保留，冻结第二轮候选。
+最新依据：MATERIAL_0F5_ACCEPTANCE.zh.txt / MATERIAL_0F5_ACCEPTANCE.json。
+冻结镜像：sha256:8af2d1ce997aa6a94a78904f55fffac5356db6ab2b09d78009a11f107bec6782
+源码指纹：73b8a32a56fce7cb88bc17dd1dd64847ed046775ffba4ab4cd12e9822b4b59ba
+二进制 SHA256：9177e57f525c556f5200e312f0a7356ea97495f1c2125ffb739479eeddac576d
+入口 /app/minivectordb-log，postings=0，其余受测默认保持不变，停止调参。
+两轮基线、收益与接受的首次准备/写盘/内存/尾延迟代价分别记录，不叠加百分比。
+原始报告归档 evidence/0f5-acceptance/。以下旧版本“当前”字样均为历史记录。
+
 当前交付状态（2026-11-16）：五项查询优化本地验收 PASS，按第二轮候选冻结。
 最新验收依据：FIVE_QUERY_ACCEPTANCE.zh.txt / FIVE_QUERY_ACCEPTANCE.json。
 冻结镜像：sha256:079a7dee6a422afecb08f7c4fb4a68833da86e0b84bd54d3b44ad1767a08a023

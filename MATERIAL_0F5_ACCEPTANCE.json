@@ -1,0 +1,2377 @@
+{
+  "status": "PASS",
+  "frozen": true,
+  "scope": "Local acceptance within 2026-11-16-current-vs-remote-0f5 material; user accepts all two-round changes and measured tradeoffs; no formal E/submission",
+  "accepted_at": "2026-11-16T04:53:07.071719+00:00",
+  "branch": "minivectordb-rewrite",
+  "git_ancestor": "0f5b5d42ab7fa100159ce8c0c32347ef8bd96a63",
+  "image": "sha256:8af2d1ce997aa6a94a78904f55fffac5356db6ab2b09d78009a11f107bec6782",
+  "source_fingerprint": "73b8a32a56fce7cb88bc17dd1dd64847ed046775ffba4ab4cd12e9822b4b59ba",
+  "binary_sha256": "9177e57f525c556f5200e312f0a7356ea97495f1c2125ffb739479eeddac576d",
+  "configuration": {
+    "entrypoint": [
+      "/app/minivectordb-log"
+    ],
+    "working_dir": "/app",
+    "MINIDB_POSTINGS": "0",
+    "other_switches": "unchanged tested source defaults; MINIDB_DIAGNOSTICS unset in benchmarks",
+    "build": "root Dockerfile, pinned base images, --no-cache --network=none; no apt/pip downloads",
+    "Dockerfile_sha256": "f607488110aa90757d20cf99862bfd9932914f5ecf81ae6b53c93387a5aef21f",
+    ".dockerignore_sha256": "6fc0533648513b640ca5c72cda5978e80abb941bf06b5d72b77c1851601f4980"
+  },
+  "input_sha256": {
+    ".dockerignore": "6fc0533648513b640ca5c72cda5978e80abb941bf06b5d72b77c1851601f4980",
+    "Dockerfile": "f607488110aa90757d20cf99862bfd9932914f5ecf81ae6b53c93387a5aef21f",
+    "checks/architecture_probe.py": "9f7e74368182a87bbb138a31880451113992e4aea2b33d852c1512a1fe661992",
+    "checks/architecture_recovery.py": "c779aa2258cde28df0f5d6dc9d1fb38ba0702c8933c3ad83c59105dc62f41aaf",
+    "checks/benchmark_general.py": "21f2ca0b09102dfff9b6d7e6b6e91a988fc95117c8dbcb79e05c0cc8e2cffa25",
+    "checks/benchmark_graph.py": "0c4aceb582de833d9e15241279f0f2c1e9f10358c82ac765beb0bbe7b39835fe",
+    "checks/benchmark_insert.py": "4f6f0f863c6dec4c9e2adcecc0674a8e46bb421e4406bdf4d0ca58202d25e165",
+    "checks/benchmark_queries.py": "bcca0072cb89fc2142df11ceb0bec4bed896c35f106ef3fc5b98a457bd0b9d1d",
+    "checks/benchmark_ranges.py": "405bc079ddad27742141c112149deeeb1a046da1f0a28388c024d882faf4ad07",
+    "checks/benchmark_workload.py": "a435139cdd4775d53996a8779afc6892914fe23c99f249233c1ebc6546470ab1",
+    "checks/bitmap_boundaries.py": "b06892a7f4820af2b24f3ec9180858d35a89d5108fd995591c09228ceabdf5fb",
+    "checks/combined_overlays.py": "e9f7f0c34802594030fbc653c36f7b71d7002e4be252f66ac777a6263296b882",
+    "checks/common_boundaries.py": "5e990b334d51d776f164ef6ce5b356113509de351dda0747c33d8666b50cac2d",
+    "checks/contract.py": "daae6b43df6fc2c7e289240f3e15c3bfe0faf9ff82d60bf5250dcc6957ed6b5f",
+    "checks/de2_query_validation.py": "09a9a82657baf3e2f5bcdf81e23945e14dffcdb943446e24fbf9393146a31c70",
+    "checks/de2_screen_truth.py": "8e08ecb6df70fbadc301c007ba95d7bfab7e2ca2887b8976a936986de26680fc",
+    "checks/decimal4_validation.cpp": "400548ea5e676ec67ebbcba2b20cb4d6de4c4bffeacdf1b28a5b4354fe7b76aa",
+    "checks/experiment_overlay_groups.py": "c6a45c2216b5d7c3c1cf4de4791bae513a37b2d85a2986c1310249a9bae26605",
+    "checks/general_boundaries.py": "8152cf96460e78d02bb5a6a7fe0b86ed0345a2261ea23a5bff22c65c81a61639",
+    "checks/graph_boundaries.py": "9dae608d0821149a49db861313cc730511600b0e0ce29aa3299501e3fa517d22",
+    "checks/graph_sanitizer.c": "345fc4c8d90c3d618036486712a45c9759cd2a885ba236ce176814b2776be664",
+    "checks/index_mapping.py": "790cd6d5df15a972aaed0c8816d12cac434f2e82f523897d01242a376e305649",
+    "checks/large_vector_scan.py": "ad23bb7ea54c05cf6032804561478bc65031496751463548dc97e8980cf5bd44",
+    "checks/lookup_boundaries.py": "93a2872186ee819287894253d16a50e74b77797af199f88d7eed8dc0aac41a4f",
+    "checks/mapped_views.py": "f1c4a78cc9657e48192d8fefb3114fbc1b3e44c1992ef95be3024536eb004311",
+    "checks/merge_boundaries.py": "2977df90bb6fc01156bdc71586e69c97bdc815a6e43489b4650203f03d580824",
+    "checks/merge_recovery.py": "05db13342c860ce3b3642089e98f1a55bcf0fc064c5a43cdc328ce1c71874c63",
+    "checks/model.py": "71511e853ea4586529abbe46bedd017ad976766bb25167a4a2647044a8c708d3",
+    "checks/native_codec.cpp": "2fe30416de401e4ea2fca58464c8d5059847098aa68b1ed7ca323657e422f41e",
+    "checks/native_fixed128.c": "1400fca4f9a7a3e25387255469ec82c7f0480ee3dfff1829192cf2be8832a0b5",
+    "checks/native_journal.py": "5c9ae66d278b96ae513ee4f328bd936e93073c0104259537a8455e8a05c846f4",
+    "checks/native_journal_fault.c": "681132951286253fe3341b1bdf9865ae53638011813c54ae21f631e50e4d4bb0",
+    "checks/native_sanitizer.c": "58ef56105ea58e8d5605129ac9a353d0b1db088dbf43bf7301f701b6f96068e3",
+    "checks/native_screen.py": "602d79ff09f8db3183ceb8243fbb36b495fa13b6be91451b355cb52b2abc6007",
+    "checks/native_topk_sql.py": "97e99132b3ec2430670c67e555711f15bf8f76cd7355923d6ac98bc5368e8ca7",
+    "checks/native_validation.py": "167507fe278fd67c47645cc377f80416b8c0ff6c31fcdf40734adae021b083b0",
+    "checks/optimization_observer.py": "4a2a4980b5c90a490f16cb9bc031620a48d52a60d196ad81c6084cd390e56419",
+    "checks/optimization_resources.py": "196590c71a8c66088a7ec8f5395656868e18f0b7d3a45963506e9b4698338fde",
+    "checks/optimization_workload.py": "5e15edc579f1b3bba2d8f0370cd579e5b8fb5a48a36c13060b01d729061f4ecb",
+    "checks/overlay_boundaries.py": "a6635578b212bbd87557dbcdb765aae20123c89626b9890f74d1c13f0e8b20fe",
+    "checks/overlay_recovery.py": "1c5ed933f0676c0a488a7e6b284cbddbdcd19efefee993545f03d6f51290ef2c",
+    "checks/parser_fastpaths.py": "ca2853b3ca687449dfc9b5a7e4daa9376ea931fed703b2c885df4ba07d1444cf",
+    "checks/parser_scan.py": "84afcd789d9f8955154ddb1ad5558237990cc4bb92e481373dda240e6597fda1",
+    "checks/projection_distances.py": "d3a4ddf14a78583baabd6b0b07bce5eca472c6e9d29fee18e27ec9dd7296a82c",
+    "checks/query_completion_validation.py": "cccaeb1c719517adf68b62b9146514f1d1f5bdd817190935266c4be0708fedba",
+    "checks/queryable_allocation.cpp": "45a128ae2f0887f2df603696e9f3a4af093c23d90d49f4582918bb270396ad38",
+    "checks/queryable_fault.c": "0b4e9482ecc265f3b71f60f98b5a0572f44951213a17cf140053bd24fbda54a9",
+    "checks/queryable_observer.py": "cacceb21afec44a6def0c3eb621e4fe1070a761c2bb3925aa304671842931e95",
+    "checks/queryable_quant.c": "bf47e7aeb7461de066a411e902e74face80f2a77d99f256c42eeef1e8b213548",
+    "checks/queryable_regression.py": "d434d97d15db0079b7570fa0e861d7b26119b8ff02db0d74acf622f6dc4dd1e0",
+    "checks/queryable_units.cpp": "be73a86e3822216b1941ee9cb1d0e4ebb0925bce6f9d5d89bef2204c71adbc5f",
+    "checks/recovery.py": "93b566e8b603beafc45ef7d239639a7e48bfa6478930bd3f4d115437c8c1d67f",
+    "checks/resource.py": "2783ec62945a6cefee80893e6d592115701805167af6d82e07f9c2002d08e91e",
+    "checks/runtime_fastpaths.py": "e3ec7736c65110be618c755fc497840c5921760ade042c57e72ac59e68a360eb",
+    "checks/runtime_native.py": "cef8db804ae9431902e707982ab475ba6f8d3787d96f07536858195500e47553",
+    "checks/runtime_reader.py": "a9b3af9a91941608130df424a5a79500e1a77daaa4588b60982063c3e8f54df5",
+    "checks/second_query_validation.py": "90cab73ec59df3a056422c37778c2acebbfc9e5f91ece5744ab2ddd2fd872e78",
+    "checks/storage_budget_probe.c": "32a925a58d437bbff52178027ecda7f70a22d561cecdca805329b3f5241cb620",
+    "checks/storage_codec_validation.py": "54365503e55662d9319b6633a57c41927a6256880cb19b60ff42a4fc76087292",
+    "checks/storage_fault.c": "9e48ebff058b75f9d582356cde223da4f67ffe5cc9c7c5e5a4445309d5ec9878",
+    "checks/storage_rewrite_validation.py": "b0ec5a29569e5705a538bd3f321435c04ea7ce1de967b0ac240321b301c668a4",
+    "checks/storage_sanitizer.cpp": "86eddfc1ec756f357fb0d8c67ba474c76d32dda26facd31570b10c73f8632867",
+    "checks/three_query_validation.py": "b8c24314dc7e807b9cecf3c44f34e34e463f3def6f17b8756f68b0f7cf29634e",
+    "checks/three_screen_truth.py": "8be7c2f3f4869a66f0e3acd29ae19ed3d4a84bccb53a5bc8f7a0e90e1855a31b",
+    "checks/value_groups.py": "be9b53cdcc4f45edd85ad8e6de4c8de34250a7348cabe21b9c857f29d0a625d7",
+    "checks/vector_codec.py": "48a0903cd9492bf692bb57a9513a6286ae724841dc5f69a4abc2eebf6c195294",
+    "checks/vector_text.py": "f2f30da9bba7d99f50568d66e8860e947624dc6daa3bc92ce6815e527d889017",
+    "checks/verify_de2_query_delivery.py": "c4c514f06bb45fff9776455d068ac4fa57a036a8dcb1cb1f223d443c1e19ae83",
+    "checks/verify_full_native.py": "172e930f2229fddfbfc956a76386d9133cccf11ff6a71a60e9610cf5d657d82c",
+    "checks/verify_optimization.py": "052beb9de5700104e360419c14eab2ea1552ed9fcf8b4001d4d1c8afb09680ef",
+    "checks/verify_queryable.py": "bad799dabb2cd7905fe990ad1917513dced121abed58af8b3658f509508d9974",
+    "checks/verify_queryable_delivery.py": "a9576bfe14dbc6b6e2fdfcf9640ca5f1dab81384d93ea08cc9da40641b797f75",
+    "checks/wide_screen_truth.py": "96060711e415d5293f776574f4cfbf9a58894cb2e478bafe6614ad3ed2d5b925",
+    "minidb/__init__.py": "847254ec645383b3d997d76a293ea32b8490971302130137f413eb80de0f5775",
+    "minidb/approx.py": "bc0cb087d9f05238fee363a56480cbc72deb9f0044bf42c7dcd17c1e235f141a",
+    "minidb/engine.py": "f1dd72ee32a36ed03c604a5556114577afc04b9b924085dc7affbccb0464a2a7",
+    "minidb/filters.py": "96fde972ffaa0fbd0fb4eecdad7391def50110c2c5cff804c3a8f1addf0e8062",
+    "minidb/graph.py": "ce57debed4aa339afd6b518722a1805493d77fdc1b843626c25ccdde1a4c65c8",
+    "minidb/indexio.py": "43ccadfbab4c0301ea1c43d490845421f373e759f27c2b8ff65d72f427afb319",
+    "minidb/native.py": "2b16deb16d698712532e15d01925b701b05f84d371464be7028f117f32e3fdb7",
+    "minidb/native_storage.py": "cb54b2a7a776f0b92d346ac3d568ebb92fd20aee376eec658cd5a4131c1f731d",
+    "minidb/query_native.py": "2cf0a9a3ea0f103f2befe7f95860ecb9d714167789465bb4d9002a71a6b178f0",
+    "minidb/server.py": "1b53d4b6429454fc39c106bcee629b96e8f3e3ef7a6f0edbd79ed230b4c812be",
+    "minidb/sql.py": "34f16e9a068dab882ddefd07c9a29520823d7564187237de3c1a3f09ece7bb07",
+    "minidb/storage.py": "c1dd0011f50dc57cf2f7ecfb3f54dfb2fdf4c9fe69870dfd705b3bc094701d75",
+    "mysqltest/README.md": "be0f15ff7ce4cce4ff2b9fae4992a8dc4f34f7c2cc998172764c2f8fbb0284c9",
+    "mysqltest/cases/sql_bigint.result": "ec2f19a62ffeb7241142324f9ba46855e3d5046204274d5d2b7627f52937864b",
+    "mysqltest/cases/sql_bigint.test": "85131b29d94827de64c31055bd4e4169c65639ee86a2fda2efda2fb62db839bf",
+    "mysqltest/cases/sql_comparisons.result": "91042d560debd503a0499a39febcb736bc032d3c502cfee6a3513712de76a829",
+    "mysqltest/cases/sql_comparisons.test": "bfff03b3f18ca0012369730cd202d2313eab305e819b5d577f9158a701effb60",
+    "mysqltest/cases/sql_crud.result": "241a4249157f7674dcb08d38d444b36aaa930581495d9ee909302f38bbe7eb98",
+    "mysqltest/cases/sql_crud.test": "2dbdc8c792d0a137c4d9654d24e758edc4c07287e5561151d78e9efec87667ae",
+    "mysqltest/cases/sql_empty.result": "1f7145867144221c28ac55035b4732866e351e18c49f3776726fa541ffe408c3",
+    "mysqltest/cases/sql_empty.test": "91c62c80dd6ff9ff1169603b21fb813e96b1ba7ed855946716b8c63f6be04edd",
+    "mysqltest/cases/sql_ordering.result": "43824b4e189a5551d0d5f53095a0d8901e235ee3e3a646e826554d409ae2d645",
+    "mysqltest/cases/sql_ordering.test": "8f6cf80f87365799cfd43604dfa987bb83a450dcef1e5ef815ac59a74633cefd",
+    "mysqltest/cases/sql_primary_key.result": "1749b095cfc531e2ecf6ccce06747058930e7eed14c526c99d1170768cea3170",
+    "mysqltest/cases/sql_primary_key.test": "76296f841f5a5105fffbe0985ae2a7e847e2291f75ea86cdf8d9e624d551ef04",
+    "mysqltest/cases/sql_unicode.result": "9b6c4b01f9a753f4b0e87dd6531e5df40614cfd31c2e6c92d795815bdffcc70b",
+    "mysqltest/cases/sql_unicode.test": "5de827789e19e96bb22bfaf65f06d14647e444baa7589318e6ba139e5a3bd520",
+    "mysqltest/cases/sql_unsupported.result": "7b003c2f63419fccd23c981beefcf8e7c36ff6d8051ad5bc823f614934e41dbe",
+    "mysqltest/cases/sql_unsupported.test": "6cf9a1de73a4e8eafa4595874908c26d8d795b53270211b2e5acbf620434e3f6",
+    "mysqltest/cases/storage_multiple_tables.result": "6a97f61f52656e83d07ea14781dbf1348d5c751411899fdf9a360173ab79fdb8",
+    "mysqltest/cases/storage_multiple_tables.test": "e4343a4644c4f5ff1033ab013ad0c254dc4b1cf24b12d6fe65c948adfe1d7144",
+    "mysqltest/cases/storage_mutations.result": "6c9c49dc99f3e07937d5d2155694289734c85b7d3564f52763e104a51c69808b",
+    "mysqltest/cases/storage_mutations.test": "6ddc9d796c7c76f3987e388cb04674475c85967bb60d20450053f8b4e39e0c6a",
+    "mysqltest/cases/storage_restart.result": "eb8eeb26f8b3db5c9d2da07340679dd4b1ae1fdc02bb83e9df8b493544577881",
+    "mysqltest/cases/storage_restart.test": "700f0026d5fef88421a303454d837fa22011dc3e8759f72b3449cd6046045f80",
+    "mysqltest/cases/transaction_autocommit_atomic.result": "7df96d20e24bbd6361544cc1b01c905288d41e3c51e2de33cc526ae2a305fb12",
+    "mysqltest/cases/transaction_autocommit_atomic.test": "d976bfaa3dbad67f0a6b515103ada46b985cdbaf79a53f0c367210910c5263e8",
+    "mysqltest/cases/transaction_commit.result": "8641156ace82031439b95cafae6a78bce6256b96c11a9e41b95220c0a2cb8832",
+    "mysqltest/cases/transaction_commit.test": "873543181bbaa96b4b3cced4cf8e9a3fba5b447522644d98be7509490dce9cd3",
+    "mysqltest/cases/transaction_failed_insert.result": "1f29ab65a1589d3aced189c6ffdeaa0dd4dad14d107a589b3da54a30f52f4964",
+    "mysqltest/cases/transaction_failed_insert.test": "3fdf65810ba864714dc67abb6142452eb944bdab09c86728e5a69a6d76f3532c",
+    "mysqltest/cases/transaction_rollback.result": "f8d6992bc3e0d62fe4a3e77d62305693840a29fc9685cde7adb2951acccd2e60",
+    "mysqltest/cases/transaction_rollback.test": "7fd2bf54a143d248f4f6c727fb79f79aab9c4490119730ee22c45f97f5dc4df2",
+    "mysqltest/cases/transaction_shutdown_rollback.result": "feca1c43740cc2dac0c5f7b178611cf255ef5022f4479d00dfb65c3386e181d3",
+    "mysqltest/cases/transaction_shutdown_rollback.test": "6f72115a099d8dfee36255e09beafbacd96df03f2f04e107dcd28d493e193f54",
+    "mysqltest/cases/vector_euclidean.result": "548b1ec06db7aaa97c62c775ce03b47d219915f6cb484722c8fb303f95d1fde8",
+    "mysqltest/cases/vector_euclidean.test": "6a5981471416a5cc2ce9ba73ceaa3e714bead80ff767f8f89f15e0dac3c5c39d",
+    "mysqltest/cases/vector_float32.result": "77866950b550e15ee08b57b73a052aa34a97cc2b82586fce062661ae2a731452",
+    "mysqltest/cases/vector_float32.test": "f7bceae16b250b1cb2ac69108633819352126b8c6b2a6d1d46381572a1885b87",
+    "mysqltest/cases/vector_index_maintenance.result": "080799d103aa68b3674042278db499c29c8a759cdffd30453b43094b66b05f97",
+    "mysqltest/cases/vector_index_maintenance.test": "d8315fc0147cc4c389a1f1b1d4a8d9376c8d4ff51df5356b4f9d66835218bfb9",
+    "mysqltest/cases/vector_ties_and_filter.result": "44bed5f7f34874c13846a75089b185a9aeb778ac0c7cf32368817762bd6f02b0",
+    "mysqltest/cases/vector_ties_and_filter.test": "2b0ebf0f09eddf7caa20fa2acc1a90196d0380695e2a3d42663607eff6605296",
+    "mysqltest/manifest.json": "a05fc8ff810affb8c899df4a2c1e31c35450178635d62b3efd6ae6ac15056aae",
+    "native/approx.c": "a6eef443380d8b83ea40e970abb0e9b766686e2cb2b07d8851eff7af01543d65",
+    "native/block_bounds_impl.h": "fc2ce33b75e692d0f23fbd794065c76d60bdcdb9b130c97f0f478b3c7fa28f18",
+    "native/block_dynamic_impl.h": "6a384d9bd677a73ec262e0b4cec3b94ebab3f6004a989ea2cceb495dc912e0c1",
+    "native/block_dynamic_scan.h": "6b3d5678080cad88739ce7ff7e18c2d9f6b50d61cb61c4babc978ac0e03acb9d",
+    "native/block_filter_scan.h": "ee7dd8f02199f7f3d56a323f6a87af7e858192c305e0828b831ff76862ec4a23",
+    "native/block_scan_impl.h": "26ed78a42815a45048427a655c51ef1661b7de7bb0d46f360b2ab912b72d4a23",
+    "native/dynamic_refine.h": "127e6cc62be5b021ca21ad49640bd7ef28e6d3af34e68db45ee553e1ead51891",
+    "native/graph.c": "b3f3d98ad7e51c74b44987217b18883e4e69311c0cbf21c94bc96691370652e7",
+    "native/queryable_log/Dockerfile": "10146a6e357c2b3edc7f660fd734dfa8e0e7ea19e4980d67ed817297281bb7b4",
+    "native/queryable_log/block_filter.hpp": "4a15653b83ba107663e7958e5364a037622e0b6f46ef46c73297111887d9c5fb",
+    "native/queryable_log/block_scan.hpp": "5504a9d52ae7a1eb98358ba007242712d02fb96b3b42dbaaebac1adf3669c368",
+    "native/queryable_log/database.hpp": "c3d6755a38f1ce784646ba9986b54baf6c1df1f76c213ac453f8bb7c6432e1ac",
+    "native/queryable_log/dictionary_projection.hpp": "b9553cc4eae4916511558e59ade8a1a4bfd343c05d3082b42df60fbeb4d163f4",
+    "native/queryable_log/int_column.hpp": "1c93c7a9841f0ecbc26d102a75ebfd6b30170e82b82b7ddfd9250f702846f4ac",
+    "native/queryable_log/main.cpp": "4894cfc87673b04185851d0fc81518c9c123c24bccdb48d2d2492d91c74ec9bd",
+    "native/queryable_log/paged_directory.hpp": "4a454ecb0ab8d515bf25c2535ae914f8a8277ca9c5a4a1ed570eb9944f3d5a52",
+    "native/queryable_log/predicate.hpp": "3dc619562441dce4633d7f9d668bebfc46d8bbaa64f457b00a143861e5bab63a",
+    "native/queryable_log/range_directory.hpp": "51d6ddcf7f6cade4adb7a98e1e83c8e35c6d44bcfc3de9019b211e64610b110d",
+    "native/queryable_log/range_reads.hpp": "75b456d4741d057b812b014464bc8f435eed77feab97faa2bb66df84084f814b",
+    "native/queryable_log/resource_budget.hpp": "74b8fb516dfb44b6ded7fdeefc6ada08d86b02aed8fb039f0d50ffcca6a28573",
+    "native/screen.c": "c5815dcca312c78a242abd0cfcf128379af9c49c2c1b168917165a7416367ded",
+    "native/span_scan.inc": "9467c817e8d086ad84361bdb9fc2f919992c43171e4154d35111e13360ce0095",
+    "native/standalone/common.hpp": "1832c43f404ae5e6647667f2d80eafde018519b8ad2a017f42edaaded752eb4a",
+    "native/standalone/engine.hpp": "ddf30722149b040c460b54f9eaf2cdfaba8f0ff163ac22b2cab52dd141b0d5b5",
+    "native/standalone/journal.hpp": "afce5299d5767f31e2b6460e9f79722f347394d8a667e9a2cd7b1312d6c19036",
+    "native/standalone/main.cpp": "d6f0cf744f65d9d24c9a7bff736c2c5c93cad58ba4ac75e75aeaac9adb741172",
+    "native/standalone/recipe_codec.hpp": "e462dd3dd78e5421f830438501bf47574ae6fd0b354bddc5f4a0a32028ee7d16",
+    "native/standalone/sql.hpp": "1f48d09380a1536ac5781c446dfe697ca5b73694cc6c18858cb26b6a273fc3d0",
+    "native/standalone/storage.hpp": "ff3edf4f81ddcc8c41a965743eac5e161edef578eb5c37732a13eb342eeefcef",
+    "native/standalone/store.hpp": "06e0a5c1a269a36ca01924090a554aa2e6ebc25d1876153697c487d8c40c3e14",
+    "native/storage.cpp": "5b70ffb304c371ccd554cf19c7571faa8c02d3668e20ac7f99d0c0ba5d447657",
+    "native/vector_codec.h": "2ac67fabc8661dce6ac37c0878bfe175a7514fa66642eb672394ac3ddef2c70b",
+    "native/vector_codec_impl.h": "d6e6e52340251a84d6b48bdb57bd21b954bb4d205e9f0cf068282992d5cc7c5d",
+    "native/vendor/SHA256SUMS": "4a6c3d833902949c881787a5087258dc751d2919cff6ed10137f5703e634fb75",
+    "native/vendor/manifest.json": "502061b39d91365540a22ee1c5b4407c9552bae9a689302f198f1259409ef3ba",
+    "native/vendor/utf8proc/LICENSE.md": "3b510150d34f248a221bb88e1d811238d6c6c18b51231822c42974c39bb07256",
+    "native/vendor/utf8proc/utf8proc.c": "fdcc214d140a526b0de3ad22d816823c3e7940c017568c046e40f444060e7a51",
+    "native/vendor/utf8proc/utf8proc.h": "3ac6bcc03716a8af82ad91d8287186a846209b3aadab04f001004d33bdb7314e",
+    "native/vendor/utf8proc/utf8proc_data.c": "57a774e8b9b5ae6b2bca3927adee178c20ffcc1986d7e2eff8f39a015f464c88",
+    "native/vendor/yyjson/LICENSE": "45e384d3d52c73cba3a64d6e6c25d47cd738cd8a55c30629e3201046eda62947",
+    "native/vendor/yyjson/yyjson.c": "d2d58ef0a3b2267862dc363832c4f3185fd375aea933d5d3419d1a940d6ece2e",
+    "native/vendor/yyjson/yyjson.h": "ef803cda5c06b8962face6dfa39c3284b3bcf3e73f4d7317664690cc779679ca",
+    "protocol_check/README.md": "9044224f625f3e5ab2948755aefc624084d70f0d6ebe1c37a7bdb408f799cb3f",
+    "protocol_check/_assertions.py": "e39367c70d689b2cd7927df6d10296127ff8f2f5fed0763ca6262881d5ea4a28",
+    "protocol_check/_transport.py": "fb3a820105e6e94fc348167c7644ce23a270c63f57b026065f4b563d6ef0674f",
+    "protocol_check/config.json": "63fe51cac3aaaf45c3739b53b1de8420e5d001e8abb6cf88532d9f190d72d904",
+    "protocol_check/example_stdio.py": "b37cb26ff9a4253d6785c2e63ebb3139e4817949368291360ab5ca12b569216a",
+    "protocol_check/run.py": "4e8c6ead177da7f9222b36bc04e819c777507e21f6adbe24eb679e238f02f513",
+    "requirements.lock": "b3f124ceebcf5f477a8d47b1396fcec3fc88d1b1464555cf5f7d6c344b14a15b"
+  },
+  "evidence": {
+    "evidence/0f5-acceptance/final-binary.json": "74571896842fba3a038432c161be02e82be10c2a8924581b607cb972294c3140",
+    "evidence/0f5-acceptance/final-image-inspect.json": "452bc58424d6bc8e7d2ea1b404546473ea2384c947ed432efdddfe78108ed391",
+    "evidence/0f5-acceptance/round1-report.json": "4b86d791317efa1bdc213cedd8ab8a4927500792b9a98172ec0bf053a9ee76a8",
+    "evidence/0f5-acceptance/round2-report.json": "dcb1367574acf64339282a43faf44fa7a09e470f0f3588948cae017e3e61dd33"
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "baseline_image": "sha256:079a7dee6a422afecb08f7c4fb4a68833da86e0b84bd54d3b44ad1767a08a023",
+      "baseline_source": "8d269d08f6985c088c84273c97fb38424b6a9c13b91e8ed65afaebb90f43ce26",
+      "candidate_image": "sha256:3d3f410a15e1490697641821e71db656baa886daabc14cb5e41a05fac9a89cb7",
+      "candidate_source": "ddfc15a58af201d6a3be83d751df65c71f3a4bf26fbca7743db2c14051b2aa0d",
+      "retained": [
+        "lossless pressure rewrite",
+        "codec-aware reads/projection/DML/checkpoint/exact refinement"
+      ],
+      "comparisons": {
+        "ordinary": {
+          "pairs": 3,
+          "metrics": {
+            "time:startup": {
+              "reference_median": 0.24895512399962172,
+              "candidate_median": 0.25996819901047274,
+              "reduction_percent": -4.423718955416134,
+              "paired_reduction_percent": [
+                6.4855637054134,
+                -13.577689998340059,
+                -2.085679907283544
+              ],
+              "known_pairs": 3
+            },
+            "time:schema": {
+              "reference_median": 0.0036365629930514842,
+              "candidate_median": 0.004145114013226703,
+              "reduction_percent": -13.984386387556768,
+              "paired_reduction_percent": [
+                8.140743736869027,
+                -22.90985282237066,
+                2.1950118459301504
+              ],
+              "known_pairs": 3
+            },
+            "time:write": {
+              "reference_median": 0.2538493789907079,
+              "candidate_median": 0.26037407500552945,
+              "reduction_percent": -2.570302137733549,
+              "paired_reduction_percent": [
+                2.310696217771946,
+                7.913978111472475,
+                -12.609785718395262
+              ],
+              "known_pairs": 3
+            },
+            "time:index": {
+              "reference_median": 0.002071496011922136,
+              "candidate_median": 0.0016777609998825938,
+              "reduction_percent": 19.007278303866805,
+              "paired_reduction_percent": [
+                19.007278303866805,
+                19.59275628880579,
+                -25.180173926811488
+              ],
+              "known_pairs": 3
+            },
+            "time:first_unfiltered": {
+              "reference_median": 0.0009930469968821853,
+              "candidate_median": 0.0010242580028716475,
+              "reduction_percent": -3.1429535648819895,
+              "paired_reduction_percent": [
+                8.736867155583571,
+                -18.311456882002396,
+                0.21912418028456893
+              ],
+              "known_pairs": 3
+            },
+            "time:first_filtered": {
+              "reference_median": 0.00741655399906449,
+              "candidate_median": 0.0072315460129175335,
+              "reduction_percent": 2.494527595569229,
+              "paired_reduction_percent": [
+                2.494527595569229,
+                3.2290262221175925,
+                1.274276462678503
+              ],
+              "known_pairs": 3
+            },
+            "time:warmup_remaining": {
+              "reference_median": 0.003119548026006669,
+              "candidate_median": 0.0029372080171015114,
+              "reduction_percent": 5.845077792842024,
+              "paired_reduction_percent": [
+                5.587038070703043,
+                6.721263598239391,
+                3.6892141178123783
+              ],
+              "known_pairs": 3
+            },
+            "time:query": {
+              "reference_median": 0.3508033170073759,
+              "candidate_median": 0.3599936069804244,
+              "reduction_percent": -2.6197842287948747,
+              "paired_reduction_percent": [
+                0.4870033713816446,
+                -3.506199338382743,
+                -1.4254846461366322
+              ],
+              "known_pairs": 3
+            },
+            "time:full_through_query": {
+              "reference_median": 0.8914810600108467,
+              "candidate_median": 0.905477477965178,
+              "reduction_percent": -1.5700185435415737,
+              "paired_reduction_percent": [
+                2.9772746281337192,
+                -2.5861931350506406,
+                -4.712581044343067
+              ],
+              "known_pairs": 3
+            },
+            "time:shutdown": {
+              "reference_median": 0.06522334099281579,
+              "candidate_median": 0.0653464010101743,
+              "reduction_percent": -0.1886748140854433,
+              "paired_reduction_percent": [
+                -0.15889404455344813,
+                -77.57631343986591,
+                1.2761951798674787
+              ],
+              "known_pairs": 3
+            },
+            "time:full_including_shutdown": {
+              "reference_median": 0.9566896730102599,
+              "candidate_median": 0.9708238789753523,
+              "reduction_percent": -1.477407602887415,
+              "paired_reduction_percent": [
+                2.7655473287904853,
+                -7.697570284497179,
+                -4.28676050910255
+              ],
+              "known_pairs": 3
+            },
+            "cpu:write": {
+              "reference_median": 0.049694,
+              "candidate_median": 0.05598499999999999,
+              "reduction_percent": -12.659475993077617,
+              "paired_reduction_percent": [
+                0.5312512576971185,
+                -15.965846308387754,
+                -17.58837243494147
+              ],
+              "known_pairs": 3
+            },
+            "cpu:index": {
+              "reference_median": 9.800000000000086e-05,
+              "candidate_median": 0.00010200000000000486,
+              "reduction_percent": -4.08163265306527,
+              "paired_reduction_percent": [
+                30.827067669163366,
+                -22.448979591830675,
+                -18.604651162811713
+              ],
+              "known_pairs": 3
+            },
+            "cpu:first_unfiltered": {
+              "reference_median": 0.0006050000000000083,
+              "candidate_median": 0.0006010000000000043,
+              "reduction_percent": 0.6611570247940457,
+              "paired_reduction_percent": [
+                12.908011869436608,
+                -20.44198895027618,
+                0.6611570247940457
+              ],
+              "known_pairs": 3
+            },
+            "cpu:first_filtered": {
+              "reference_median": 0.006789000000000003,
+              "candidate_median": 0.006628999999999996,
+              "reduction_percent": 2.3567535719547394,
+              "paired_reduction_percent": [
+                2.5576951344993937,
+                2.3453839259036546,
+                0.3387833259686168
+              ],
+              "known_pairs": 3
+            },
+            "cpu:query": {
+              "reference_median": 0.058566999999999994,
+              "candidate_median": 0.05926999999999999,
+              "reduction_percent": -1.200334659449842,
+              "paired_reduction_percent": [
+                1.7480710939652644,
+                -1.200334659449842,
+                0.5804749340369231
+              ],
+              "known_pairs": 3
+            },
+            "cpu_through_query_seconds": {
+              "reference_median": 0.138461,
+              "candidate_median": 0.145707,
+              "reduction_percent": -5.233242573721131,
+              "paired_reduction_percent": [
+                2.3484540058711256,
+                -8.238137882328944,
+                -5.233242573721131
+              ],
+              "known_pairs": 3
+            },
+            "peak_memory_bytes": {
+              "reference_median": 8536064,
+              "candidate_median": 8564736,
+              "reduction_percent": -0.33589251439538614,
+              "paired_reduction_percent": [
+                -1.149976042165779,
+                -1.0653753026634405,
+                -0.33589251439538614
+              ],
+              "known_pairs": 3
+            },
+            "io_all_devices_bytes": {
+              "reference_median": 6021120,
+              "candidate_median": 6021120,
+              "reduction_percent": 0.0,
+              "paired_reduction_percent": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "known_pairs": 3
+            },
+            "io_read_bytes": {
+              "reference_median": 0,
+              "candidate_median": 0,
+              "reduction_percent": null,
+              "paired_reduction_percent": [
+                null,
+                null,
+                null
+              ],
+              "known_pairs": 3
+            },
+            "io_write_bytes": {
+              "reference_median": 6021120,
+              "candidate_median": 6021120,
+              "reduction_percent": 0.0,
+              "paired_reduction_percent": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:total_seconds": {
+              "reference_median": 0.1644166259211488,
+              "candidate_median": 0.1659119997639209,
+              "reduction_percent": -0.9095028160286178,
+              "paired_reduction_percent": [
+                0.21826200171534138,
+                -2.007478121396522,
+                -1.3513299767216713
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:p99_seconds": {
+              "reference_median": 0.0004190370091237128,
+              "candidate_median": 0.00044501101365312934,
+              "reduction_percent": -6.198498930615504,
+              "paired_reduction_percent": [
+                -2.3612478553142635,
+                -6.198498930615504,
+                -10.622889525995305
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:max_seconds": {
+              "reference_median": 0.0005280240147840232,
+              "candidate_median": 0.0006241649971343577,
+              "reduction_percent": -18.207691252387235,
+              "paired_reduction_percent": [
+                6.445408075753911,
+                -26.533094114292368,
+                -29.037500178445775
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:total_seconds": {
+              "reference_median": 0.18521533117746003,
+              "candidate_median": 0.19284770710510202,
+              "reduction_percent": -4.1208121806769915,
+              "paired_reduction_percent": [
+                0.7258741924424883,
+                -4.8271847384936395,
+                -1.483743815518146
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:p99_seconds": {
+              "reference_median": 0.00048439198872074485,
+              "candidate_median": 0.000498159002745524,
+              "reduction_percent": -2.8421225671252826,
+              "paired_reduction_percent": [
+                3.412065195096625,
+                -8.32445804034252,
+                2.2502705496369346
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:max_seconds": {
+              "reference_median": 0.0006417529948521405,
+              "candidate_median": 0.0006556349981110543,
+              "reduction_percent": -2.1631380562722846,
+              "paired_reduction_percent": [
+                8.704624693565554,
+                -613.7830336004253,
+                -10.271025462183413
+              ],
+              "known_pairs": 3
+            }
+          }
+        },
+        "pressure": {
+          "pairs": 3,
+          "metrics": {
+            "time:startup": {
+              "reference_median": 0.25313563202507794,
+              "candidate_median": 0.2629489229875617,
+              "reduction_percent": -3.876692855911945,
+              "paired_reduction_percent": [
+                -3.766262732352077,
+                -5.00602182370482,
+                2.1932582894825803
+              ],
+              "known_pairs": 3
+            },
+            "time:schema": {
+              "reference_median": 0.0036795189953409135,
+              "candidate_median": 0.0033056169922929257,
+              "reduction_percent": 10.161708732076956,
+              "paired_reduction_percent": [
+                -5.569689758987462,
+                4.039223803781001,
+                14.38505522134761
+              ],
+              "known_pairs": 3
+            },
+            "time:write": {
+              "reference_median": 0.7476317669788841,
+              "candidate_median": 0.7331522649910767,
+              "reduction_percent": 1.936715723880733,
+              "paired_reduction_percent": [
+                1.414134586567417,
+                1.936715723880733,
+                2.755684806123737
+              ],
+              "known_pairs": 3
+            },
+            "time:index": {
+              "reference_median": 0.0019334130047354847,
+              "candidate_median": 0.0018692610028665513,
+              "reduction_percent": 3.3180702577155885,
+              "paired_reduction_percent": [
+                29.509676366875183,
+                -25.55936879550609,
+                8.38253471824727
+              ],
+              "known_pairs": 3
+            },
+            "time:first_unfiltered": {
+              "reference_median": 0.025703789986437187,
+              "candidate_median": 0.06996160297421739,
+              "reduction_percent": -172.18399703364057,
+              "paired_reduction_percent": [
+                -176.0846706615642,
+                -174.48480180268226,
+                -165.50267231810633
+              ],
+              "known_pairs": 3
+            },
+            "time:first_filtered": {
+              "reference_median": 0.022182056010933593,
+              "candidate_median": 0.009096738009247929,
+              "reduction_percent": 58.990555227323725,
+              "paired_reduction_percent": [
+                57.886425140316035,
+                58.99012697620687,
+                64.04284384972667
+              ],
+              "known_pairs": 3
+            },
+            "time:warmup_remaining": {
+              "reference_median": 0.19639071600977331,
+              "candidate_median": 0.008816354005830362,
+              "reduction_percent": 95.51080917420168,
+              "paired_reduction_percent": [
+                95.50778728663938,
+                95.65549474092188,
+                95.5786631607124
+              ],
+              "known_pairs": 3
+            },
+            "time:query": {
+              "reference_median": 2.454279143974418,
+              "candidate_median": 0.10176627000328153,
+              "reduction_percent": 95.85351689708436,
+              "paired_reduction_percent": [
+                95.9356547815559,
+                95.85351689708436,
+                95.70485073648899
+              ],
+              "known_pairs": 3
+            },
+            "time:full_through_query": {
+              "reference_median": 3.7046721409715246,
+              "candidate_median": 1.1886115259840153,
+              "reduction_percent": 67.91587809245894,
+              "paired_reduction_percent": [
+                68.07004945085437,
+                67.75597646645906,
+                68.30552286118461
+              ],
+              "known_pairs": 3
+            },
+            "time:shutdown": {
+              "reference_median": 0.06534715098678134,
+              "candidate_median": 0.06550150702241808,
+              "reduction_percent": -0.23620928120946516,
+              "paired_reduction_percent": [
+                -1.129946032350504,
+                0.6756453749916624,
+                -0.31270432851231433
+              ],
+              "known_pairs": 3
+            },
+            "time:full_including_shutdown": {
+              "reference_median": 3.7873295160243288,
+              "candidate_median": 1.2594409929588437,
+              "reduction_percent": 66.7459356881913,
+              "paired_reduction_percent": [
+                66.88661423041657,
+                66.59324805988891,
+                66.21094135311449
+              ],
+              "known_pairs": 3
+            },
+            "cpu:write": {
+              "reference_median": 0.148903,
+              "candidate_median": 0.148894,
+              "reduction_percent": 0.006044203273281035,
+              "paired_reduction_percent": [
+                6.687920425925331,
+                -0.6047338157690207,
+                -0.2780333505705057
+              ],
+              "known_pairs": 3
+            },
+            "cpu:index": {
+              "reference_median": 0.00012299999999998423,
+              "candidate_median": 0.00010799999999999699,
+              "reduction_percent": 12.195121951210709,
+              "paired_reduction_percent": [
+                8.130081300799619,
+                3.15789473681658,
+                16.27906976743786
+              ],
+              "known_pairs": 3
+            },
+            "cpu:first_unfiltered": {
+              "reference_median": 0.009075,
+              "candidate_median": 0.028914999999999996,
+              "reduction_percent": -218.6225895316804,
+              "paired_reduction_percent": [
+                -241.88494199258432,
+                -218.6225895316804,
+                -199.64135669638247
+              ],
+              "known_pairs": 3
+            },
+            "cpu:first_filtered": {
+              "reference_median": 0.008154999999999996,
+              "candidate_median": 0.008284000000000014,
+              "reduction_percent": -1.5818516247702918,
+              "paired_reduction_percent": [
+                -7.15962441314546,
+                -1.5818516247702918,
+                10.243692042268504
+              ],
+              "known_pairs": 3
+            },
+            "cpu:query": {
+              "reference_median": 0.887918,
+              "candidate_median": 0.06393399999999999,
+              "reduction_percent": 92.79956031975925,
+              "paired_reduction_percent": [
+                93.08849117979183,
+                92.79956031975925,
+                92.21682660352768
+              ],
+              "known_pairs": 3
+            },
+            "cpu_through_query_seconds": {
+              "reference_median": 1.144425,
+              "candidate_median": 0.277738,
+              "reduction_percent": 75.73121873429889,
+              "paired_reduction_percent": [
+                76.84835379346903,
+                75.73121873429889,
+                74.61669428822415
+              ],
+              "known_pairs": 3
+            },
+            "peak_memory_bytes": {
+              "reference_median": 16777216,
+              "candidate_median": 16777216,
+              "reduction_percent": 0.0,
+              "paired_reduction_percent": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "known_pairs": 3
+            },
+            "io_all_devices_bytes": {
+              "reference_median": 1735708672,
+              "candidate_median": 51617792,
+              "reduction_percent": 97.02612582211032,
+              "paired_reduction_percent": [
+                97.32935233138663,
+                97.02612582211032,
+                97.02609073231513
+              ],
+              "known_pairs": 3
+            },
+            "io_read_bytes": {
+              "reference_median": 1717043200,
+              "candidate_median": 22687744,
+              "reduction_percent": 98.67867366412214,
+              "paired_reduction_percent": [
+                98.8148094258919,
+                98.67867366412214,
+                98.67865790383951
+              ],
+              "known_pairs": 3
+            },
+            "io_write_bytes": {
+              "reference_median": 18665472,
+              "candidate_median": 28930048,
+              "reduction_percent": -54.99231950844854,
+              "paired_reduction_percent": [
+                -55.014263770024144,
+                -54.99231950844854,
+                -54.99231950844854
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:total_seconds": {
+              "reference_median": 1.2253483780950774,
+              "candidate_median": 0.03638811988639645,
+              "reduction_percent": 97.03038576319288,
+              "paired_reduction_percent": [
+                97.12907897558955,
+                97.03038576319288,
+                96.95723239490354
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:p99_seconds": {
+              "reference_median": 0.026151963014854118,
+              "candidate_median": 0.001119694992667064,
+              "reduction_percent": 95.71850498552982,
+              "paired_reduction_percent": [
+                95.71850498552982,
+                95.8946030841013,
+                95.6729236464075
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:max_seconds": {
+              "reference_median": 0.026151963014854118,
+              "candidate_median": 0.001119694992667064,
+              "reduction_percent": 95.71850498552982,
+              "paired_reduction_percent": [
+                95.71850498552982,
+                95.8946030841013,
+                95.6729236464075
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:total_seconds": {
+              "reference_median": 1.2284793748694938,
+              "candidate_median": 0.06522729207063094,
+              "reduction_percent": 94.69040397381028,
+              "paired_reduction_percent": [
+                94.75702402558126,
+                94.69040397381028,
+                94.47666911363677
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:p99_seconds": {
+              "reference_median": 0.027470699977129698,
+              "candidate_median": 0.001988816977245733,
+              "reduction_percent": 92.76022460693942,
+              "paired_reduction_percent": [
+                92.76022460693942,
+                93.7874454459714,
+                91.91782419447424
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:max_seconds": {
+              "reference_median": 0.027470699977129698,
+              "candidate_median": 0.001988816977245733,
+              "reduction_percent": 92.76022460693942,
+              "paired_reduction_percent": [
+                92.76022460693942,
+                93.7874454459714,
+                91.91782419447424
+              ],
+              "known_pairs": 3
+            }
+          }
+        }
+      },
+      "runs": 12,
+      "diagnostics": 4
+    },
+    {
+      "round": 2,
+      "baseline_image": "sha256:3d3f410a15e1490697641821e71db656baa886daabc14cb5e41a05fac9a89cb7",
+      "baseline_source": "ddfc15a58af201d6a3be83d751df65c71f3a4bf26fbca7743db2c14051b2aa0d",
+      "candidate_image": "sha256:8af2d1ce997aa6a94a78904f55fffac5356db6ab2b09d78009a11f107bec6782",
+      "candidate_source": "73b8a32a56fce7cb88bc17dd1dd64847ed046775ffba4ab4cd12e9822b4b59ba",
+      "retained": [
+        "decimal4 parsing with generic fallback",
+        "VARCHAR grouping and string condition plans",
+        "complete AND block bitmaps",
+        "budgeted ordinary-column dictionary projection",
+        "wide exact screening and full raw-cache rank certification"
+      ],
+      "comparisons": {
+        "ordinary": {
+          "pairs": 3,
+          "metrics": {
+            "time:startup": {
+              "reference_median": 0.26826090799295343,
+              "candidate_median": 0.25486930398619734,
+              "reduction_percent": 4.992007261493303,
+              "paired_reduction_percent": [
+                9.16621233925179,
+                1.0752934556897742,
+                3.7140853397491846
+              ],
+              "known_pairs": 3
+            },
+            "time:schema": {
+              "reference_median": 0.0033330089936498553,
+              "candidate_median": 0.0026466120034456253,
+              "reduction_percent": 20.59391353314597,
+              "paired_reduction_percent": [
+                26.15119048207408,
+                -7.448712402515878,
+                20.59391353314597
+              ],
+              "known_pairs": 3
+            },
+            "time:write": {
+              "reference_median": 0.23807449798914604,
+              "candidate_median": 0.2214291440031957,
+              "reduction_percent": 6.991657706534038,
+              "paired_reduction_percent": [
+                12.939575094221423,
+                1.890717392377117,
+                6.991657706534038
+              ],
+              "known_pairs": 3
+            },
+            "time:index": {
+              "reference_median": 0.0017179240239784122,
+              "candidate_median": 0.0017052280018106103,
+              "reduction_percent": 0.7390328088200393,
+              "paired_reduction_percent": [
+                -2.186901136766406,
+                -41.958439460546245,
+                0.7390328088200393
+              ],
+              "known_pairs": 3
+            },
+            "time:first_unfiltered": {
+              "reference_median": 0.0010066740214824677,
+              "candidate_median": 0.0010613670165184885,
+              "reduction_percent": -5.433039282714169,
+              "paired_reduction_percent": [
+                1.2668994606326756,
+                -24.965477519825917,
+                -4.265581529472651
+              ],
+              "known_pairs": 3
+            },
+            "time:first_filtered": {
+              "reference_median": 0.007600177021231502,
+              "candidate_median": 0.007566294982098043,
+              "reduction_percent": 0.445805920556952,
+              "paired_reduction_percent": [
+                3.841651287408221,
+                -45.14735203539038,
+                0.445805920556952
+              ],
+              "known_pairs": 3
+            },
+            "time:warmup_remaining": {
+              "reference_median": 0.003161055996315554,
+              "candidate_median": 0.003076299006352201,
+              "reduction_percent": 2.6812872047234593,
+              "paired_reduction_percent": [
+                5.550580101057112,
+                -23.319578350022073,
+                2.6812872047234593
+              ],
+              "known_pairs": 3
+            },
+            "time:query": {
+              "reference_median": 0.3569612790015526,
+              "candidate_median": 0.36080790098640136,
+              "reduction_percent": -1.077602028883362,
+              "paired_reduction_percent": [
+                -1.077602028883362,
+                -7.315655520184294,
+                -1.170541590037688
+              ],
+              "known_pairs": 3
+            },
+            "time:full_through_query": {
+              "reference_median": 0.8852938980271574,
+              "candidate_median": 0.844475015939679,
+              "reduction_percent": 4.610771877953946,
+              "paired_reduction_percent": [
+                6.10262947848409,
+                -2.786396934274271,
+                2.641231006480438
+              ],
+              "known_pairs": 3
+            },
+            "time:shutdown": {
+              "reference_median": 0.06568328800494783,
+              "candidate_median": 0.06518822300131433,
+              "reduction_percent": 0.7537153188741152,
+              "paired_reduction_percent": [
+                -0.6930188162665329,
+                1.1670553716388365,
+                0.7537153188741152
+              ],
+              "known_pairs": 3
+            },
+            "time:full_including_shutdown": {
+              "reference_median": 0.9512193080445286,
+              "candidate_median": 0.9100698689289857,
+              "reduction_percent": 4.32596760468792,
+              "paired_reduction_percent": [
+                5.643645301087663,
+                -2.512398118178716,
+                2.5046399750093706
+              ],
+              "known_pairs": 3
+            },
+            "cpu:write": {
+              "reference_median": 0.048848,
+              "candidate_median": 0.038186,
+              "reduction_percent": 21.826891582050457,
+              "paired_reduction_percent": [
+                25.72471991251778,
+                20.92613822469702,
+                26.176390983257946
+              ],
+              "known_pairs": 3
+            },
+            "cpu:index": {
+              "reference_median": 0.00011200000000000099,
+              "candidate_median": 9.40000000000038e-05,
+              "reduction_percent": 16.071428571425916,
+              "paired_reduction_percent": [
+                18.75,
+                -71.42857142858226,
+                -2.173913043488107
+              ],
+              "known_pairs": 3
+            },
+            "cpu:first_unfiltered": {
+              "reference_median": 0.0006089999999999984,
+              "candidate_median": 0.0006249999999999936,
+              "reduction_percent": -2.6272577996708124,
+              "paired_reduction_percent": [
+                9.942363112392872,
+                -13.793103448276023,
+                -8.022388059701836
+              ],
+              "known_pairs": 3
+            },
+            "cpu:first_filtered": {
+              "reference_median": 0.006926000000000002,
+              "candidate_median": 0.006969000000000003,
+              "reduction_percent": -0.6208489748772861,
+              "paired_reduction_percent": [
+                3.3785734911926824,
+                -45.283849200527946,
+                -0.6208489748772861
+              ],
+              "known_pairs": 3
+            },
+            "cpu:query": {
+              "reference_median": 0.05870199999999999,
+              "candidate_median": 0.05850000000000001,
+              "reduction_percent": 0.3441109331879355,
+              "paired_reduction_percent": [
+                0.3441109331879355,
+                -6.81388116433288,
+                0.15691944214257791
+              ],
+              "known_pairs": 3
+            },
+            "cpu_through_query_seconds": {
+              "reference_median": 0.139031,
+              "candidate_median": 0.124547,
+              "reduction_percent": 10.417820486078632,
+              "paired_reduction_percent": [
+                10.417820486078632,
+                2.20493328864515,
+                9.88531610655441
+              ],
+              "known_pairs": 3
+            },
+            "peak_memory_bytes": {
+              "reference_median": 8544256,
+              "candidate_median": 8581120,
+              "reduction_percent": -0.431447746883995,
+              "paired_reduction_percent": [
+                1.085930122757317,
+                0.14381591562799834,
+                -2.127659574468077
+              ],
+              "known_pairs": 3
+            },
+            "io_all_devices_bytes": {
+              "reference_median": 6021120,
+              "candidate_median": 6021120,
+              "reduction_percent": 0.0,
+              "paired_reduction_percent": [
+                0.0,
+                -0.06802721088434716,
+                0.0
+              ],
+              "known_pairs": 3
+            },
+            "io_read_bytes": {
+              "reference_median": 0,
+              "candidate_median": 0,
+              "reduction_percent": null,
+              "paired_reduction_percent": [
+                null,
+                null,
+                null
+              ],
+              "known_pairs": 3
+            },
+            "io_write_bytes": {
+              "reference_median": 6021120,
+              "candidate_median": 6021120,
+              "reduction_percent": 0.0,
+              "paired_reduction_percent": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:total_seconds": {
+              "reference_median": 0.1667978121258784,
+              "candidate_median": 0.1685710539459251,
+              "reduction_percent": -1.0631085608655777,
+              "paired_reduction_percent": [
+                -1.0631085608655777,
+                -3.385935510707516,
+                -1.1078112931544482
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:p99_seconds": {
+              "reference_median": 0.0004626589943654835,
+              "candidate_median": 0.00044749301741831005,
+              "reduction_percent": 3.278003266309115,
+              "paired_reduction_percent": [
+                3.278003266309115,
+                8.707430732100352,
+                -4.623685722910165
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:max_seconds": {
+              "reference_median": 0.0006985690270084888,
+              "candidate_median": 0.0006866229814477265,
+              "reduction_percent": 1.7100737506097752,
+              "paired_reduction_percent": [
+                16.607091992221356,
+                -0.9551488629445659,
+                -62.79251549507974
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:total_seconds": {
+              "reference_median": 0.18892457991023548,
+              "candidate_median": 0.19104564673034474,
+              "reduction_percent": -1.122705590303319,
+              "paired_reduction_percent": [
+                -1.122705590303319,
+                -10.720025556300495,
+                -1.2164257414444046
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:p99_seconds": {
+              "reference_median": 0.0004939589998684824,
+              "candidate_median": 0.0005034310161136091,
+              "reduction_percent": -1.9175713465386046,
+              "paired_reduction_percent": [
+                -1.9175713465386046,
+                6.107969729206541,
+                -2.1534013373507133
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:max_seconds": {
+              "reference_median": 0.0006139090110082179,
+              "candidate_median": 0.0006086590001359582,
+              "reduction_percent": 0.8551773598562518,
+              "paired_reduction_percent": [
+                10.342251566139037,
+                -2258.6121543240947,
+                -15.436799217871755
+              ],
+              "known_pairs": 3
+            }
+          }
+        },
+        "varchar": {
+          "pairs": 3,
+          "metrics": {
+            "time:startup": {
+              "reference_median": 0.23121860600076616,
+              "candidate_median": 0.25273741700220853,
+              "reduction_percent": -9.306695241200046,
+              "paired_reduction_percent": [
+                -2.9985809092134996,
+                -10.091427311450252,
+                -3.9844797731470427
+              ],
+              "known_pairs": 3
+            },
+            "time:schema": {
+              "reference_median": 0.003788195986999199,
+              "candidate_median": 0.0035458820057101548,
+              "reduction_percent": 6.396553455012555,
+              "paired_reduction_percent": [
+                2.4914247537363488,
+                6.396553455012555,
+                -16.379399655287408
+              ],
+              "known_pairs": 3
+            },
+            "time:write": {
+              "reference_median": 0.234670667006867,
+              "candidate_median": 0.2236885979946237,
+              "reduction_percent": 4.679779178333332,
+              "paired_reduction_percent": [
+                9.473730339393583,
+                1.5968886179427821,
+                4.679779178333332
+              ],
+              "known_pairs": 3
+            },
+            "time:index": {
+              "reference_median": 0.0016801570018287748,
+              "candidate_median": 0.0016590329760219902,
+              "reduction_percent": 1.257264992723428,
+              "paired_reduction_percent": [
+                -0.36085897125321953,
+                -3.2411085075824797,
+                9.396287572922912
+              ],
+              "known_pairs": 3
+            },
+            "time:first_unfiltered": {
+              "reference_median": 0.0009794849902391434,
+              "candidate_median": 0.0009718009969219565,
+              "reduction_percent": 0.7844932177379027,
+              "paired_reduction_percent": [
+                0.35191405229977324,
+                12.057909754121997,
+                -10.157992690978723
+              ],
+              "known_pairs": 3
+            },
+            "time:first_filtered": {
+              "reference_median": 0.00769591101561673,
+              "candidate_median": 0.007202390988823026,
+              "reduction_percent": 6.412756407815012,
+              "paired_reduction_percent": [
+                10.298403972637104,
+                3.2903530821697613,
+                6.779692372806934
+              ],
+              "known_pairs": 3
+            },
+            "time:warmup_remaining": {
+              "reference_median": 0.011792928009526804,
+              "candidate_median": 0.010302593000233173,
+              "reduction_percent": 12.637531646845279,
+              "paired_reduction_percent": [
+                12.700390558283392,
+                13.329630489019184,
+                12.637531646845279
+              ],
+              "known_pairs": 3
+            },
+            "time:query": {
+              "reference_median": 0.40003454298130237,
+              "candidate_median": 0.35551846501766704,
+              "reduction_percent": 11.128058500117078,
+              "paired_reduction_percent": [
+                7.401158177972967,
+                7.445155805573833,
+                11.723336751751479
+              ],
+              "known_pairs": 3
+            },
+            "time:full_through_query": {
+              "reference_median": 0.887517897906946,
+              "candidate_median": 0.8706065160222352,
+              "reduction_percent": 1.9054693910504072,
+              "paired_reduction_percent": [
+                5.273985545754012,
+                1.4049902478574072,
+                5.373899191121545
+              ],
+              "known_pairs": 3
+            },
+            "time:shutdown": {
+              "reference_median": 0.06556588501553051,
+              "candidate_median": 0.06560625799465925,
+              "reduction_percent": -0.061576197925439224,
+              "paired_reduction_percent": [
+                -0.08152283672342442,
+                -0.061576197925439224,
+                -0.30620961830665205
+              ],
+              "known_pairs": 3
+            },
+            "time:full_including_shutdown": {
+              "reference_median": 0.9530837829224765,
+              "candidate_median": 0.9361897150229197,
+              "reduction_percent": 1.772569023024806,
+              "paired_reduction_percent": [
+                4.900731688058535,
+                1.3041001386405848,
+                4.997026415975769
+              ],
+              "known_pairs": 3
+            },
+            "cpu:write": {
+              "reference_median": 0.049212000000000006,
+              "candidate_median": 0.039518,
+              "reduction_percent": 19.69844753312202,
+              "paired_reduction_percent": [
+                29.473948185728883,
+                11.432171015199566,
+                16.814718140866436
+              ],
+              "known_pairs": 3
+            },
+            "cpu:index": {
+              "reference_median": 0.00010999999999999899,
+              "candidate_median": 0.00010700000000000293,
+              "reduction_percent": 2.72727272726917,
+              "paired_reduction_percent": [
+                -1.7391304347782466,
+                11.818181818181127,
+                -0.9433962264226325
+              ],
+              "known_pairs": 3
+            },
+            "cpu:first_unfiltered": {
+              "reference_median": 0.0005759999999999932,
+              "candidate_median": 0.0005380000000000107,
+              "reduction_percent": 6.597222222219257,
+              "paired_reduction_percent": [
+                12.106135986732603,
+                6.597222222219257,
+                -12.81138790035774
+              ],
+              "known_pairs": 3
+            },
+            "cpu:first_filtered": {
+              "reference_median": 0.007094000000000003,
+              "candidate_median": 0.006645999999999999,
+              "reduction_percent": 6.3151959402312325,
+              "paired_reduction_percent": [
+                11.418099802650195,
+                1.9330087059171608,
+                7.543762156154699
+              ],
+              "known_pairs": 3
+            },
+            "cpu:query": {
+              "reference_median": 0.07970900000000002,
+              "candidate_median": 0.05855999999999999,
+              "reduction_percent": 26.53276292514023,
+              "paired_reduction_percent": [
+                27.902460077686662,
+                27.807423358614226,
+                26.53276292514023
+              ],
+              "known_pairs": 3
+            },
+            "cpu_through_query_seconds": {
+              "reference_median": 0.168431,
+              "candidate_median": 0.135311,
+              "reduction_percent": 19.663838604532422,
+              "paired_reduction_percent": [
+                23.46242675042005,
+                17.699737846825126,
+                18.475562731961258
+              ],
+              "known_pairs": 3
+            },
+            "peak_memory_bytes": {
+              "reference_median": 10362880,
+              "candidate_median": 8884224,
+              "reduction_percent": 14.268774703557307,
+              "paired_reduction_percent": [
+                13.723150357995229,
+                13.992094861660076,
+                15.44492355938848
+              ],
+              "known_pairs": 3
+            },
+            "io_all_devices_bytes": {
+              "reference_median": 6221824,
+              "candidate_median": 6221824,
+              "reduction_percent": 0.0,
+              "paired_reduction_percent": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "known_pairs": 3
+            },
+            "io_read_bytes": {
+              "reference_median": 0,
+              "candidate_median": 0,
+              "reduction_percent": null,
+              "paired_reduction_percent": [
+                null,
+                null,
+                null
+              ],
+              "known_pairs": 3
+            },
+            "io_write_bytes": {
+              "reference_median": 6221824,
+              "candidate_median": 6221824,
+              "reduction_percent": 0.0,
+              "paired_reduction_percent": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:total_seconds": {
+              "reference_median": 0.19462601558188908,
+              "candidate_median": 0.1658820588781964,
+              "reduction_percent": 14.768815267452585,
+              "paired_reduction_percent": [
+                12.531256527252133,
+                13.095890878510563,
+                14.768815267452585
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:p99_seconds": {
+              "reference_median": 0.0005536149838007987,
+              "candidate_median": 0.0004733569803647697,
+              "reduction_percent": 14.497079339331487,
+              "paired_reduction_percent": [
+                14.611635152128265,
+                5.124679937499954,
+                18.065912006664576
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:max_seconds": {
+              "reference_median": 0.0009422629955224693,
+              "candidate_median": 0.0005443429981824011,
+              "reduction_percent": 42.23024773666594,
+              "paired_reduction_percent": [
+                44.983118000764435,
+                21.21138631270948,
+                42.23024773666594
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:total_seconds": {
+              "reference_median": 0.2008819084148854,
+              "candidate_median": 0.18836851223022677,
+              "reduction_percent": 6.2292300403750005,
+              "paired_reduction_percent": [
+                2.4079279698162037,
+                1.9008728964845734,
+                8.923465196855462
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:p99_seconds": {
+              "reference_median": 0.0005223670159466565,
+              "candidate_median": 0.0005699509929399937,
+              "reduction_percent": -9.109299695560512,
+              "paired_reduction_percent": [
+                2.3310420043116897,
+                -13.276354648991596,
+                -9.109299695560512
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:max_seconds": {
+              "reference_median": 0.0006370680057443678,
+              "candidate_median": 0.000609542999882251,
+              "reduction_percent": 4.320575764899049,
+              "paired_reduction_percent": [
+                14.522181378369748,
+                -96.84586073042361,
+                94.64392807015366
+              ],
+              "known_pairs": 3
+            }
+          }
+        },
+        "mixed_projection": {
+          "pairs": 3,
+          "metrics": {
+            "time:startup": {
+              "reference_median": 0.2352742780058179,
+              "candidate_median": 0.24355534501955844,
+              "reduction_percent": -3.5197502608150577,
+              "paired_reduction_percent": [
+                2.2400905569428975,
+                -0.12143093493370838,
+                -8.316272466710561
+              ],
+              "known_pairs": 3
+            },
+            "time:schema": {
+              "reference_median": 0.0029761689947918057,
+              "candidate_median": 0.0033792809990700334,
+              "reduction_percent": -13.54466110572552,
+              "paired_reduction_percent": [
+                -13.773138272898255,
+                0.27942511254454017,
+                -19.615687356867852
+              ],
+              "known_pairs": 3
+            },
+            "time:write": {
+              "reference_median": 0.2338368269847706,
+              "candidate_median": 0.21682029200019315,
+              "reduction_percent": 7.277097967843071,
+              "paired_reduction_percent": [
+                5.750046636175787,
+                9.52943567276896,
+                3.1763709009523966
+              ],
+              "known_pairs": 3
+            },
+            "time:index": {
+              "reference_median": 0.001776655000867322,
+              "candidate_median": 0.0016242550045717508,
+              "reduction_percent": 8.577917278322078,
+              "paired_reduction_percent": [
+                -2.8147364881132564,
+                9.977513293753281,
+                10.79619507549847
+              ],
+              "known_pairs": 3
+            },
+            "time:first_unfiltered": {
+              "reference_median": 0.0010276650136802346,
+              "candidate_median": 0.0010300710273440927,
+              "reduction_percent": -0.23412431403515566,
+              "paired_reduction_percent": [
+                -6.663940633722287,
+                1.8775569202879372,
+                8.616755326448466
+              ],
+              "known_pairs": 3
+            },
+            "time:first_filtered": {
+              "reference_median": 0.008341303997440264,
+              "candidate_median": 0.009526797017315403,
+              "reduction_percent": -14.212322440699165,
+              "paired_reduction_percent": [
+                -15.760221690183007,
+                -13.875881528708822,
+                -16.540628434137705
+              ],
+              "known_pairs": 3
+            },
+            "time:warmup_remaining": {
+              "reference_median": 0.01022452101460658,
+              "candidate_median": 0.004623457003617659,
+              "reduction_percent": 54.78069831327388,
+              "paired_reduction_percent": [
+                57.046365418118825,
+                59.210725153215506,
+                53.99939373661908
+              ],
+              "known_pairs": 3
+            },
+            "time:query": {
+              "reference_median": 0.43025542100076564,
+              "candidate_median": 0.384316490002675,
+              "reduction_percent": 10.677130085017318,
+              "paired_reduction_percent": [
+                10.677130085017318,
+                7.223633886229985,
+                12.06909318615621
+              ],
+              "known_pairs": 3
+            },
+            "time:full_through_query": {
+              "reference_median": 0.9314841100131162,
+              "candidate_median": 0.8727753779967315,
+              "reduction_percent": 6.302708912077726,
+              "paired_reduction_percent": [
+                7.405652329523605,
+                6.302708912077726,
+                4.693201025721471
+              ],
+              "known_pairs": 3
+            },
+            "time:shutdown": {
+              "reference_median": 0.06564971301122569,
+              "candidate_median": 0.06543785499525256,
+              "reduction_percent": 0.3227097366547471,
+              "paired_reduction_percent": [
+                0.43013727360259324,
+                0.0833727975684706,
+                1.455240873564978
+              ],
+              "known_pairs": 3
+            },
+            "time:full_including_shutdown": {
+              "reference_median": 0.9971338230243418,
+              "candidate_median": 0.9383703570056241,
+              "reduction_percent": 5.893237663976347,
+              "paired_reduction_percent": [
+                6.949401695331159,
+                5.893237663976347,
+                4.475156404407155
+              ],
+              "known_pairs": 3
+            },
+            "cpu:write": {
+              "reference_median": 0.049293,
+              "candidate_median": 0.037021,
+              "reduction_percent": 24.896029862252245,
+              "paired_reduction_percent": [
+                29.468646029923928,
+                21.345830036719203,
+                21.724881596752375
+              ],
+              "known_pairs": 3
+            },
+            "cpu:index": {
+              "reference_median": 0.00011400000000000299,
+              "candidate_median": 0.00010199999999999793,
+              "reduction_percent": 10.526315789477847,
+              "paired_reduction_percent": [
+                0.7518796992540433,
+                10.891089108914498,
+                10.526315789477847
+              ],
+              "known_pairs": 3
+            },
+            "cpu:first_unfiltered": {
+              "reference_median": 0.0006089999999999984,
+              "candidate_median": 0.0006150000000000044,
+              "reduction_percent": -0.9852216748778453,
+              "paired_reduction_percent": [
+                -0.9852216748778453,
+                13.10452418096838,
+                -10.598290598290472
+              ],
+              "known_pairs": 3
+            },
+            "cpu:first_filtered": {
+              "reference_median": 0.007653999999999994,
+              "candidate_median": 0.008759999999999997,
+              "reduction_percent": -14.449960804807983,
+              "paired_reduction_percent": [
+                -16.78860726417564,
+                -14.092211513414842,
+                -17.671750384776953
+              ],
+              "known_pairs": 3
+            },
+            "cpu:query": {
+              "reference_median": 0.11242900000000002,
+              "candidate_median": 0.07351600000000001,
+              "reduction_percent": 34.61117683160039,
+              "paired_reduction_percent": [
+                34.61117683160039,
+                29.55208451962751,
+                36.316141398832066
+              ],
+              "known_pairs": 3
+            },
+            "cpu_through_query_seconds": {
+              "reference_median": 0.200734,
+              "candidate_median": 0.14244,
+              "reduction_percent": 29.040421652535187,
+              "paired_reduction_percent": [
+                29.123397140852568,
+                24.64555082845955,
+                28.071502691318774
+              ],
+              "known_pairs": 3
+            },
+            "peak_memory_bytes": {
+              "reference_median": 10211328,
+              "candidate_median": 8937472,
+              "reduction_percent": 12.474929803449664,
+              "paired_reduction_percent": [
+                12.319422150882831,
+                13.102349661489443,
+                13.036502206177293
+              ],
+              "known_pairs": 3
+            },
+            "io_all_devices_bytes": {
+              "reference_median": 6221824,
+              "candidate_median": 6221824,
+              "reduction_percent": 0.0,
+              "paired_reduction_percent": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "known_pairs": 3
+            },
+            "io_read_bytes": {
+              "reference_median": 0,
+              "candidate_median": 0,
+              "reduction_percent": null,
+              "paired_reduction_percent": [
+                null,
+                null,
+                null
+              ],
+              "known_pairs": 3
+            },
+            "io_write_bytes": {
+              "reference_median": 6221824,
+              "candidate_median": 6221824,
+              "reduction_percent": 0.0,
+              "paired_reduction_percent": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:total_seconds": {
+              "reference_median": 0.2237908247334417,
+              "candidate_median": 0.18948607658967376,
+              "reduction_percent": 15.328934144028683,
+              "paired_reduction_percent": [
+                15.328934144028683,
+                12.051721476965538,
+                16.034608133181795
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:p99_seconds": {
+              "reference_median": 0.0005848759901709855,
+              "candidate_median": 0.0005183300236240029,
+              "reduction_percent": 11.377790790750042,
+              "paired_reduction_percent": [
+                12.793820678212276,
+                -16.65920484956378,
+                8.316155391893354
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:max_seconds": {
+              "reference_median": 0.0008063389977905899,
+              "candidate_median": 0.0007185669965110719,
+              "reduction_percent": 10.885248204541487,
+              "paired_reduction_percent": [
+                19.17716842557119,
+                -40.702497830153916,
+                -2.7208117223450623
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:total_seconds": {
+              "reference_median": 0.20528469196869992,
+              "candidate_median": 0.19345720449928194,
+              "reduction_percent": 5.761504842855658,
+              "paired_reduction_percent": [
+                5.761504842855658,
+                2.0597778524957477,
+                7.826006283152632
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:p99_seconds": {
+              "reference_median": 0.0005381660012062639,
+              "candidate_median": 0.0004981459933333099,
+              "reduction_percent": 7.436368663804805,
+              "paired_reduction_percent": [
+                7.01946775951956,
+                -31.20473297882118,
+                14.374560974619177
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:max_seconds": {
+              "reference_median": 0.0006698160141240805,
+              "candidate_median": 0.0005417630018200725,
+              "reduction_percent": 19.11763971057979,
+              "paired_reduction_percent": [
+                18.00650395001607,
+                -9.047221948003381,
+                19.140034090381263
+              ],
+              "known_pairs": 3
+            }
+          }
+        },
+        "wide": {
+          "pairs": 3,
+          "metrics": {
+            "time:startup": {
+              "reference_median": 0.2472299349901732,
+              "candidate_median": 0.24173002602765337,
+              "reduction_percent": 2.224612874140197,
+              "paired_reduction_percent": [
+                9.561765317709403,
+                0.6290366872924058,
+                -1.6108198920286254
+              ],
+              "known_pairs": 3
+            },
+            "time:schema": {
+              "reference_median": 0.00265337698510848,
+              "candidate_median": 0.00368104298831895,
+              "reduction_percent": -38.730493592807555,
+              "paired_reduction_percent": [
+                -38.730493592807555,
+                -16.1747143535758,
+                -46.29022465035095
+              ],
+              "known_pairs": 3
+            },
+            "time:write": {
+              "reference_median": 0.24777670699404553,
+              "candidate_median": 0.2611308100167662,
+              "reduction_percent": -5.3895715964300095,
+              "paired_reduction_percent": [
+                -17.200436433207187,
+                33.80062186403483,
+                -15.091686299361529
+              ],
+              "known_pairs": 3
+            },
+            "time:index": {
+              "reference_median": 0.002125049999449402,
+              "candidate_median": 0.001977557985810563,
+              "reduction_percent": 6.9406373345123225,
+              "paired_reduction_percent": [
+                -10.706395473150776,
+                13.388885335883716,
+                6.9406373345123225
+              ],
+              "known_pairs": 3
+            },
+            "time:first_unfiltered": {
+              "reference_median": 0.0020060149836353958,
+              "candidate_median": 0.0019467879901640117,
+              "reduction_percent": 2.952470143769814,
+              "paired_reduction_percent": [
+                3.41786970547463,
+                0.8766776069469184,
+                14.946438680725006
+              ],
+              "known_pairs": 3
+            },
+            "time:first_filtered": {
+              "reference_median": 0.00079032001667656,
+              "candidate_median": 0.01603828600491397,
+              "reduction_percent": -1929.3407311582328,
+              "paired_reduction_percent": [
+                -1917.5428030389635,
+                -2120.438529881284,
+                -1929.3407311582328
+              ],
+              "known_pairs": 3
+            },
+            "time:warmup_remaining": {
+              "reference_median": 0.009078133007278666,
+              "candidate_median": 0.003948183002648875,
+              "reduction_percent": 56.50886587051214,
+              "paired_reduction_percent": [
+                54.05759780494951,
+                55.433128478322644,
+                57.266400740376746
+              ],
+              "known_pairs": 3
+            },
+            "time:query": {
+              "reference_median": 1.030951880995417,
+              "candidate_median": 0.41879780500312336,
+              "reduction_percent": 59.3775604154521,
+              "paired_reduction_percent": [
+                61.39264679341155,
+                58.06440838758867,
+                59.3775604154521
+              ],
+              "known_pairs": 3
+            },
+            "time:full_through_query": {
+              "reference_median": 1.5818547749950085,
+              "candidate_median": 0.9506112460512668,
+              "reduction_percent": 39.905276952224234,
+              "paired_reduction_percent": [
+                39.176827595244866,
+                42.92462823511519,
+                37.19647427649615
+              ],
+              "known_pairs": 3
+            },
+            "time:shutdown": {
+              "reference_median": 0.06534523601294495,
+              "candidate_median": 0.06597340499865822,
+              "reduction_percent": -0.9613080065834279,
+              "paired_reduction_percent": [
+                -74.61285535849656,
+                -0.6650461568092458,
+                -1.0511271115473564
+              ],
+              "known_pairs": 3
+            },
+            "time:full_including_shutdown": {
+              "reference_median": 1.648308428004384,
+              "candidate_median": 1.016584651049925,
+              "reduction_percent": 38.325580711814375,
+              "paired_reduction_percent": [
+                34.58925164247866,
+                41.20821115570199,
+                35.61495907833068
+              ],
+              "known_pairs": 3
+            },
+            "cpu:write": {
+              "reference_median": 0.095118,
+              "candidate_median": 0.061431,
+              "reduction_percent": 35.41600958809058,
+              "paired_reduction_percent": [
+                32.47545154439747,
+                37.21450362796834,
+                29.8724871288485
+              ],
+              "known_pairs": 3
+            },
+            "cpu:index": {
+              "reference_median": 0.00019500000000000073,
+              "candidate_median": 0.00022099999999999898,
+              "reduction_percent": -13.333333333332376,
+              "paired_reduction_percent": [
+                -116.92307692306115,
+                27.234042553189308,
+                -13.333333333332376
+              ],
+              "known_pairs": 3
+            },
+            "cpu:first_unfiltered": {
+              "reference_median": 0.0015119999999999995,
+              "candidate_median": 0.0015180000000000055,
+              "reduction_percent": -0.3968253968257951,
+              "paired_reduction_percent": [
+                -3.8303693570451713,
+                0.5952380952386926,
+                17.967244701349262
+              ],
+              "known_pairs": 3
+            },
+            "cpu:first_filtered": {
+              "reference_median": 0.0003599999999999992,
+              "candidate_median": 0.015032000000000004,
+              "reduction_percent": -4075.555555555566,
+              "paired_reduction_percent": [
+                -4161.111111111122,
+                -4220.30303030289,
+                -3908.533333333331
+              ],
+              "known_pairs": 3
+            },
+            "cpu:query": {
+              "reference_median": 0.63403,
+              "candidate_median": 0.10276300000000001,
+              "reduction_percent": 83.7920918568522,
+              "paired_reduction_percent": [
+                84.09849808002464,
+                83.05925443594336,
+                83.7920918568522
+              ],
+              "known_pairs": 3
+            },
+            "cpu_through_query_seconds": {
+              "reference_median": 0.751611,
+              "candidate_median": 0.203848,
+              "reduction_percent": 72.87852359797822,
+              "paired_reduction_percent": [
+                73.17514227417031,
+                72.51624207131798,
+                72.87852359797822
+              ],
+              "known_pairs": 3
+            },
+            "peak_memory_bytes": {
+              "reference_median": 16560128,
+              "candidate_median": 20115456,
+              "reduction_percent": -21.469206035122433,
+              "paired_reduction_percent": [
+                -21.04872619342073,
+                -23.051866700075173,
+                -18.367838228213774
+              ],
+              "known_pairs": 3
+            },
+            "io_all_devices_bytes": {
+              "reference_median": 12734464,
+              "candidate_median": 12734464,
+              "reduction_percent": 0.0,
+              "paired_reduction_percent": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "known_pairs": 3
+            },
+            "io_read_bytes": {
+              "reference_median": 0,
+              "candidate_median": 0,
+              "reduction_percent": null,
+              "paired_reduction_percent": [
+                null,
+                null,
+                null
+              ],
+              "known_pairs": 3
+            },
+            "io_write_bytes": {
+              "reference_median": 12734464,
+              "candidate_median": 12734464,
+              "reduction_percent": 0.0,
+              "paired_reduction_percent": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:total_seconds": {
+              "reference_median": 0.30559296265710145,
+              "candidate_median": 0.1825281360943336,
+              "reduction_percent": 40.2708313348354,
+              "paired_reduction_percent": [
+                44.74768979680278,
+                38.805627893316206,
+                40.2708313348354
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:p99_seconds": {
+              "reference_median": 0.0009444900206290185,
+              "candidate_median": 0.0004987810098100454,
+              "reduction_percent": 47.19044151701429,
+              "paired_reduction_percent": [
+                50.99375092017075,
+                46.47675214226691,
+                46.38397494424916
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:max_seconds": {
+              "reference_median": 0.0022036400041542947,
+              "candidate_median": 0.0005701479967683554,
+              "reduction_percent": 74.12699008488164,
+              "paired_reduction_percent": [
+                95.65364289765486,
+                75.48156680366104,
+                40.388773774981004
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:total_seconds": {
+              "reference_median": 0.7237406277854461,
+              "candidate_median": 0.23454181142733432,
+              "reduction_percent": 67.59311244623612,
+              "paired_reduction_percent": [
+                68.73333693391261,
+                66.40701814667023,
+                67.5308830143718
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:p99_seconds": {
+              "reference_median": 0.002177021000534296,
+              "candidate_median": 0.0006670260045211762,
+              "reduction_percent": 69.36060771313318,
+              "paired_reduction_percent": [
+                73.91693565572864,
+                67.77444954853536,
+                69.09560210972305
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:max_seconds": {
+              "reference_median": 0.002741037023952231,
+              "candidate_median": 0.0008050110191106796,
+              "reduction_percent": 70.63115120021418,
+              "paired_reduction_percent": [
+                71.81424468324742,
+                68.49830446426238,
+                83.27511564307137
+              ],
+              "known_pairs": 3
+            }
+          }
+        },
+        "pressure": {
+          "pairs": 3,
+          "metrics": {
+            "time:startup": {
+              "reference_median": 0.24679742101579905,
+              "candidate_median": 0.2513978969946038,
+              "reduction_percent": -1.86406971347981,
+              "paired_reduction_percent": [
+                -7.463590548385413,
+                4.374969936106443,
+                -3.9966568099857103
+              ],
+              "known_pairs": 3
+            },
+            "time:schema": {
+              "reference_median": 0.0034718870010692626,
+              "candidate_median": 0.0033766989945434034,
+              "reduction_percent": 2.7416792797848366,
+              "paired_reduction_percent": [
+                7.444819308002881,
+                -6.094718292152268,
+                6.552949918850737
+              ],
+              "known_pairs": 3
+            },
+            "time:write": {
+              "reference_median": 0.6952615930058528,
+              "candidate_median": 0.6511439669993706,
+              "reduction_percent": 6.345471467184982,
+              "paired_reduction_percent": [
+                7.554114241047472,
+                6.233824886960648,
+                8.282822552791602
+              ],
+              "known_pairs": 3
+            },
+            "time:index": {
+              "reference_median": 0.0016775380063336343,
+              "candidate_median": 0.0017330049886368215,
+              "reduction_percent": -3.3064516031093616,
+              "paired_reduction_percent": [
+                4.641078060916226,
+                -4.8637759353849175,
+                -48.94201949150836
+              ],
+              "known_pairs": 3
+            },
+            "time:first_unfiltered": {
+              "reference_median": 0.0695459260023199,
+              "candidate_median": 0.06912550900597125,
+              "reduction_percent": 0.6045170731275085,
+              "paired_reduction_percent": [
+                -3.118167939646277,
+                0.6045170731275085,
+                10.306379126658527
+              ],
+              "known_pairs": 3
+            },
+            "time:first_filtered": {
+              "reference_median": 0.0092291810142342,
+              "candidate_median": 0.0091234770079609,
+              "reduction_percent": 1.145323795364639,
+              "paired_reduction_percent": [
+                1.145323795364639,
+                -0.8891651486490959,
+                3.433719354042275
+              ],
+              "known_pairs": 3
+            },
+            "time:warmup_remaining": {
+              "reference_median": 0.009209339012159035,
+              "candidate_median": 0.008684396016178653,
+              "reduction_percent": 5.70011588548649,
+              "paired_reduction_percent": [
+                5.085036148806898,
+                10.892495229144483,
+                4.585953617950944
+              ],
+              "known_pairs": 3
+            },
+            "time:query": {
+              "reference_median": 0.10293063701828942,
+              "candidate_median": 0.10101839900016785,
+              "reduction_percent": 1.8577928530470356,
+              "paired_reduction_percent": [
+                3.576886835116422,
+                1.6773102505102888,
+                0.20578325085448546
+              ],
+              "known_pairs": 3
+            },
+            "time:full_through_query": {
+              "reference_median": 1.1428418119903654,
+              "candidate_median": 1.1007027349842247,
+              "reduction_percent": 3.6872187002636503,
+              "paired_reduction_percent": [
+                3.218255730608577,
+                5.001961722495474,
+                5.0197943784326515
+              ],
+              "known_pairs": 3
+            },
+            "time:shutdown": {
+              "reference_median": 0.06533843098441139,
+              "candidate_median": 0.06530447799013928,
+              "reduction_percent": 0.051964814215099686,
+              "paired_reduction_percent": [
+                0.051964814215099686,
+                43.755412622820046,
+                0.19197266510231348
+              ],
+              "known_pairs": 3
+            },
+            "time:full_including_shutdown": {
+              "reference_median": 1.2376722049957607,
+              "candidate_median": 1.166007212974364,
+              "reduction_percent": 5.790304713326111,
+              "paired_reduction_percent": [
+                3.04623413892271,
+                8.590387546275146,
+                4.76539221907728
+              ],
+              "known_pairs": 3
+            },
+            "cpu:write": {
+              "reference_median": 0.146287,
+              "candidate_median": 0.113252,
+              "reduction_percent": 22.582321053818855,
+              "paired_reduction_percent": [
+                24.805348390492664,
+                21.877392785944373,
+                26.798127751914503
+              ],
+              "known_pairs": 3
+            },
+            "cpu:index": {
+              "reference_median": 0.00010000000000001674,
+              "candidate_median": 0.00010899999999999799,
+              "reduction_percent": -8.999999999979735,
+              "paired_reduction_percent": [
+                20.325203252032885,
+                -30.999999999970296,
+                -37.97468354430868
+              ],
+              "known_pairs": 3
+            },
+            "cpu:first_unfiltered": {
+              "reference_median": 0.029551999999999995,
+              "candidate_median": 0.030333,
+              "reduction_percent": -2.642799133730378,
+              "paired_reduction_percent": [
+                -0.2347904150265423,
+                -2.642799133730378,
+                -2.343460228613825
+              ],
+              "known_pairs": 3
+            },
+            "cpu:first_filtered": {
+              "reference_median": 0.008351999999999998,
+              "candidate_median": 0.00829100000000002,
+              "reduction_percent": 0.730363984674065,
+              "paired_reduction_percent": [
+                0.730363984674065,
+                0.11976047904170839,
+                3.4402059443013
+              ],
+              "known_pairs": 3
+            },
+            "cpu:query": {
+              "reference_median": 0.06388200000000002,
+              "candidate_median": 0.062558,
+              "reduction_percent": 2.0725713033405646,
+              "paired_reduction_percent": [
+                4.76101771216565,
+                2.0725713033405646,
+                0.086321902220865
+              ],
+              "known_pairs": 3
+            },
+            "cpu_through_query_seconds": {
+              "reference_median": 0.275757,
+              "candidate_median": 0.242182,
+              "reduction_percent": 12.175574872079387,
+              "paired_reduction_percent": [
+                14.230645096951289,
+                11.718732912915108,
+                14.665872031378868
+              ],
+              "known_pairs": 3
+            },
+            "peak_memory_bytes": {
+              "reference_median": 16777216,
+              "candidate_median": 16777216,
+              "reduction_percent": 0.0,
+              "paired_reduction_percent": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "known_pairs": 3
+            },
+            "io_all_devices_bytes": {
+              "reference_median": 51621888,
+              "candidate_median": 51617792,
+              "reduction_percent": 0.007934618741567423,
+              "paired_reduction_percent": [
+                0.0,
+                0.007934618741567423,
+                0.0
+              ],
+              "known_pairs": 3
+            },
+            "io_read_bytes": {
+              "reference_median": 22687744,
+              "candidate_median": 22687744,
+              "reduction_percent": 0.0,
+              "paired_reduction_percent": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "known_pairs": 3
+            },
+            "io_write_bytes": {
+              "reference_median": 28934144,
+              "candidate_median": 28930048,
+              "reduction_percent": 0.014156285390709566,
+              "paired_reduction_percent": [
+                0.0,
+                0.014156285390709566,
+                0.0
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:total_seconds": {
+              "reference_median": 0.03706051895278506,
+              "candidate_median": 0.03622081098728813,
+              "reduction_percent": 2.265774978938395,
+              "paired_reduction_percent": [
+                3.2359138128372655,
+                1.472445863803129,
+                1.0684790858628945
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:p99_seconds": {
+              "reference_median": 0.0008753799775149673,
+              "candidate_median": 0.0009417090041097254,
+              "reduction_percent": -7.577169720405674,
+              "paired_reduction_percent": [
+                -23.073922917198608,
+                -7.577169720405674,
+                10.114558465048928
+              ],
+              "known_pairs": 3
+            },
+            "query:filtered:max_seconds": {
+              "reference_median": 0.0008753799775149673,
+              "candidate_median": 0.0009417090041097254,
+              "reduction_percent": -7.577169720405674,
+              "paired_reduction_percent": [
+                -23.073922917198608,
+                -7.577169720405674,
+                10.114558465048928
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:total_seconds": {
+              "reference_median": 0.06605725389090367,
+              "candidate_median": 0.06486750894691795,
+              "reduction_percent": 1.801081446635111,
+              "paired_reduction_percent": [
+                3.786534073421599,
+                1.801081446635111,
+                -0.2597666078367977
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:p99_seconds": {
+              "reference_median": 0.0017078490054700524,
+              "candidate_median": 0.0016962660010904074,
+              "reduction_percent": 0.6782218066436752,
+              "paired_reduction_percent": [
+                -5.41581897248431,
+                1.4585509828852428,
+                7.229545579893171
+              ],
+              "known_pairs": 3
+            },
+            "query:unfiltered:max_seconds": {
+              "reference_median": 0.0017078490054700524,
+              "candidate_median": 0.0016962660010904074,
+              "reduction_percent": 0.6782218066436752,
+              "paired_reduction_percent": [
+                -5.41581897248431,
+                1.4585509828852428,
+                7.229545579893171
+              ],
+              "known_pairs": 3
+            }
+          }
+        }
+      },
+      "runs": 30,
+      "diagnostics": 10
+    }
+  ],
+  "accepted_costs": [
+    "round1 first-query/rewrite delay and extra physical writes; 16MiB memory peak remains at limit",
+    "ordinary query median +1.08%; all three paired elapsed queries slower",
+    "ordinary seed43 unfiltered maximum 15.731235ms versus 0.666970ms; do not hide with median",
+    "mixed projection first filtered query +14.21%",
+    "wide first filtered query 0.790320ms -> 16.038286ms; peak 16560128 -> 20115456 bytes",
+    "wide write median elapsed +5.39% despite lower CPU; some per-round/P99/max regressions",
+    "pressure filtered P99/max median +7.58%"
+  ],
+  "limits": [
+    "each round has its own baseline; no additive or multiplicative whole-version speedup claim",
+    "representative composite workload results do not isolate pure per-layer causation",
+    "synthetic distribution and steady warm queries; original document generator unavailable",
+    "AVX-512 not empirically covered; no formal E or hidden-test claim",
+    "phase IO can lag writeback; syncfs accounting drain is outside timings; missing metrics remain null",
+    "local closure uses existing immutable reports and archived image/binary inspection, no new performance tests"
+  ],
+  "blockers": [],
+  "stop_policy": "No additional optimization, tuning or ablations; frozen defaults and implementation",
+  "excluded_from_commit": [
+    "agent/conversation.json"
+  ]
+}

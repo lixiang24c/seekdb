@@ -1,7 +1,7 @@
 /* Included once per supported SIMD target. */
 MV_DYN_TARGET
 static size_t MV_DYN_NAME(const unsigned char *tiles,size_t slots,size_t dim,double quant_delta,const uint32_t *ranges,size_t range_count,size_t k,uint32_t *selected){
- if(!tiles||!selected||!ranges||!slots||slots%16||slots>(8u<<20)/(dim+16)||!k||k>1024||!isfinite(quant_delta))return SIZE_MAX;
+ if(!tiles||!selected||!ranges||!slots||slots%16||slots>mv_dynamic_tile_budget(dim)/(dim+16)||!k||k>1024||!isfinite(quant_delta))return SIZE_MAX;
  size_t active=0;for(size_t r=0;r<range_count;r++){size_t first=ranges[2*r],n=ranges[2*r+1];if(first%16||first>slots||n>slots-first)return SIZE_MAX;active+=n;}
  if(!active)return 0;
  const char *tile_flag=getenv("MINIDB_TILE_MASK");int tile_mask=!tile_flag||strcmp(tile_flag,"0");
@@ -11,11 +11,22 @@ static size_t MV_DYN_NAME(const unsigned char *tiles,size_t slots,size_t dim,dou
  for(size_t r=0;r<range_count;r++){
   size_t first=ranges[2*r],stop=first+ranges[2*r+1];
   for(size_t slot=first;slot<stop;slot+=16){
-   const unsigned char *tile=tiles+(slot/16)*16*(dim+16);int32_t dots[16];MV_DYN_DOT(tile,dim,dots);
+   const unsigned char *tile=tiles+(slot/16)*16*(dim+16);
+#ifdef MV_DYN_LONG
+   double dots[16];
+#else
+   int32_t dots[16];
+#endif
+   MV_DYN_DOT(tile,dim,dots);
    double scores[16];
    for(size_t lane=0;lane<16;lane+=4){
     __m256d norm=_mm256_loadu_pd((const double*)(tile+dim*16+lane*8)),scale=_mm256_loadu_pd((const double*)(tile+dim*16+128+lane*8));
-    __m256d product=_mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(2),scale),_mm256_set1_pd(dynamic_query_scale));product=_mm256_mul_pd(product,_mm256_cvtepi32_pd(_mm_loadu_si128((const __m128i*)(dots+lane))));
+    __m256d product=_mm256_mul_pd(_mm256_mul_pd(_mm256_set1_pd(2),scale),_mm256_set1_pd(dynamic_query_scale));
+#ifdef MV_DYN_LONG
+    product=_mm256_mul_pd(product,_mm256_loadu_pd(dots+lane));
+#else
+    product=_mm256_mul_pd(product,_mm256_cvtepi32_pd(_mm_loadu_si128((const __m128i*)(dots+lane))));
+#endif
     _mm256_storeu_pd(scores+lane,_mm256_max_pd(_mm256_setzero_pd(),_mm256_sub_pd(_mm256_add_pd(norm,_mm256_set1_pd(dynamic_query_norm)),product)));
    }
    size_t n=stop-slot<16?stop-slot:16;

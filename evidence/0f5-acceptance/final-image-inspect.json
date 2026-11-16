@@ -1,0 +1,52 @@
+[
+    {
+        "Architecture": "amd64",
+        "Config": {
+            "Entrypoint": [
+                "/app/minivectordb-log"
+            ],
+            "Env": [
+                "PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "LANG=C.UTF-8",
+                "GPG_KEY=7169605F62C751356D054A26A821E680E5FA6305",
+                "PYTHON_VERSION=3.12.8",
+                "PYTHON_SHA256=c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e",
+                "MINIDB_POSTINGS=0"
+            ],
+            "WorkingDir": "/app"
+        },
+        "Created": "2026-11-16T12:32:36.32294263+08:00",
+        "Descriptor": {
+            "digest": "sha256:8af2d1ce997aa6a94a78904f55fffac5356db6ab2b09d78009a11f107bec6782",
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "size": 2274
+        },
+        "Id": "sha256:8af2d1ce997aa6a94a78904f55fffac5356db6ab2b09d78009a11f107bec6782",
+        "Metadata": {
+            "LastTagTime": "2026-11-16T04:32:36.421156162Z"
+        },
+        "Os": "linux",
+        "Parent": "sha256:dc4439f5636f4ac47d9b7ba280015b45e81cc093c95653a1ae8f126ac4e92ffc",
+        "RepoDigests": [
+            "minivectordb@sha256:8af2d1ce997aa6a94a78904f55fffac5356db6ab2b09d78009a11f107bec6782"
+        ],
+        "RepoTags": [
+            "minivectordb:0f5-query-candidate"
+        ],
+        "RootFS": {
+            "Layers": [
+                "sha256:7914c8f600f532b7adbd0b003888e3aa921687d62dbe2f1f829d0ab6234a158a",
+                "sha256:46cd1391c75e48c6efe37a2cef3e3e267b0dd5f0c7dd370440b9bf22861bb208",
+                "sha256:e6c4c63db83312c93d00e0e6e03ae1392b27d8a93a9270a425a95603ed3170ab",
+                "sha256:cc193c810c6eab0be16f4e0ab33f34d93469b9e3040c0b43ec8477905da24f6a",
+                "sha256:0e0111404bdf05e44ad8d14ebc8a5c3b95216bd65895561d98bc926100e69e61",
+                "sha256:1d51779370d443cf96796066829fc3b503fab2ebe3e69a3d2485101ea0e441ca",
+                "sha256:ebbfa1b376663c61398cbd48363706fad9983d95c929886fa14d4cef628cf658",
+                "sha256:36f71f38eb290db26a43cefe4def4b209979c82d928fd3fbeb472145257f19df",
+                "sha256:c55ad5edc4c79a270d425d145d09176c5a016f994709dbf4dfa886a8c5dae0ee"
+            ],
+            "Type": "layers"
+        },
+        "Size": 46624482
+    }
+]

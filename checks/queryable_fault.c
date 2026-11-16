@@ -53,9 +53,14 @@ int fsync(int fd) {
         if(armed("sync-eio")){fired=1;errno=EIO;return -1;}
         int result=real_sync(fd);if(!result&&armed("sync-after"))pause_at("sync-after");return result;
     }
-    if(!fired&&named(fd,"queryable.next")&&armed("checkpoint-sync"))pause_at("checkpoint-sync");
-    char path[4096];if(!fired&&fd_path(fd,path)&&!strcmp(path,root())&&armed("checkpoint-directory"))pause_at("checkpoint-directory");
-    return real_sync(fd);
+    int next=named(fd,"queryable.next");
+    if(!fired&&next&&armed("checkpoint-sync"))pause_at("checkpoint-sync");
+    char path[4096];int directory=fd_path(fd,path)&&!strcmp(path,root());
+    if(!fired&&directory&&armed("checkpoint-directory"))pause_at("checkpoint-directory");
+    int result=real_sync(fd);
+    if(!fired&&!result&&next&&armed("checkpoint-sync-after"))pause_at("checkpoint-sync-after");
+    if(!fired&&!result&&directory&&armed("checkpoint-directory-after"))pause_at("checkpoint-directory-after");
+    return result;
 }
 int rename(const char *old,const char *new) {
     static int (*real_rename)(const char*,const char*);if(!real_rename)real_rename=dlsym(RTLD_NEXT,"rename");

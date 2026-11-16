@@ -17,3 +17,7 @@
 !native/block_bounds_impl.h
 !native/block_dynamic_impl.h
 !native/block_dynamic_scan.h
+!native/vector_codec.h
+!native/vector_codec_impl.h
+!native/block_filter_scan.h
+!native/dynamic_refine.h
