@@ -12,4 +12,5 @@ COPY native/vendor/yyjson/LICENSE /usr/share/licenses/minivectordb/yyjson.txt
 COPY native/vendor/utf8proc/LICENSE.md /usr/share/licenses/minivectordb/utf8proc.txt
 RUN mkdir -p /data && chmod 777 /data
 ENV MINIDB_POSTINGS=0
+ENV MINIDB_FORCE_CODEC=1
 ENTRYPOINT ["/app/minivectordb-log"]

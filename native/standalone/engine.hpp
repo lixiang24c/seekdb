@@ -1,6 +1,7 @@
 #pragma once
 #include "store.hpp"
 #include <list>
+extern void mv_put_text(std::vector<unsigned char> &,const char *,size_t);
 namespace cppdb {
 struct BoundExpr {size_t column=0;bool distance=false;std::vector<double> query;};
 struct BoundCondition {size_t column;std::string op;Cell value;};
@@ -20,7 +21,11 @@ inline Cell scalar_field(const Table &table,const Bytes &scalar,size_t target){
     for(size_t i=0;i<table.columns.size();i++){
         auto &c=table.columns[i];if(c.type=="VECTOR")continue;
         if(c.type=="BIGINT"){if(pos>scalar.size()||scalar.size()-pos<8)throw std::runtime_error("incomplete scalar integer");if(i==target){int64_t x;std::memcpy(&x,scalar.data()+pos,8);return x;}pos+=8;}
-        else{if(pos>scalar.size()||scalar.size()-pos<4)throw std::runtime_error("incomplete scalar text");uint32_t n;std::memcpy(&n,scalar.data()+pos,4);pos+=4;if(n>scalar.size()-pos)throw std::runtime_error("incomplete scalar text");if(i==target)return std::string(reinterpret_cast<const char*>(scalar.data()+pos),n);pos+=n;}
+        else{
+            if(pos>scalar.size()||scalar.size()-pos<4)throw std::runtime_error("incomplete scalar text");uint32_t tag;std::memcpy(&tag,scalar.data()+pos,4);pos+=4;
+            if(i==target){size_t consumed;return read_text_value(tag,scalar.data()+pos,scalar.size()-pos,consumed);}
+            size_t payload=text_payload_size(tag);if(payload>scalar.size()-pos)throw std::runtime_error("incomplete scalar text");pos+=payload;
+        }
     }throw std::runtime_error("missing scalar field");
 }
 struct Response {

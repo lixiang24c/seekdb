@@ -1,6 +1,9 @@
 #pragma once
 #include "../standalone/engine.hpp"
 #include <tuple>
+#include <zlib.h>
+using cppdb::text_compressed;
+using cppdb::text_payload_size;
 extern "C" int mv_screen_begin_query(const unsigned char*,size_t,size_t,const double*,size_t);
 extern "C" void mv_screen_end_query(void);
 struct mv_record_span {const unsigned char *data,*mask;size_t count;const unsigned char *quant=nullptr;const uint32_t *indices=nullptr;size_t index_count=0,index_base=0;};
@@ -407,7 +410,16 @@ class LogDatabase {
             auto &column=schema.columns[i];bool keep=needed.at(i);
             if(column.type=="VECTOR"){if(keep){if(width!=column.n*4)throw std::runtime_error("invalid projected vector");std::vector<float> value(column.n);read(value.data(),width,vector,nullptr);row[i]=std::move(value);}continue;}
             if(column.type=="BIGINT"){if(position>size||size-position<8)throw std::runtime_error("incomplete projected integer");if(keep){int64_t value;field(&value,8,position);row[i]=value;}position+=8;}
-            else{uint32_t length;field(&length,4,position);position+=4;if(length>size-position)throw std::runtime_error("incomplete projected text");if(keep){std::string value(length,'\0');field(value.data(),length,position);row[i]=std::move(value);}position+=length;}
+            else{
+                uint32_t tag;field(&tag,4,position);position+=4;
+                if(text_compressed(tag)){
+                    uint32_t original;field(&original,4,position);position+=4;size_t bytes=tag&0x3fffffffu;
+                    if(bytes>size-position)throw std::runtime_error("incomplete projected compressed text");
+                    if(keep){std::vector<unsigned char> packed(bytes);field(packed.data(),bytes,position);std::string value(original,'\0');uLongf length=original;if(uncompress(reinterpret_cast<Bytef*>(value.data()),&length,packed.data(),bytes)!=Z_OK||length!=original)throw std::runtime_error("invalid projected compressed text");row[i]=std::move(value);}position+=bytes;
+                }else{
+                    if(tag>size-position)throw std::runtime_error("incomplete projected text");if(keep){std::string value(tag,'\0');field(value.data(),tag,position);row[i]=std::move(value);}position+=tag;
+                }
+            }
         }
         if(position!=size)throw std::runtime_error("extra projected scalar bytes");return row;
     }
@@ -475,7 +487,11 @@ class LogDatabase {
                 for(size_t col=0;col<=column;col++){
                     auto &type=table.schema.columns[col].type;if(type=="VECTOR")continue;
                     if(type=="BIGINT"){if(col==column)field(&value,8);else{if(pos>n||n-pos<8)throw std::runtime_error("incomplete integer prefix");pos+=8;}}
-                    else{uint32_t length;field(&length,4);if(length>n-pos)throw std::runtime_error("incomplete text prefix");pos+=length;}
+                    else{
+                        uint32_t tag;field(&tag,4);
+                        if(text_compressed(tag)){size_t bytes=tag&0x3fffffffu;if(pos>n||n-pos<4+bytes)throw std::runtime_error("incomplete compressed text prefix");pos+=4+bytes;}
+                        else{if(tag>n-pos)throw std::runtime_error("incomplete text prefix");pos+=tag;}
+                    }
                 }
                 if(!cache.append(value)){Bytes().swap(cache.codes);return nullptr;}row+=4+uint64_t(n);
             }

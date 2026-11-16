@@ -12,6 +12,21 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <zlib.h>
+static void mv_put_text(std::vector<unsigned char> &out,const char *data,size_t size){
+    if(size>=32&&size<0x3fffffffu){
+        uLongf bound=compressBound(static_cast<uLong>(size));std::vector<unsigned char> packed(bound);
+        if(compress2(packed.data(),&bound,reinterpret_cast<const Bytef*>(data),static_cast<uLong>(size),1)==Z_OK&&bound+8<size){
+            uint32_t tag=0x40000000u|static_cast<uint32_t>(bound),original=static_cast<uint32_t>(size);
+            const unsigned char *tagp=reinterpret_cast<const unsigned char*>(&tag);out.insert(out.end(),tagp,tagp+4);
+            const unsigned char *origp=reinterpret_cast<const unsigned char*>(&original);out.insert(out.end(),origp,origp+4);
+            out.insert(out.end(),packed.begin(),packed.begin()+bound);return;
+        }
+    }
+    if(size>=0x40000000u)throw std::runtime_error("text value too large");
+    uint32_t raw_size=static_cast<uint32_t>(size);const unsigned char *sizep=reinterpret_cast<const unsigned char*>(&raw_size);out.insert(out.end(),sizep,sizep+4);
+    out.insert(out.end(),reinterpret_cast<const unsigned char*>(data),reinterpret_cast<const unsigned char*>(data)+size);
+}
 
 extern "C" {
 struct mv_source { const char *rows; const char *vectors; uint64_t count; const int64_t *excluded; size_t excluded_count; };
@@ -237,7 +252,7 @@ extern "C" void *mv_insert_prepare(const char *text,size_t size,const mv_column 
                     if(!in.plain_string(value,length)){decoded=in.string();value=decoded.data();length=decoded.size();}
                     for(size_t i=0;i<length;i++)if((static_cast<unsigned char>(value[i])&0xc0)!=0x80)++chars;
                     if(chars>cols[c].width||length>UINT32_MAX)return nullptr;
-                    put(fields[c],static_cast<uint32_t>(length));fields[c].insert(fields[c].end(),value,value+length);
+                    mv_put_text(fields[c],value,length);
                 }else if(cols[c].kind==2){
                     if(!cols[c].width||cols[c].width>4096)return nullptr;
                     std::string quoted;const char *v=nullptr;size_t length=0;

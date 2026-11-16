@@ -35,9 +35,15 @@ public:
                     if(pos>n||n-pos<8)throw std::runtime_error("incomplete projected integer");
                     if(keep){int64_t value;std::memcpy(&value,scalars.get(extent.rows+offset+4+pos,8),8);row[col]=value;}pos+=8;
                 }else{
-                    if(pos>n||n-pos<4)throw std::runtime_error("incomplete projected text size");uint32_t length;std::memcpy(&length,scalars.get(extent.rows+offset+4+pos,4),4);pos+=4;
-                    if(length>n-pos)throw std::runtime_error("incomplete projected text");
-                    if(keep){auto *data=scalars.get(extent.rows+offset+4+pos,length);row[col]=std::string(reinterpret_cast<const char*>(data),length);}pos+=length;
+                    if(pos>n||n-pos<4)throw std::runtime_error("incomplete projected text size");uint32_t tag;std::memcpy(&tag,scalars.get(extent.rows+offset+4+pos,4),4);pos+=4;
+                    if(text_compressed(tag)){
+                        size_t bytes=tag&0x3fffffffu;if(pos>n||n-pos<4+bytes)throw std::runtime_error("incomplete projected compressed text");
+                        uint32_t original;std::memcpy(&original,scalars.get(extent.rows+offset+4+pos,4),4);pos+=4;
+                        if(keep){auto *data=scalars.get(extent.rows+offset+4+pos,bytes);std::string value(original,'\0');uLongf length=original;if(uncompress(reinterpret_cast<Bytef*>(value.data()),&length,data,bytes)!=Z_OK||length!=original)throw std::runtime_error("invalid scanned compressed text");row[col]=std::move(value);}pos+=bytes;
+                    }else{
+                        if(tag>n-pos)throw std::runtime_error("incomplete projected text");
+                        if(keep){auto *data=scalars.get(extent.rows+offset+4+pos,tag);row[col]=std::string(reinterpret_cast<const char*>(data),tag);}pos+=tag;
+                    }
                 }
             }
             if(pos!=n)throw std::runtime_error("extra projected scalar bytes");return true;

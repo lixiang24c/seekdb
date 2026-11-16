@@ -10,6 +10,9 @@ class LogPredicate {
         else{auto &target=std::get<std::string>(test.value);cmp=std::string_view(reinterpret_cast<const char*>(data),n).compare(target);}
         return accept(cmp,test.op);
     }
+    static bool compare_text(const Test &test,const std::string &value){
+        auto &target=std::get<std::string>(test.value);int cmp=value.compare(target);return accept(cmp,test.op);
+    }
 public:
     LogPredicate(const Table &schema,const std::vector<BoundCondition> &conditions):table(schema){
         for(auto &c:conditions){size_t offset=0;bool known=true;
@@ -25,10 +28,24 @@ public:
         if(fixed){for(auto &test:tests){if(test.offset>size||size-test.offset<8)throw std::runtime_error("incomplete predicate field");if(!compare(test,data+test.offset,8,true))return false;}return true;}
         size_t position=0,next=0;
         for(size_t col=0;col<table.columns.size()&&next<tests.size();col++){
-            auto &column=table.columns[col];if(column.type=="VECTOR")continue;size_t n=8;bool integer=column.type=="BIGINT";
-            if(!integer){if(position>size||size-position<4)throw std::runtime_error("incomplete predicate text size");uint32_t length;std::memcpy(&length,data+position,4);position+=4;n=length;}
-            if(position>size||n>size-position)throw std::runtime_error("incomplete predicate field");
-            while(next<tests.size()&&tests[next].column==col){if(!compare(tests[next],data+position,n,integer))return false;++next;}position+=n;
+            auto &column=table.columns[col];if(column.type=="VECTOR")continue;
+            if(column.type=="BIGINT"){
+                if(position>size||size-position<8)throw std::runtime_error("incomplete predicate integer");
+                while(next<tests.size()&&tests[next].column==col){if(!compare(tests[next],data+position,8,true))return false;++next;}position+=8;continue;
+            }
+            if(position>size||size-position<4)throw std::runtime_error("incomplete predicate text size");uint32_t tag;std::memcpy(&tag,data+position,4);position+=4;
+            if(text_compressed(tag)){
+                size_t bytes=tag&0x3fffffffu;if(position>size||size-position<4+bytes)throw std::runtime_error("incomplete predicate compressed text");
+                if(next<tests.size()&&tests[next].column==col){
+                    uint32_t original;std::memcpy(&original,data+position,4);std::string value(original,'\0');uLongf length=original;
+                    if(uncompress(reinterpret_cast<Bytef*>(value.data()),&length,data+position+4,bytes)!=Z_OK||length!=original)throw std::runtime_error("invalid predicate compressed text");
+                    while(next<tests.size()&&tests[next].column==col){if(!compare_text(tests[next],value))return false;++next;}
+                }
+                position+=4+bytes;
+            }else{
+                if(tag>size-position)throw std::runtime_error("incomplete predicate text");
+                while(next<tests.size()&&tests[next].column==col){if(!compare(tests[next],data+position,tag,false))return false;++next;}position+=tag;
+            }
         }
         if(next!=tests.size())throw std::runtime_error("missing predicate field");return true;
     }
